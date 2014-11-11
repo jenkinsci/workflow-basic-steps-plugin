@@ -25,11 +25,10 @@ THE SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry field="job" title="Project to Build">
-        <f:textbox/>
+    <f:entry field="time" title="Timeout">
+        <f:number clazz="positive-number"/>
     </f:entry>
-    <f:entry title="Parameters">
-        <!-- https://trello.com/c/kXyfSioF/133-code-snippet-generation-for-buildtriggerstep-parameters -->
-        <f:block><code>parameters</code> may be bound to a list of <code>ParameterValue</code>s.</f:block>
+    <f:entry field="unit" title="Unit">
+        <f:select/>
     </f:entry>
 </j:jelly>

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2013-2014, CloudBees, Inc.
+ * Copyright 2014 Jesse Glick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,55 +24,23 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.Extension;
-import org.kohsuke.stapler.DataBoundConstructor;
+import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.*;
+import org.junit.Test;
+import org.junit.Rule;
+import org.jvnet.hudson.test.JenkinsRule;
 
-import java.io.Serializable;
+public class TimeoutStepTest {
 
-/**
- * Executes the body up to N times.
- *
- * @author Kohsuke Kawaguchi
- */
-public class RetryStep extends AbstractStepImpl {
-    
-    private final int count;
+    @Rule public JenkinsRule r = new JenkinsRule();
 
-    @DataBoundConstructor
-    public RetryStep(int count) {
-        this.count = count;
-    }
-
-    public int getCount() {
-        return count;
-    }
-
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
-    }
-
-    @Extension
-    public static class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(RetryStepExecution.class);
-        }
-
-        @Override
-        public String getFunctionName() {
-            return "retry";
-        }
-
-        @Override
-        public boolean takesImplicitBlockArgument() {
-            return true;
-        }
-
-        @Override
-        public String getDisplayName() {
-            return "Retry the body up to N times";
-        }
+    @Test public void configRoundTrip() throws Exception {
+        TimeoutStep s1 = new TimeoutStep(3);
+        s1.setUnit(TimeUnit.HOURS);
+        TimeoutStep s2 = new StepConfigTester(r).configRoundTrip(s1);
+        // assertEqualDataBoundBeans does not currently work on @DataBoundSetter:
+        assertEquals(3, s2.getTime());
+        assertEquals(TimeUnit.HOURS, s2.getUnit());
     }
 
 }
