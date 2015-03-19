@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2014 Jesse Glick.
+ * Copyright 2015 Jesse Glick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,53 +24,48 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.Functions;
-import java.io.File;
+import java.util.List;
 import org.jenkinsci.plugins.workflow.BuildWatcher;
 import org.jenkinsci.plugins.workflow.JenkinsRuleExt;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import static org.junit.Assert.*;
 import org.junit.ClassRule;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
-public class PushdStepTest {
+public class SleepStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public RestartableJenkinsRule r = new RestartableJenkinsRule();
 
-    private String pwdStep() {
-        return Functions.isWindows() ? "bat 'cd'" : "sh 'pwd'";
-    }
-
-    @Test public void basics() {
-        story.addStep(new Statement() {
+    @Test public void sleepAndRestart() {
+        r.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {" + pwdStep() + "}}"));
-                story.j.assertLogContains(File.separator + "subdir", story.j.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+                WorkflowJob p = r.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition("semaphore 'start'; sleep 10"));
+                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                SemaphoreStep.waitForStart("start/1", b);
+                SemaphoreStep.success("start/1", null);
+                ((CpsFlowExecution) b.getExecution()).waitForSuspension();
+                List<FlowNode> heads = b.getExecution().getCurrentHeads();
+                assertEquals(1, heads.size());
+                assertEquals(r.j.jenkins.getDescriptorByType(SleepStep.DescriptorImpl.class), ((StepAtomNode) heads.get(0)).getDescriptor());
             }
         });
-    }
-
-    @Test public void restarting() {
-        story.addStep(new Statement() {
+        r.addStep(new Statement() {
+            @SuppressWarnings("SleepWhileInLoop")
             @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {semaphore 'restarting'; " + pwdStep() + "}}"));
-                WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
-                SemaphoreStep.waitForStart("restarting/1", b);
-            }
-        });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                SemaphoreStep.success("restarting/1", null);
-                WorkflowRun b = story.j.jenkins.getItemByFullName("p", WorkflowJob.class).getLastBuild();
-                story.j.assertLogContains(File.separator + "subdir", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
+                WorkflowJob p = r.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowRun b = p.getLastBuild();
+                r.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b));
             }
         });
     }
