@@ -24,17 +24,4 @@ THE SOFTWARE.
 -->
 
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry field="name" title="Name">
-        <f:textbox/>
-    </f:entry>
-    <f:entry field="includes" title="Includes">
-        <f:textbox/>
-    </f:entry>
-    <f:entry field="excludes" title="Excludes">
-        <f:textbox/>
-    </f:entry>
-    <f:entry field="useDefaultExcludes" title="Use Default Ant Excludes">
-        <f:checkbox default="true" />
-    </f:entry>
-</j:jelly>
+<j:jelly xmlns:j="jelly:core"/>
