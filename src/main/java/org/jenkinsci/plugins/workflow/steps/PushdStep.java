@@ -84,7 +84,6 @@ public class PushdStep extends AbstractStepImpl {
             listener.getLogger().println("Running in " + dir);
             body = getContext().newBodyInvoker()
                     .withContext(dir)
-                    .withDisplayName(null)
                     // Could use a dedicated BodyExecutionCallback here if we wished to print a message at the end ("Returning to ${cwd}"):
                     .withCallback(BodyExecutionCallback.wrap(getContext()))
                     .start();

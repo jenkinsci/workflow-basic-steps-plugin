@@ -73,7 +73,6 @@ public final class CatchErrorStep extends AbstractStepImpl {
             StepContext context = getContext();
             context.newBodyInvoker()
                     .withCallback(new Callback())
-                    .withDisplayName(null)
                     .start();
             return false;
         }

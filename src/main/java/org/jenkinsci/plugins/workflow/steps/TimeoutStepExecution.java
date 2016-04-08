@@ -25,7 +25,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         StepContext context = getContext();
         body = context.newBodyInvoker()
                 .withCallback(new Callback())
-                .withDisplayName(null)  // hide the body block
                 .start();
         long now = System.currentTimeMillis();
         end = now + step.getUnit().toMillis(step.getTime());
