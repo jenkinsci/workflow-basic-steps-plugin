@@ -60,8 +60,9 @@ public class ErrorInfoStep extends AbstractStepImpl {
 
     public static class Execution extends AbstractSynchronousStepExecution<ErrorInfo> {
 
-        @Inject private ErrorInfoStep step;
-        @StepContextParameter private FlowExecution execution;
+        private static final long serialVersionUID = 1;
+        @Inject private transient ErrorInfoStep step;
+        @StepContextParameter private transient FlowExecution execution;
 
         @Override protected ErrorInfo run() throws Exception {
             return new ErrorInfo(step.error, execution);
@@ -174,7 +175,7 @@ public class ErrorInfoStep extends AbstractStepImpl {
                 for (FlowNode n2 : new FlowNodeSerialWalker(n)) {
                     LogAction a = n2.getAction(LogAction.class);
                     if (a != null) {
-                        String u = Jenkins.getInstance().getRootUrl();
+                        String u = Jenkins.getActiveInstance().getRootUrl();
                         if (u == null) {
                             u = "http://jenkins/"; // placeholder
                         }
