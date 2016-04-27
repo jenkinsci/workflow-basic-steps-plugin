@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.base.Predicate;
 import com.google.inject.Inject;
 import hudson.AbortException;
 import hudson.Extension;
@@ -42,9 +43,8 @@ import org.jenkinsci.plugins.workflow.actions.LogAction;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
-import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.graph.FlowNodeSerialWalker;
+import org.jenkinsci.plugins.workflow.graph.FlowScanner;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -115,22 +115,21 @@ public class ErrorInfoStep extends AbstractStepImpl {
          * so we compare by stack trace instead.
          */
         private @CheckForNull FlowNode getNode() throws IOException {
-            Set<String> stackTraces = new HashSet<>();
+            final Set<String> stackTraces = new HashSet<>();
             for (Throwable t = error; t != null; t = t.getCause()) {
                 stackTraces.add(Functions.printThrowable(t));
             }
-            for (FlowNode n : new FlowGraphWalker(getExecution())) {
-                if (n instanceof BlockEndNode) {
-                    continue; // look for the thing it is enclosing
-                }
-                ErrorAction a = n.getAction(ErrorAction.class);
-                if (a != null) {
-                    if (stackTraces.contains(Functions.printThrowable(a.getError()))) {
-                        return n;
+            Predicate<FlowNode> threwException = new Predicate<FlowNode>() {
+                @Override
+                public boolean apply(FlowNode input) {
+                    if (input instanceof BlockEndNode) {
+                        return false;
                     }
+                    ErrorAction a = input.getAction(ErrorAction.class);
+                    return (a != null && stackTraces.contains(Functions.printThrowable(a.getError())));
                 }
-            }
-            return null;
+            };
+            return new FlowScanner.DepthFirstScanner().findFirstMatch(getExecution(), threwException);
         }
 
         @Whitelisted
@@ -172,15 +171,15 @@ public class ErrorInfoStep extends AbstractStepImpl {
         public @CheckForNull String getLogURL() throws IOException {
             FlowNode n = getNode();
             if (n != null) {
-                for (FlowNode n2 : new FlowNodeSerialWalker(n)) {
-                    LogAction a = n2.getAction(LogAction.class);
-                    if (a != null) {
-                        String u = Jenkins.getActiveInstance().getRootUrl();
-                        if (u == null) {
-                            u = "http://jenkins/"; // placeholder
-                        }
-                        return u + n2.getUrl() + a.getUrlName();
+                FlowNode logNode = new FlowScanner.LinearBlockHoppingScanner()
+                        .findFirstMatch(n,
+                                FlowScanner.MATCH_HAS_LOG);
+                if (logNode != null) {
+                    String u = Jenkins.getActiveInstance().getRootUrl();
+                    if (u == null) {
+                        u = "http://jenkins/"; // placeholder
                     }
+                    return u + logNode.getUrl() + logNode.getAction(LogAction.class).getUrlName();
                 }
             }
             return null;
