@@ -21,7 +21,7 @@ Here we are running the standard _Archive the artifacts_ post-build action (`hud
 and configuring the _Files to archive_ property (`artifacts`) to archive our file `something` produced in an earlier step.
 The easiest way to see what class and field names to use is to use the _Snippet Generator_ feature in the Pipeline configuration page.
 
-See the [compatibility list](../COMPATIBILITY.md) for the list of currently supported steps.
+See the [compatibility list](https://github.com/jenkinsci/pipeline-plugin/blob/master/COMPATIBILITY.md#build-steps-and-post-build-actions) for the list of currently supported steps.
 
 # Interacting with build status
 
@@ -80,4 +80,4 @@ node('linux') {
 
 # Adding support from plugins
 
-See the [compatibility guide](../COMPATIBILITY.md#plugin-developer-guide).
+See the [compatibility guide](https://github.com/jenkinsci/pipeline-plugin/blob/master/DEVGUIDE.md#build-steps).
