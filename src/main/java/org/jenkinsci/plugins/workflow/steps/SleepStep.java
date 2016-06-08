@@ -26,6 +26,8 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.inject.Inject;
 import hudson.Extension;
+import hudson.Util;
+import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +62,7 @@ public final class SleepStep extends AbstractStepImpl {
         private static final long serialVersionUID = 1L;
 
         @Inject(optional=true) private transient SleepStep step;
+        @StepContextParameter private transient TaskListener listener;
         private long end;
         private transient volatile ScheduledFuture<?> task;
 
@@ -72,12 +75,14 @@ public final class SleepStep extends AbstractStepImpl {
 
         private void setupTimer(long now) {
             if (end > now) {
+                listener.getLogger().println("Sleeping for " + Util.getTimeSpanString(end - now));
                 task = Timer.get().schedule(new Runnable() {
                     @Override public void run() {
                         getContext().onSuccess(null);
                     }
                 }, end - now, TimeUnit.MILLISECONDS);
             } else {
+                listener.getLogger().println("No need to sleep any longer");
                 getContext().onSuccess(null);
             }
         }
