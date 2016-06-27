@@ -99,6 +99,15 @@ public final class SleepStep extends AbstractStepImpl {
             setupTimer(System.currentTimeMillis());
         }
 
+        @Override public String toString() {
+            long now = System.currentTimeMillis();
+            if (end > now) {
+                return "sleeping for another " + Util.getTimeSpanString(end - now);
+            } else {
+                return "should have stopped sleeping " + Util.getPastTimeString(now - end);
+            }
+        }
+
     }
 
     @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
