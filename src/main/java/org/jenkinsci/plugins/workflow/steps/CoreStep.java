@@ -69,6 +69,11 @@ public final class CoreStep extends AbstractStepImpl {
             return null;
         }
 
+        @Override public String toString() {
+            String supe = super.toString();
+            return step != null ? step.delegate.getClass().getName() + ": " + supe : supe;
+        }
+
         private static final long serialVersionUID = 1L;
 
     }
