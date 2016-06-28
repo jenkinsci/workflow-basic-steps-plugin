@@ -99,7 +99,7 @@ public final class SleepStep extends AbstractStepImpl {
             setupTimer(System.currentTimeMillis());
         }
 
-        @Override public String toString() {
+        @Override public String getStatus() {
             long now = System.currentTimeMillis();
             if (end > now) {
                 return "sleeping for another " + Util.getTimeSpanString(end - now);

@@ -69,8 +69,8 @@ public final class CoreStep extends AbstractStepImpl {
             return null;
         }
 
-        @Override public String toString() {
-            String supe = super.toString();
+        @Override public String getStatus() {
+            String supe = super.getStatus();
             return step != null ? step.delegate.getClass().getName() + ": " + supe : supe;
         }
 
