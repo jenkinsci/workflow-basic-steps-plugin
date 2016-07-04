@@ -90,6 +90,11 @@ public class EnvStep extends AbstractStepImpl {
         }
         @Override public void expand(EnvVars env) throws IOException, InterruptedException {
             env.overrideAll(overrides);
+            // Workaround for https://issues.jenkins-ci.org/browse/JENKINS-15146
+            // Empty values should not be deleted from Environment
+            for (Map.Entry<String, String> e : all.entrySet()) {
+              env.put(e.getKey(), e.getValue());
+            }
         }
     }
 
