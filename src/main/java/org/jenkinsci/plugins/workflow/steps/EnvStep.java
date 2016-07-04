@@ -92,7 +92,7 @@ public class EnvStep extends AbstractStepImpl {
             env.overrideAll(overrides);
             // Workaround for https://issues.jenkins-ci.org/browse/JENKINS-15146
             // Empty values should not be deleted from Environment
-            for (Map.Entry<String, String> e : all.entrySet()) {
+            for (Map.Entry<String, String> e : overrides.entrySet()) {
               env.put(e.getKey(), e.getValue());
             }
         }
