@@ -27,6 +27,7 @@ import com.google.inject.Inject;
 
 import hudson.AbortException;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.TaskListener;
 import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
 
@@ -50,8 +51,7 @@ import java.io.UnsupportedEncodingException;
  */
 public class MailStep extends AbstractStepImpl {
 
-    @DataBoundSetter
-    public String charset;
+    private String charset;
 
     public final String subject;
 
@@ -72,13 +72,30 @@ public class MailStep extends AbstractStepImpl {
     @DataBoundSetter
     public String replyTo;
 
-    @DataBoundSetter
-    public String mimeType;
+    private String mimeType;
 
     @DataBoundConstructor
     public MailStep(@Nonnull String subject, @Nonnull String body) {
         this.subject = subject;
         this.body = body;
+    }
+
+    @DataBoundSetter
+    public void setCharset(String charset) {
+        this.charset = Util.fixEmpty(charset);
+    }
+
+    public String getCharset() {
+        return charset;
+    }
+
+    @DataBoundSetter
+    public void setMimeType(String mimeType) {
+        this.mimeType = Util.fixEmpty(mimeType);
+    }
+
+    public String getMimeType() {
+        return mimeType;
     }
 
     @Extension
