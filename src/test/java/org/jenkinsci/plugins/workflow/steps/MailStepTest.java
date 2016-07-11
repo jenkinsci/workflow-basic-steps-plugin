@@ -44,9 +44,9 @@ public class MailStepTest {
         step1.to = "tom.fennelly@gmail.com";
         step1.cc = "tom.fennelly@gmail.com";
         step1.bcc = "tom.fennelly@gmail.com";
-        step1.charset = "UTF-8";
+        step1.setCharset("UTF-8");
         step1.replyTo = "tom.fennelly@gmail.com";
-        step1.mimeType = "text/html";
+        step1.setMimeType("text/html");
 
         MailStep step2 = new StepConfigTester(r).configRoundTrip(step1);
         r.assertEqualDataBoundBeans(step1, step2);
