@@ -54,6 +54,7 @@ import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.tasks.SimpleBuildWrapper;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -85,7 +86,7 @@ public class CoreWrapperStepTest {
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node('slave') {wrap([$class: 'MockWrapper']) {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
+                p.setDefinition(new CpsFlowDefinition("node('slave') {mock() {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
             }
@@ -118,6 +119,7 @@ public class CoreWrapperStepTest {
                 listener.getLogger().println("ran DisposerImpl");
             }
         }
+        @Symbol("mock")
         @TestExtension("useWrapper") public static class DescriptorImpl extends BuildWrapperDescriptor {
             @Override public String getDisplayName() {
                 return "MockWrapper";
