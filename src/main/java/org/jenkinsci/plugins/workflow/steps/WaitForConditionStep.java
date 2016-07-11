@@ -53,7 +53,7 @@ public final class WaitForConditionStep extends AbstractStepImpl {
         private final String id = UUID.randomUUID().toString();
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
         static final long MIN_RECURRENCE_PERIOD = 250; // ¼s
-        // Do we want a maximum, or can it grow to any size?
+        static final long MAX_RECURRENCE_PERIOD = 15000; // ¼min
         long recurrencePeriod = MIN_RECURRENCE_PERIOD;
 
         @Override public boolean start() throws Exception {
@@ -106,7 +106,7 @@ public final class WaitForConditionStep extends AbstractStepImpl {
                     body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
                 }
             }, recurrencePeriod, TimeUnit.MILLISECONDS);
-            recurrencePeriod *= RECURRENCE_PERIOD_BACKOFF;
+            recurrencePeriod = Math.min((long)(recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
         }
 
     }
