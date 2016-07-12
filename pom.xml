@@ -95,6 +95,13 @@
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-cps</artifactId>
+            <version>2.10-SNAPSHOT</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-job</artifactId>
             <version>2.3</version>
             <scope>test</scope>
