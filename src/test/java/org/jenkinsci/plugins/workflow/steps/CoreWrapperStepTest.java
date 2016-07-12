@@ -86,7 +86,7 @@ public class CoreWrapperStepTest {
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node('slave') {mock() {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
+                p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
             }
