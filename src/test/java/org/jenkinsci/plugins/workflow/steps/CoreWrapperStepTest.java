@@ -56,6 +56,7 @@ import javax.annotation.Nonnull;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
@@ -80,6 +81,7 @@ public class CoreWrapperStepTest {
     @Test public void useWrapper() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                new SnippetizerTester(story.j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Assume.assumeFalse(Functions.isWindows()); // TODO create Windows equivalent
                 Map<String,String> slaveEnv = new HashMap<String,String>();
                 slaveEnv.put("PATH", "/usr/bin:/bin");
