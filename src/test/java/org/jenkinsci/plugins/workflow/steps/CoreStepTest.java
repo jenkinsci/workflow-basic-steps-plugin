@@ -32,7 +32,7 @@ import hudson.tasks.junit.TestResultAction;
 import java.util.List;
 import javax.mail.internet.InternetAddress;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.cps.SnippetizerTestRule;
+import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Test;
@@ -48,7 +48,7 @@ public class CoreStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
-    @Rule public SnippetizerTestRule st = new SnippetizerTestRule(r);
+    private SnippetizerTester st = new SnippetizerTester(r);
 
     @Test public void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
