@@ -2,6 +2,8 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
 import hudson.Util;
+import hudson.tasks.ArtifactArchiver;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -14,7 +16,6 @@ public class ArtifactArchiverStep extends AbstractStepImpl {
 
     private final String includes;
     private String excludes;
-    // TBD: boolean fingerprint = true
 
     @DataBoundConstructor
     public ArtifactArchiverStep(String includes) {
@@ -49,5 +50,15 @@ public class ArtifactArchiverStep extends AbstractStepImpl {
         public String getDisplayName() {
             return "Archive artifacts";
         }
+
+        /**
+         * When the {@code archiveArtifacts} symbol is available, {@link CoreStep} may be used instead,
+         * with no more verbose a syntax but more configuration options.
+         */
+        @Override
+        public boolean isAdvanced() {
+            return ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class);
+        }
+
     }
 }
