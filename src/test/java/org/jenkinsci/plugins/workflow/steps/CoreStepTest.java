@@ -25,12 +25,14 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
+import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Fingerprinter;
 import hudson.tasks.i18n.Messages;
 import hudson.tasks.junit.JUnitResultArchiver;
 import hudson.tasks.junit.TestResultAction;
 import java.util.List;
 import javax.mail.internet.InternetAddress;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -52,8 +54,11 @@ public class CoreStepTest {
 
     @Test public void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        // TODO 2.7.x+ use core symbols
-        p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'ArtifactArchiver', artifacts: 'x.txt', fingerprint: true])}", true));
+        if (ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
+            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; archiveArtifacts artifacts: 'x.txt', fingerprint: true}", true));
+        } else { // TODO 2.x delete
+            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'ArtifactArchiver', artifacts: 'x.txt', fingerprint: true])}", true));
+        }
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         List<WorkflowRun.Artifact> artifacts = b.getArtifacts();
         assertEquals(1, artifacts.size());
@@ -65,7 +70,11 @@ public class CoreStepTest {
 
     @Test public void fingerprinter() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'Fingerprinter', targets: 'x.txt'])}"));
+        if (Fingerprinter.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
+            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; fingerprint 'x.txt'}"));
+        } else { // TODO 2.x delete
+            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'Fingerprinter', targets: 'x.txt'])}"));
+        }
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         Fingerprinter.FingerprintAction fa = b.getAction(Fingerprinter.FingerprintAction.class);
         assertNotNull(fa);
@@ -107,7 +116,7 @@ public class CoreStepTest {
         p.setDefinition(new CpsFlowDefinition(
                   "node {\n"
                 + "    writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'\n"
-                + "    step([$class: 'JUnitResultArchiver', testResults: 'r.xml'])\n"
+                + "    junit 'r.xml'\n"
                 + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
                 + "}"));
         Mailbox inbox = Mailbox.get(new InternetAddress(recipient));

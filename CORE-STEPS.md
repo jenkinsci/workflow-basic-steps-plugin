@@ -23,6 +23,21 @@ The easiest way to see what class and field names to use is to use the _Snippet 
 
 See the [compatibility list](https://github.com/jenkinsci/pipeline-plugin/blob/master/COMPATIBILITY.md#build-steps-and-post-build-actions) for the list of currently supported steps.
 
+## Simplified syntax
+
+Build steps and post-build actions in Jenkins core as of 2.2,
+and in some plugins according to their individual changelogs,
+have defined symbols which allow for a more concise syntax.
+_Snippet Generator_ will offer this when available.
+For example, the above script may also be written:
+
+```groovy
+node {
+    sh 'make something'
+    archiveArtifacts 'something'
+}
+```
+
 # Interacting with build status
 
 Builders generally have a simple mode of operation: they run, and either pass or fail.
