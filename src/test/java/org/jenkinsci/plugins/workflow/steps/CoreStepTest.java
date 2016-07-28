@@ -27,13 +27,16 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.model.Result;
 import hudson.tasks.Fingerprinter;
 import hudson.tasks.i18n.Messages;
+import hudson.tasks.junit.JUnitResultArchiver;
 import hudson.tasks.junit.TestResultAction;
 import java.util.List;
 import javax.mail.internet.InternetAddress;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -45,9 +48,11 @@ public class CoreStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
+    private SnippetizerTester st = new SnippetizerTester(r);
 
     @Test public void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // TODO 2.7.x+ use core symbols
         p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'ArtifactArchiver', artifacts: 'x.txt', fingerprint: true])}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         List<WorkflowRun.Artifact> artifacts = b.getArtifacts();
@@ -73,13 +78,16 @@ public class CoreStepTest {
                   "node {\n"
                 + "    writeFile text: '''<testsuite name='a'><testcase name='a1'/><testcase name='a2'><error>a2 failed</error></testcase></testsuite>''', file: 'a.xml'\n"
                 + "    writeFile text: '''<testsuite name='b'><testcase name='b1'/><testcase name='b2'/></testsuite>''', file: 'b.xml'\n"
-                + "    step([$class: 'JUnitResultArchiver', testResults: '*.xml'])\n"
+                + "    junit '*.xml'\n"
                 + "}"));
         WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0).get());
         TestResultAction a = b.getAction(TestResultAction.class);
         assertNotNull(a);
         assertEquals(4, a.getTotalCount());
         assertEquals(1, a.getFailCount());
+        /* TODO impossible prior to JENKINS-31582:
+        r.assertLogContains("[Pipeline] junit", b);
+        */
     }
 
     @Test public void javadoc() throws Exception {
@@ -133,6 +141,17 @@ public class CoreStepTest {
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
         assertEquals(Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
+    }
+
+    @Test public void coreStepWithSymbol() throws Exception {
+        JUnitResultArchiver aa = new JUnitResultArchiver("target/surefire/*.xml");
+        aa.setAllowEmptyResults(true);
+        st.assertRoundTrip(new CoreStep(aa), "junit allowEmptyResults: true, testResults: 'target/surefire/*.xml'");
+    }
+
+    @Test public void coreStepWithSymbolWithSoleArg() throws Exception {
+        JUnitResultArchiver aa = new JUnitResultArchiver("target/surefire/*.xml");
+        st.assertRoundTrip(new CoreStep(aa), "junit 'target/surefire/*.xml'");
     }
 
 }

@@ -54,7 +54,9 @@ import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.tasks.SimpleBuildWrapper;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
@@ -79,13 +81,14 @@ public class CoreWrapperStepTest {
     @Test public void useWrapper() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                new SnippetizerTester(story.j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Assume.assumeFalse(Functions.isWindows()); // TODO create Windows equivalent
                 Map<String,String> slaveEnv = new HashMap<String,String>();
                 slaveEnv.put("PATH", "/usr/bin:/bin");
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node('slave') {wrap([$class: 'MockWrapper']) {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
+                p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
             }
@@ -118,6 +121,7 @@ public class CoreWrapperStepTest {
                 listener.getLogger().println("ran DisposerImpl");
             }
         }
+        @Symbol("mock")
         @TestExtension("useWrapper") public static class DescriptorImpl extends BuildWrapperDescriptor {
             @Override public String getDisplayName() {
                 return "MockWrapper";

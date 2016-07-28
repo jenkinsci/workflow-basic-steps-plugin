@@ -92,6 +92,11 @@ public final class CoreStep extends AbstractStepImpl {
             return "General Build Step";
         }
 
+        @Override
+        public boolean isMetaStep() {
+            return true;
+        }
+
         public Collection<? extends Descriptor<?>> getApplicableDescriptors() {
             // Jenkins.instance.getDescriptorList(SimpleBuildStep) is empty, presumably because that itself is not a Describable.
             List<Descriptor<?>> r = new ArrayList<Descriptor<?>>();

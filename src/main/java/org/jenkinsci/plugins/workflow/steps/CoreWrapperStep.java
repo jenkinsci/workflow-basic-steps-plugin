@@ -137,6 +137,10 @@ public class CoreWrapperStep extends AbstractStepImpl {
             return true;
         }
 
+        @Override public boolean isMetaStep() {
+            return true;
+        }
+
         // getPropertyType("delegate").getApplicableDescriptors() does not work, because extension lists do not work on subtypes.
         public Collection<BuildWrapperDescriptor> getApplicableDescriptors() {
             Collection<BuildWrapperDescriptor> r = new ArrayList<BuildWrapperDescriptor>();

@@ -64,7 +64,7 @@ public class TimeoutStepRunTest extends Assert {
                         + "  }\n"
                         + "  echo 'NotHere'\n"
                         + "}\n"));
-                WorkflowRun b = story.j.assertBuildStatus(/* TODO JENKINS-25894 should really be ABORTED */Result.FAILURE, p.scheduleBuild2(0).get());
+                WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
 
                 // make sure things that are supposed to run do, and things that are NOT supposed to run do not.
                 story.j.assertLogNotContains("NotHere", b);
