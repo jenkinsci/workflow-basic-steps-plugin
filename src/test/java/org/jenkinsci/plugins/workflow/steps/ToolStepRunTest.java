@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.tasks.Maven;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.ClassRule;
@@ -42,8 +43,19 @@ public class ToolStepRunTest {
     @Test public void build() throws Exception {
         Maven.MavenInstallation tool = ToolInstallations.configureMaven3();
         String name = tool.getName();
+        Maven.MavenInstallation.DescriptorImpl desc = Jenkins.getInstance().getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
+
+        String type = ToolStep.symbolForDescriptor(desc);
+
+        // Defensive - Maven doesn't have a symbol before 2.x, and other tools may still not have symbols after that.
+        if (type == null) {
+            type = desc.getId();
+        }
+
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool '" + name + "'; sh \"M2_HOME=${home} ${home}/bin/mvn -version\"}"));
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'; sh \"M2_HOME=${home} ${home}/bin/mvn -version\"}",
+                true));
+
         r.assertLogContains("Apache Maven 3", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
