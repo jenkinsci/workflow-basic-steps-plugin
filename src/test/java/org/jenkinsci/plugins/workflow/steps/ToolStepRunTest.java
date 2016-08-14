@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.tasks.Maven;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.ClassRule;
@@ -45,7 +46,7 @@ public class ToolStepRunTest {
         String name = tool.getName();
         Maven.MavenInstallation.DescriptorImpl desc = Jenkins.getInstance().getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
 
-        String type = ToolStep.symbolForDescriptor(desc);
+        String type = SymbolLookup.getSymbolValue(desc);
 
         // Defensive - Maven doesn't have a symbol before 2.x, and other tools may still not have symbols after that.
         if (type == null) {

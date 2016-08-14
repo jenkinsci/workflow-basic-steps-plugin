@@ -89,7 +89,7 @@ public final class ToolStep extends AbstractStepImpl {
             ListBoxModel r = new ListBoxModel();
             r.add("<any>", "");
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                String idOrSymbol = symbolForDescriptor(desc);
+                String idOrSymbol = SymbolLookup.getSymbolValue(desc);
                 if (idOrSymbol == null) {
                     idOrSymbol = desc.getId();
                 }
@@ -103,7 +103,7 @@ public final class ToolStep extends AbstractStepImpl {
             ListBoxModel r = new ListBoxModel();
 
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type) && !type.equals(symbolForDescriptor(desc))) {
+                if (type != null && !desc.getId().equals(type) && !type.equals(SymbolLookup.getSymbolValue(desc))) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
@@ -126,7 +126,7 @@ public final class ToolStep extends AbstractStepImpl {
             String name = step.getName();
             String type = step.getType();
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type) && !type.equals(symbolForDescriptor(desc))) {
+                if (type != null && !desc.getId().equals(type) && !type.equals(SymbolLookup.getSymbolValue(desc))) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
@@ -146,25 +146,6 @@ public final class ToolStep extends AbstractStepImpl {
 
         private static final long serialVersionUID = 1L;
 
-    }
-
-    /**
-     * Finds the {@code @Symbol} on the given {@link ToolDescriptor}, if it exists.
-     * TODO: This should probably go somewhere else - maybe {@link SymbolLookup}?
-     *
-     * @param desc A {@link ToolDescriptor}
-     * @return The {@code @Symbol} value for that descriptor, or null if not present.
-     */
-    public static String symbolForDescriptor(ToolDescriptor<?> desc) {
-        Symbol s = desc.getClass().getAnnotation(Symbol.class);
-        if (s != null) {
-            for (String t : s.value()) {
-                if (t != null) {
-                    return t;
-                }
-            }
-        }
-        return null;
     }
 
 }
