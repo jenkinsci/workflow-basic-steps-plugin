@@ -37,12 +37,12 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.ToolInstallations;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.List;
 import java.util.Set;
@@ -51,6 +51,8 @@ public class ToolStepRunTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
+
+    @Rule public TemporaryFolder folder = new TemporaryFolder();
 
     @Test public void build() throws Exception {
         Maven.MavenInstallation tool = ToolInstallations.configureMaven3();
@@ -74,36 +76,36 @@ public class ToolStepRunTest {
     }
 
     @Test public void toolWithSymbol() throws Exception {
-        File buildDirectory = new File(System.getProperty("buildDirectory", "target")); // TODO relative path
-        File toolHome = new File(buildDirectory, "mockTools");
+        File toolHome = folder.newFolder("mockTools");
         MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
         Jenkins.getInstance().getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(tool);
-        String name = tool.getName();
-
-        String type = "mockToolWithSymbol";
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'}",
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithSymbol'\n"
+                +"echo \"${home}\"}",
                 true));
 
-        r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.assertLogContains(toolHome.getAbsolutePath(),
+                r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     @Test public void toolWithoutSymbol() throws Exception {
-        File buildDirectory = new File(System.getProperty("buildDirectory", "target")); // TODO relative path
-        File toolHome = new File(buildDirectory, "mockTools");
+        File toolHome = folder.newFolder("mockTools");
         MockToolWithoutSymbol tool = new MockToolWithoutSymbol("mock-tool-without-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
         Jenkins.getInstance().getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class).setInstallations(tool);
-        String name = tool.getName();
-
-        String type = "mockToolWithoutSymbol";
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'}",
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithoutSymbol'}",
                 true));
 
         r.assertLogContains("No mockToolWithoutSymbol named mock-tool-without-symbol found",
                 r.assertBuildStatus(Result.FAILURE, r.waitForCompletion(p.scheduleBuild2(0).waitForStart())));
+
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: '" + MockToolWithoutSymbol.class.getName() + "'\n"
+                + "echo \"${home}\"}",
+                true));
+        r.assertLogContains(toolHome.getAbsolutePath(),
+                r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     public static class MockToolWithSymbol extends ToolInstallation {
@@ -114,12 +116,6 @@ public class ToolStepRunTest {
         @TestExtension
         @Symbol("mockToolWithSymbol")
         public static class MockToolWithSymbolDescriptor extends ToolDescriptor<MockToolWithSymbol> {
-            @Override
-            @Nonnull
-            public String getDisplayName() {
-                return "MockToolWithSymbol";
-            }
-
         }
     }
 
@@ -130,12 +126,6 @@ public class ToolStepRunTest {
 
         @TestExtension
         public static class MockToolWithoutSymbolDescriptor extends ToolDescriptor<MockToolWithoutSymbol> {
-            @Override
-            @Nonnull
-            public String getDisplayName() {
-                return "MockToolWithoutSymbol";
-            }
-
         }
     }
 }
