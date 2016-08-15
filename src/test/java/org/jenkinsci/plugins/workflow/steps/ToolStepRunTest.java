@@ -24,8 +24,13 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.model.Result;
 import hudson.tasks.Maven;
+import hudson.tools.ToolDescriptor;
+import hudson.tools.ToolInstallation;
+import hudson.tools.ToolProperty;
 import jenkins.model.Jenkins;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -34,8 +39,12 @@ import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.ToolInstallations;
 
+import javax.annotation.Nonnull;
+import java.io.File;
+import java.util.List;
 import java.util.Set;
 
 public class ToolStepRunTest {
@@ -64,4 +73,69 @@ public class ToolStepRunTest {
         r.assertLogContains("Apache Maven 3", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
+    @Test public void toolWithSymbol() throws Exception {
+        File buildDirectory = new File(System.getProperty("buildDirectory", "target")); // TODO relative path
+        File toolHome = new File(buildDirectory, "mockTools");
+        MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        Jenkins.getInstance().getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(tool);
+        String name = tool.getName();
+
+        String type = "mockToolWithSymbol";
+
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'}",
+                true));
+
+        r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+    }
+
+    @Test public void toolWithoutSymbol() throws Exception {
+        File buildDirectory = new File(System.getProperty("buildDirectory", "target")); // TODO relative path
+        File toolHome = new File(buildDirectory, "mockTools");
+        MockToolWithoutSymbol tool = new MockToolWithoutSymbol("mock-tool-without-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        Jenkins.getInstance().getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class).setInstallations(tool);
+        String name = tool.getName();
+
+        String type = "mockToolWithoutSymbol";
+
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'}",
+                true));
+
+        r.assertLogContains("No mockToolWithoutSymbol named mock-tool-without-symbol found",
+                r.assertBuildStatus(Result.FAILURE, r.waitForCompletion(p.scheduleBuild2(0).waitForStart())));
+    }
+
+    public static class MockToolWithSymbol extends ToolInstallation {
+        public MockToolWithSymbol(String name, String home, List<? extends ToolProperty<?>> properties) {
+            super(name, home, properties);
+        }
+
+        @TestExtension
+        @Symbol("mockToolWithSymbol")
+        public static class MockToolWithSymbolDescriptor extends ToolDescriptor<MockToolWithSymbol> {
+            @Override
+            @Nonnull
+            public String getDisplayName() {
+                return "MockToolWithSymbol";
+            }
+
+        }
+    }
+
+    public static class MockToolWithoutSymbol extends ToolInstallation {
+        public MockToolWithoutSymbol(String name, String home, List<? extends ToolProperty<?>> properties) {
+            super(name, home, properties);
+        }
+
+        @TestExtension
+        public static class MockToolWithoutSymbolDescriptor extends ToolDescriptor<MockToolWithoutSymbol> {
+            @Override
+            @Nonnull
+            public String getDisplayName() {
+                return "MockToolWithoutSymbol";
+            }
+
+        }
+    }
 }

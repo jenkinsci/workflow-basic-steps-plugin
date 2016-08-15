@@ -142,6 +142,7 @@ public final class ToolStep extends AbstractStepImpl {
                         if (tool instanceof EnvironmentSpecific) {
                             tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(env);
                         }
+
                         return tool.getHome();
                     }
                 }
