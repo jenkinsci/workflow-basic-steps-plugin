@@ -39,11 +39,12 @@ import hudson.util.ListBoxModel;
 import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 
-import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+
+import java.util.Set;
 
 /**
  * Binds a {@link ToolInstallation} to a variable.
@@ -89,10 +90,14 @@ public final class ToolStep extends AbstractStepImpl {
             ListBoxModel r = new ListBoxModel();
             r.add("<any>", "");
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                String idOrSymbol = SymbolLookup.getSymbolValue(desc);
-                if (idOrSymbol == null) {
-                    idOrSymbol = desc.getId();
+                String idOrSymbol = desc.getId();
+
+                Set<String> symbols = SymbolLookup.getSymbolValue(desc);
+
+                if (!symbols.isEmpty()) {
+                    idOrSymbol = symbols.iterator().next();
                 }
+
                 r.add(desc.getDisplayName(), idOrSymbol);
             }
             return r;
@@ -103,7 +108,7 @@ public final class ToolStep extends AbstractStepImpl {
             ListBoxModel r = new ListBoxModel();
 
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type) && !type.equals(SymbolLookup.getSymbolValue(desc))) {
+                if (type != null && !desc.getId().equals(type) && !SymbolLookup.getSymbolValue(desc).contains(type)) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
@@ -126,7 +131,7 @@ public final class ToolStep extends AbstractStepImpl {
             String name = step.getName();
             String type = step.getType();
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type) && !type.equals(SymbolLookup.getSymbolValue(desc))) {
+                if (type != null && !desc.getId().equals(type) && !SymbolLookup.getSymbolValue(desc).contains(type)) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {

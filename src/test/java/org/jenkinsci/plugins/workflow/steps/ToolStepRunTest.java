@@ -36,6 +36,8 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.ToolInstallations;
 
+import java.util.Set;
+
 public class ToolStepRunTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
@@ -46,11 +48,13 @@ public class ToolStepRunTest {
         String name = tool.getName();
         Maven.MavenInstallation.DescriptorImpl desc = Jenkins.getInstance().getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
 
-        String type = SymbolLookup.getSymbolValue(desc);
-
         // Defensive - Maven doesn't have a symbol before 2.x, and other tools may still not have symbols after that.
-        if (type == null) {
-            type = desc.getId();
+        String type = desc.getId();
+
+        Set<String> symbols = SymbolLookup.getSymbolValue(desc);
+
+        if (!symbols.isEmpty()) {
+            type = symbols.iterator().next();
         }
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
