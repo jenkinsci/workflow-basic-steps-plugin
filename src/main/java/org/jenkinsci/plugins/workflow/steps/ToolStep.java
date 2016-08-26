@@ -39,9 +39,12 @@ import hudson.util.ListBoxModel;
 import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 
+import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+
+import java.util.Set;
 
 /**
  * Binds a {@link ToolInstallation} to a variable.
@@ -87,7 +90,15 @@ public final class ToolStep extends AbstractStepImpl {
             ListBoxModel r = new ListBoxModel();
             r.add("<any>", "");
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                r.add(desc.getDisplayName(), desc.getId());
+                String idOrSymbol = desc.getId();
+
+                Set<String> symbols = SymbolLookup.getSymbolValue(desc);
+
+                if (!symbols.isEmpty()) {
+                    idOrSymbol = symbols.iterator().next();
+                }
+
+                r.add(desc.getDisplayName(), idOrSymbol);
             }
             return r;
         }
@@ -95,8 +106,9 @@ public final class ToolStep extends AbstractStepImpl {
         public ListBoxModel doFillNameItems(@QueryParameter String type) {
             type = Util.fixEmpty(type);
             ListBoxModel r = new ListBoxModel();
+
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type)) {
+                if (type != null && !desc.getId().equals(type) && !SymbolLookup.getSymbolValue(desc).contains(type)) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
@@ -119,7 +131,7 @@ public final class ToolStep extends AbstractStepImpl {
             String name = step.getName();
             String type = step.getType();
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type)) {
+                if (type != null && !desc.getId().equals(type) && !SymbolLookup.getSymbolValue(desc).contains(type)) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
@@ -130,6 +142,7 @@ public final class ToolStep extends AbstractStepImpl {
                         if (tool instanceof EnvironmentSpecific) {
                             tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(env);
                         }
+
                         return tool.getHome();
                     }
                 }
