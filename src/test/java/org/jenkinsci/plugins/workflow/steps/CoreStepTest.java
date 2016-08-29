@@ -43,6 +43,7 @@ import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.mock_javamail.Mailbox;
 
@@ -66,6 +67,26 @@ public class CoreStepTest {
         Fingerprinter.FingerprintAction fa = b.getAction(Fingerprinter.FingerprintAction.class);
         assertNotNull(fa);
         assertEquals("[x.txt]", fa.getRecords().keySet().toString());
+    }
+
+    @Issue("JENKINS-31931")
+    @Test public void artifactArchiverNonexistent() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        if (ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
+            p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts artifacts: 'nonexistent/', allowEmptyArchive: true}", true));
+        } else { // TODO 2.x delete
+            p.setDefinition(new CpsFlowDefinition("node {step([$class: 'ArtifactArchiver', artifacts: 'nonexistent/', allowEmptyArchive: true])}", true));
+        }
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        if (ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
+            p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts 'nonexistent/'}", true));
+        } else { // TODO 2.x delete
+            p.setDefinition(new CpsFlowDefinition("node {step([$class: 'ArtifactArchiver', artifacts: 'nonexistent/'])}", true));
+        }
+        b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+        /* TODO bug in ArtifactArchiver:
+        r.assertLogContains(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound("nonexistent/"), b);
+        */
     }
 
     @Test public void fingerprinter() throws Exception {

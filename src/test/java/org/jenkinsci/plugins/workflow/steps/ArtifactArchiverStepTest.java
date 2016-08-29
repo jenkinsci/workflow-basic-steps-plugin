@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import java.util.Arrays;
 import jenkins.util.VirtualFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -9,9 +10,8 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import java.util.Arrays;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -41,6 +41,13 @@ public class ArtifactArchiverStepTest extends Assert {
         VirtualFile archivedFile = b.getArtifactManager().root().child("msg.out");
         assertTrue(archivedFile.exists());
         assertEquals("hello world", IOUtils.toString(archivedFile.open()));
+    }
+
+    @Issue("JENKINS-31931")
+    @Test public void nonexistent() throws Exception {
+        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node {archive 'nonexistent/'}", true));
+        j.assertBuildStatusSuccess(p.scheduleBuild2(0));
     }
 
     @Test public void unarchiveDir() throws Exception {

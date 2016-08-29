@@ -65,6 +65,7 @@ public final class CoreStep extends AbstractStepImpl {
         @StepContextParameter private transient TaskListener listener;
 
         @Override protected Void run() throws Exception {
+            workspace.mkdirs();
             step.delegate.perform(run, workspace, launcher, listener);
             return null;
         }
