@@ -11,6 +11,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.actions.TimeoutInfoAction;
@@ -133,11 +134,15 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
      * @throws IOException 
      */
     @CheckForNull
-    /*package*/ static TimeoutInfoAction extractTimeoutInfoActionWithId(String id, Run<?, ?> run) throws IOException {
+    /*package*/ static TimeoutInfoAction extractTimeoutInfoActionWithId(@Nonnull String id, @Nonnull Run<?, ?> run) throws IOException {
         if (!(run instanceof FlowExecutionOwner.Executable)) {
             return null;
         }
-        FlowExecution execution = ((FlowExecutionOwner.Executable)run).asFlowExecutionOwner().get();
+        FlowExecutionOwner owner = ((FlowExecutionOwner.Executable)run).asFlowExecutionOwner();
+        if (owner == null) {
+            return null;
+        }
+        FlowExecution execution = owner.get();
         for (FlowNode node: new FlowGraphWalker(execution)) {
             TimeoutInfoAction action = node.getAction(TimeoutInfoAction.class);
             if (action == null) {
