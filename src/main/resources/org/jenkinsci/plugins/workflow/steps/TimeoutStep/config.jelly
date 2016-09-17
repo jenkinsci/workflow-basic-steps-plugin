@@ -31,4 +31,7 @@ THE SOFTWARE.
     <f:entry field="unit" title="Unit">
         <f:select/>
     </f:entry>
+    <f:entry field="activity" title="Timeout of activity">
+        <f:checkbox/>
+    </f:entry>
 </j:jelly>

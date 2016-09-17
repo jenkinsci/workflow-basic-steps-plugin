@@ -151,6 +151,72 @@ public class TimeoutStepRunTest extends Assert {
         });
     }
 
+    @Test
+    public void activity() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(time:5, unit:'SECONDS', activity: true) {\n"
+                        + "    echo 'NotHere';\n"
+                        + "    sleep 3;\n"
+                        + "    echo 'NotHereYet';\n"
+                        + "    sleep 3;\n"
+                        + "    echo 'JustHere!';\n"
+                        + "    sleep 10;\n"
+                        + "    echo 'ShouldNot!';\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
+                story.j.assertLogContains("JustHere!", b);
+                story.j.assertLogNotContains("ShouldNot!", b);
+            }
+        });
+    }
+
+
+    @Test
+    public void activity_restart() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "restarted");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(time:15, unit:'SECONDS', activity: true) {\n"
+                        + "    echo 'NotHere';\n"
+                        + "    semaphore 'restarted'\n"
+                        + "    echo 'NotHereYet';\n"
+                        + "    sleep 10;\n"
+                        + "    echo 'NotHereYet';\n"
+                        + "    sleep 10;\n"
+                        + "    echo 'JustHere!';\n"
+                        + "    sleep 30;\n"
+                        + "    echo 'ShouldNot!';\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
+                SemaphoreStep.waitForStart("restarted/1", b);
+            }
+        });
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.getItemByFullName("restarted", WorkflowJob.class);
+                WorkflowRun b = p.getBuildByNumber(1);
+                assertTrue("took more than 15s to restart?", b.isBuilding());
+                SemaphoreStep.success("restarted/1", null);
+                story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
+                story.j.assertLogContains("JustHere!", b);
+                story.j.assertLogNotContains("ShouldNot!", b);
+            }
+        });
+    }
+
     // TODO: timeout inside parallel
 
 }
