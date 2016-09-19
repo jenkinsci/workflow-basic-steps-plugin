@@ -11,7 +11,7 @@ public class MatrixStepExecution extends GroovyStepExecution {
         for (int i = 0; i < permutations.size(); i++) {
             Map<String,Object> thisPermutation = permutations.get(i)
 
-            String blockName = getBlockName(thisPermutation.keySet())
+            String blockName = getBlockName(thisPermutation)
             List<String> envList = getEnvList(thisPermutation)
 
             parallelBlocks.put(blockName, { ->
@@ -25,8 +25,8 @@ public class MatrixStepExecution extends GroovyStepExecution {
     }
 
     @NonCPS
-    String getBlockName(Set<String> keys) {
-        return keys.join("+")
+    String getBlockName(Map<String,Object> permutation) {
+        return permutation.values().collect { it.toString() }.join("+")
     }
 
     @NonCPS
