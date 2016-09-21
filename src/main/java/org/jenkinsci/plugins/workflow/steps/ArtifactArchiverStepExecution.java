@@ -39,6 +39,7 @@ public class ArtifactArchiverStepExecution extends AbstractSynchronousNonBlockin
 
     @Override
     protected Void run() throws Exception {
+        ws.mkdirs();
         Map<String,String> files = ws.act(new ListFiles(step.getIncludes(), step.getExcludes()));
         build.pickArtifactManager().archive(ws, launcher, new BuildListenerAdapter(listener), files);
         return null;
