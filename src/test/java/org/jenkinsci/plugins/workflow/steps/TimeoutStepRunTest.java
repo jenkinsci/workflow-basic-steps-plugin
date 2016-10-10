@@ -3,7 +3,10 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.model.Result;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
+
+import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.TimeoutInfoAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -147,6 +150,164 @@ public class TimeoutStepRunTest extends Assert {
                 assertEquals(1, causes.size());
                 assertEquals(TimeoutStepExecution.ExceededTimeout.class, causes.get(0).getClass());
                 story.j.assertBuildStatus(Result.ABORTED, run);
+            }
+        });
+    }
+
+    @Test
+    public void elastic() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(id: 'main', time: 20, unit: 'SECONDS', elastic: 1.0) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 5;\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+                TimeoutInfoAction info = TimeoutStepExecution.extractTimeoutInfoActionWithId("main", b);
+                assertNotNull(info);
+                assertThat(info.getDuration(), Matchers.greaterThanOrEqualTo(5000L));
+                assertThat(info.getDuration(), Matchers.lessThan(20000L));
+
+                p.setDefinition(new CpsFlowDefinition(String.format(""
+                    + "node {\n"
+                    + "  timeout(id: 'main', time:20, unit: 'SECONDS', elastic: 1.0) {\n"
+                    + "    assert('%d' == \"${env.timeout}\");\n"
+                    + "    sleep 10;\n"
+                    + "  }\n"
+                    + "}", info.getDuration()
+                )));
+                story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
+            }
+        });
+    }
+
+    @Test
+    public void elasticWithTwoBlocks() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(id: 'main1', time: 20, unit: 'SECONDS', elastic: 1.0) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 5;\n"
+                        + "  }\n"
+                        + "  timeout(id: 'main2', time: 20, unit: 'SECONDS', elastic: 1.0) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 3;\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+                TimeoutInfoAction info1 = TimeoutStepExecution.extractTimeoutInfoActionWithId("main1", b);
+                assertNotNull(info1);
+                TimeoutInfoAction info2 = TimeoutStepExecution.extractTimeoutInfoActionWithId("main2", b);
+                assertNotNull(info2);
+
+                p.setDefinition(new CpsFlowDefinition(String.format(""
+                    + "node {\n"
+                    + "  timeout(id: 'main1', time: 20, unit: 'SECONDS', elastic: 1.0) {\n"
+                    + "    assert('%d' == \"${env.timeout}\");\n"
+                    + "    sleep 3;\n"
+                    + "  }\n"
+                    + "  timeout(id: 'main2', time: 20, unit: 'SECONDS', elastic: 1.0) {\n"
+                    + "    assert('%d' == \"${env.timeout}\");\n"
+                    + "    sleep 1;\n"
+                    + "  }\n"
+                    + "}\n",
+                    info1.getDuration(),
+                    info2.getDuration()
+                )));
+                story.j.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
+            }
+        });
+    }
+
+    @Test
+    public void elasticScaling() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(id: 'main', time: 20, unit: 'SECONDS', elastic: 1.5) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 5;\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+                TimeoutInfoAction info = TimeoutStepExecution.extractTimeoutInfoActionWithId("main", b);
+                assertNotNull(info);
+                assertThat(info.getDuration(), Matchers.greaterThanOrEqualTo(5000L));
+                assertThat(info.getDuration(), Matchers.lessThan(20000L));
+
+                p.setDefinition(new CpsFlowDefinition(String.format(""
+                    + "node {\n"
+                    + "  timeout(id: 'main', time:20, unit: 'SECONDS', elastic: 1.5) {\n"
+                    + "    assert('%d' == \"${env.timeout}\");\n"
+                    + "    sleep 5;\n"
+                    + "  }\n"
+                    + "}", (long)(1.5f * info.getDuration())
+                )));
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+            }
+        });
+    }
+
+    @Test
+    public void elasticWithoutId() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(time: 20, unit: 'SECONDS', elastic: 1.5) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 5;\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+            }
+        });
+    }
+
+    @Test
+    public void elasticIdChanged() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(id: 'main1', time: 20, unit: 'SECONDS', elastic: 1.5) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 5;\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+
+                p.setDefinition(new CpsFlowDefinition(""
+                        + "node {\n"
+                        + "  timeout(id: 'main2', time: 20, unit: 'SECONDS', elastic: 1.5) {\n"
+                        + "    assert('20000' == \"${env.timeout}\");\n"
+                        + "    sleep 5;\n"
+                        + "  }\n"
+                        + "}\n"
+                ));
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
             }
         });
     }

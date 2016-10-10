@@ -31,4 +31,10 @@ THE SOFTWARE.
     <f:entry field="unit" title="Unit">
         <f:select/>
     </f:entry>
+    <f:entry field="id" title="ID">
+        <f:textbox />
+    </f:entry>
+    <f:entry field="elastic" title="Rate for elastic timeout">
+        <f:textbox />
+    </f:entry>
 </j:jelly>
