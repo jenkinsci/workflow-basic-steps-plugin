@@ -38,9 +38,16 @@ public class TimeoutStepTest {
         TimeoutStep s1 = new TimeoutStep(3);
         s1.setUnit(TimeUnit.HOURS);
         TimeoutStep s2 = new StepConfigTester(r).configRoundTrip(s1);
-        // assertEqualDataBoundBeans does not currently work on @DataBoundSetter:
-        assertEquals(3, s2.getTime());
-        assertEquals(TimeUnit.HOURS, s2.getUnit());
+        r.assertEqualDataBoundBeans(s1, s2);
+    }
+
+    @Test public void configRoundTripWithActivity() throws Exception {
+        TimeoutStep s1 = new TimeoutStep(3);
+        s1.setUnit(TimeUnit.HOURS);
+        assertFalse(s1.isActivity());
+        s1.setActivity(true);
+        TimeoutStep s2 = new StepConfigTester(r).configRoundTrip(s1);
+        r.assertEqualDataBoundBeans(s1, s2);
     }
 
 }
