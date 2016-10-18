@@ -18,8 +18,6 @@ import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import java.util.List;
-import org.jenkinsci.plugins.workflow.steps.SleepStep;
-import org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -47,7 +45,6 @@ public class TimeoutStepRunTest extends Assert {
         });
     }
 
-    @Ignore("TODO: fails because the timeout step doesn't abort the build")
     @Issue("JENKINS-34637")
     @Test
     public void basicWithBlock() {
