@@ -18,8 +18,6 @@ import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import java.util.List;
-import org.jenkinsci.plugins.workflow.steps.SleepStep;
-import org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -41,6 +39,21 @@ public class TimeoutStepRunTest extends Assert {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                         "node { timeout(time:5, unit:'SECONDS') { sleep 10; echo 'NotHere' } }"));
+                WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
+                story.j.assertLogNotContains("NotHere", b);
+            }
+        });
+    }
+
+    @Issue("JENKINS-34637")
+    @Test
+    public void basicWithBlock() {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node { timeout(time:5, unit:'SECONDS') { withEnv([]) { sleep 7; echo 'NotHere' } } }"));
                 WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
                 story.j.assertLogNotContains("NotHere", b);
             }

@@ -2,6 +2,8 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.Util;
+import hudson.model.TaskListener;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -15,6 +17,7 @@ import jenkins.util.Timer;
 public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     @Inject(optional=true)
     private transient TimeoutStep step;
+    @StepContextParameter private transient TaskListener listener;
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
@@ -45,15 +48,22 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
      */
     private void setupTimer(final long now) {
         if (end > now) {
+            long delay = end - now;
+            listener.getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
             killer = Timer.get().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    body.cancel(new ExceededTimeout());
+                    cancel();
                 }
-            }, end - now, TimeUnit.MILLISECONDS);
+            }, delay, TimeUnit.MILLISECONDS);
         } else {
-            body.cancel(new ExceededTimeout());
+            cancel();
         }
+    }
+
+    private void cancel() {
+        listener.getLogger().println("Cancelling nested steps due to timeout");
+        body.cancel(new ExceededTimeout());
     }
 
     @Override
