@@ -57,9 +57,7 @@ public class TimeoutStepTest extends Assert {
                 TimeoutStep s1 = new TimeoutStep(3);
                 s1.setUnit(TimeUnit.HOURS);
                 TimeoutStep s2 = new StepConfigTester(story.j).configRoundTrip(s1);
-                // assertEqualDataBoundBeans does not currently work on @DataBoundSetter:
-                assertEquals(3, s2.getTime());
-                assertEquals(TimeUnit.HOURS, s2.getUnit());
+                story.j.assertEqualDataBoundBeans(s1, s2);
             }
         });
     }
@@ -74,7 +72,7 @@ public class TimeoutStepTest extends Assert {
             public void evaluate() throws Throwable {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                        "node { timeout(time:5, unit:'SECONDS') { sleep 10; echo 'NotHere' } }"));
+                        "node { timeout(time:5, unit:'SECONDS') { sleep 10; echo 'NotHere' } }", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
                 story.j.assertLogNotContains("NotHere", b);
             }
@@ -89,7 +87,7 @@ public class TimeoutStepTest extends Assert {
             public void evaluate() throws Throwable {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                        "node { timeout(time:5, unit:'SECONDS') { withEnv([]) { sleep 7; echo 'NotHere' } } }"));
+                        "node { timeout(time:5, unit:'SECONDS') { withEnv([]) { sleep 7; echo 'NotHere' } } }", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
                 story.j.assertLogNotContains("NotHere", b);
             }
@@ -112,7 +110,7 @@ public class TimeoutStepTest extends Assert {
                         + "    echo 'NotHere'\n"
                         + "  }\n"
                         + "  echo 'NotHere'\n"
-                        + "}\n"));
+                        + "}\n", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
 
                 // make sure things that are supposed to run do, and things that are NOT supposed to run do not.
@@ -148,7 +146,7 @@ public class TimeoutStepTest extends Assert {
                         + "    semaphore 'restarted'\n"
                         + "    sleep 999\n"
                         + "  }\n"
-                        + "}\n"));
+                        + "}\n", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarted/1", b);
             }
@@ -178,7 +176,7 @@ public class TimeoutStepTest extends Assert {
                         + "    semaphore 'timeIsConsumed'\n"
                         + "    sleep 10\n"
                         + "  }\n"
-                        + "}\n"));
+                        + "}\n", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("timeIsConsumed/1", b);
             }
