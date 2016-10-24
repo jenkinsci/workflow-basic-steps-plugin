@@ -132,6 +132,27 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             body.cancel(cause);
     }
 
+    @Override public String getStatus() {
+        if (killer == null) {
+            return "killer task nowhere to be found";
+        } else if (killer.isCancelled()) {
+            return "killer task was cancelled";
+        } else if (killer.isDone()) {
+            return "killer task reported done";
+        } else {
+            long delay = end - System.currentTimeMillis();
+            if (delay <= 0) {
+                return "overshot by " + Util.getTimeSpanString(-delay);
+            }
+            String delayS = Util.getTimeSpanString(delay);
+            if (forcible) {
+                return "body did not yet respond to signal; forcibly killing in " + delayS;
+            } else {
+                return "body has another " + delayS + " to run";
+            }
+        }
+    }
+
     private class Callback extends BodyExecutionCallback.TailCall {
 
         @Override protected void finished(StepContext context) throws Exception {
