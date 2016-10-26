@@ -95,13 +95,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2.20</version>
+            <version>2.22-SNAPSHOT</version> <!-- https://github.com/jenkinsci/workflow-cps-plugin/pull/79 -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2.20</version>
+            <version>2.22-SNAPSHOT</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
