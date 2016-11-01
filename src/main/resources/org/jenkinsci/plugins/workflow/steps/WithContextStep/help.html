@@ -1,0 +1,13 @@
+<p>
+    Wraps a block in a contextual object as in <code>BodyInvoker.withContext</code>; cf. <code>getContext</code>.
+    Takes a single <code>context</code> argument plus a block. Example:
+</p>
+<pre><code>withContext(new MyConsoleLogFilter()) {
+    sh 'process'
+}</code></pre>
+<p>
+    Automatically merges its argument with contextual objects in the case of <code>ConsoleLogFilter</code>, <code>LauncherDecorator</code>, and <code>EnvironmentExpander</code>.
+</p>
+<p>
+    For use from trusted code, such as global libraries, which can manipulate internal Jenkins APIs.
+</p>
