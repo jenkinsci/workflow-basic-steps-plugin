@@ -75,6 +75,8 @@ node {
 though this would not automatically adjust the message according to the status of _previous_ builds as the standard mail notifier does.
 For that, check if `currentBuild.previousBuild` exists, what its `.result` is, etc.
 
+The Pipeline Model Definition plugin (“Declarative Pipeline”) has a built-in construct for running selected publishers under certain conditions.
+
 # Build wrappers
 
 The `wrap` step may be used to run a build wrapper defined originally for freestyle projects.
