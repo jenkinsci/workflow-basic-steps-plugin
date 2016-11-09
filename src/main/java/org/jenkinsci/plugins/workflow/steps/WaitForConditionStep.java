@@ -109,6 +109,20 @@ public final class WaitForConditionStep extends AbstractStepImpl {
             recurrencePeriod = Math.min((long)(recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
         }
 
+        @Override public String getStatus() {
+            if (body != null) {
+                return "running body";
+            } else if (task == null) {
+                return "no body, no task, not sure what happened";
+            } else if (task.isDone()) {
+                return "scheduled task task done, but no body";
+            } else if (task.isCancelled()) {
+                return "scheduled task was cancelled";
+            } else {
+                return "waiting to rerun; next recurrence period: " + recurrencePeriod + "ms";
+            }
+        }
+
     }
 
     private static final class Callback extends BodyExecutionCallback {
