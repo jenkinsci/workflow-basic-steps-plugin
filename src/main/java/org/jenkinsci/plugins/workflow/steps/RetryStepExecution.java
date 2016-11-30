@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.model.TaskListener;
 
@@ -8,6 +9,7 @@ import hudson.model.TaskListener;
  */
 public class RetryStepExecution extends StepExecution {
     
+    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final int count;
     private volatile BodyExecution body;
 

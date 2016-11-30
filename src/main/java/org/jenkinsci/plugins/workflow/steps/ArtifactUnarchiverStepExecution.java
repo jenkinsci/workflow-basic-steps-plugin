@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.Run;
@@ -18,6 +19,7 @@ import java.util.Map.Entry;
  */
 public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepExecution<List<FilePath>> {
 
+    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final Map<String,String> mapping;
 
     ArtifactUnarchiverStepExecution(Map<String, String> mapping, StepContext context) throws Exception {

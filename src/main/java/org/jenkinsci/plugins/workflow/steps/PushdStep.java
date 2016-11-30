@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -77,6 +78,7 @@ public class PushdStep extends Step {
 
     public static class Execution extends StepExecution {
         
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final String path;
         private BodyExecution body;
 

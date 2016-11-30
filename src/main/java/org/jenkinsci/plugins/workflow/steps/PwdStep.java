@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.slaves.WorkspaceList;
@@ -84,6 +85,7 @@ public class PwdStep extends Step {
 
     public static class Execution extends SynchronousStepExecution<String> {
         
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final boolean tmp;
 
         Execution(boolean tmp, StepContext context) {

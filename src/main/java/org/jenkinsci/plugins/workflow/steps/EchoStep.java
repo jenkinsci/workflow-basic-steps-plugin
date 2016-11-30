@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -72,6 +73,7 @@ public class EchoStep extends Step {
 
     public static class Execution extends SynchronousStepExecution<Void> {
         
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final String message;
 
         Execution(String message, StepContext context) {

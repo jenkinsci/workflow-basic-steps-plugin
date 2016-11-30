@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import java.util.Collections;
@@ -66,6 +67,7 @@ public final class FileExistsStep extends Step {
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
 
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final String file;
 
         Execution(String file, StepContext context) {

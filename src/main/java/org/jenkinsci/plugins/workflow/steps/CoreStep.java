@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import hudson.Extension;
 import hudson.FilePath;
@@ -63,6 +64,7 @@ public final class CoreStep extends Step {
 
     private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final SimpleBuildStep delegate;
 
         Execution(SimpleBuildStep delegate, StepContext context) {

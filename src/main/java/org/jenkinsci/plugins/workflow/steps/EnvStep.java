@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
 import java.io.IOException;
@@ -66,6 +67,7 @@ public class EnvStep extends Step {
 
         private static final long serialVersionUID = 1;
         
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final List<String> overrides;
 
         Execution(List<String> overrides, StepContext context) {

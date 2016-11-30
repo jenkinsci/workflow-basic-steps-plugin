@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.LauncherDecorator;
 import hudson.console.ConsoleLogFilter;
@@ -74,6 +75,7 @@ public class WithContextStep extends Step {
 
         private static final long serialVersionUID = 1;
 
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient Object obj;
 
         Execution(Object obj, StepContext context) {

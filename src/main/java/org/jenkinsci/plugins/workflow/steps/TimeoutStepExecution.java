@@ -26,6 +26,7 @@ public class TimeoutStepExecution extends StepExecution {
     private static final Logger LOGGER = Logger.getLogger(TimeoutStepExecution.class.getName());
     private static final long GRACE_PERIOD = Main.isUnitTest ? /* 5s */5_000 : /* 1m */60_000;
 
+    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final TimeoutStep step;
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
