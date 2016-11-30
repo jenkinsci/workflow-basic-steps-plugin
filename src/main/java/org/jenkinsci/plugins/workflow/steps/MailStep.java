@@ -23,12 +23,12 @@
  */
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
-
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.Set;
 import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
 
 import org.apache.commons.lang.StringUtils;
@@ -38,18 +38,15 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.Nonnull;
 import javax.mail.Address;
 import javax.mail.Message;
-import javax.mail.MessagingException;
 import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
-
-import java.io.UnsupportedEncodingException;
 
 /**
  * Simple email sender step.
  *
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
-public class MailStep extends AbstractStepImpl {
+public class MailStep extends Step {
 
     private String charset;
 
@@ -98,12 +95,13 @@ public class MailStep extends AbstractStepImpl {
         return mimeType;
     }
 
-    @Extension
-    public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new MailStepExecution(this, context);
+    }
 
-        public DescriptorImpl() {
-            super(MailStepExecution.class);
-        }
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "mail";
@@ -112,20 +110,25 @@ public class MailStep extends AbstractStepImpl {
         @Override public String getDisplayName() {
             return "Mail";
         }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(TaskListener.class);
+        }
     }
 
     /**
      * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
      */
-    public static class MailStepExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+    public static class MailStepExecution extends SynchronousNonBlockingStepExecution<Void> {
 
         private static final long serialVersionUID = 1L;
 
-        @Inject
-        private transient MailStep step;
+        private transient final MailStep step;
 
-        @StepContextParameter
-        private transient TaskListener listener;
+        MailStepExecution(MailStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override
         protected Void run() throws Exception {
@@ -134,12 +137,12 @@ public class MailStep extends AbstractStepImpl {
             return null;
         }
 
-        private MimeMessage buildMimeMessage() throws UnsupportedEncodingException, MessagingException, AbortException {
+        private MimeMessage buildMimeMessage() throws Exception {
             if (StringUtils.isBlank(step.subject) || StringUtils.isBlank(step.body)) {
                 throw new AbortException("Email not sent. All mandatory properties must be supplied ('subject', 'body').");
             }
 
-            MimeMessageBuilder messageBuilder = new MimeMessageBuilder().setListener(listener);
+            MimeMessageBuilder messageBuilder = new MimeMessageBuilder().setListener(getContext().get(TaskListener.class));
 
             if (step.subject != null) {
                 messageBuilder.setSubject(step.subject);

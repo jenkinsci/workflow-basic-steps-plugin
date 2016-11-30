@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
 
 import jenkins.MasterToSlaveFileCallable;
 import jenkins.util.BuildListenerAdapter;
@@ -20,28 +19,21 @@ import jenkins.util.BuildListenerAdapter;
 /**
  * @author Kohsuke Kawaguchi
  */
-public class ArtifactArchiverStepExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+public class ArtifactArchiverStepExecution extends SynchronousNonBlockingStepExecution<Void> {
 
-    @StepContextParameter
-    private transient TaskListener listener;
+    private transient final ArtifactArchiverStep step;
 
-    @StepContextParameter
-    private transient FilePath ws;
-
-    @StepContextParameter
-    private transient Run build;
-
-    @StepContextParameter
-    private transient Launcher launcher;
-
-    @Inject
-    private transient ArtifactArchiverStep step;
+    ArtifactArchiverStepExecution(ArtifactArchiverStep step, StepContext context) {
+        super(context);
+        this.step = step;
+    }
 
     @Override
     protected Void run() throws Exception {
+        FilePath ws = getContext().get(FilePath.class);
         ws.mkdirs();
         Map<String,String> files = ws.act(new ListFiles(step.getIncludes(), step.getExcludes()));
-        build.pickArtifactManager().archive(ws, launcher, new BuildListenerAdapter(listener), files);
+        getContext().get(Run.class).pickArtifactManager().archive(ws, getContext().get(Launcher.class), new BuildListenerAdapter(getContext().get(TaskListener.class)), files);
         return null;
     }
 
@@ -53,7 +45,7 @@ public class ArtifactArchiverStepExecution extends AbstractSynchronousNonBlockin
             this.excludes = excludes;
         }
         @Override public Map<String,String> invoke(File basedir, VirtualChannel channel) throws IOException, InterruptedException {
-            Map<String,String> r = new HashMap<String,String>();
+            Map<String,String> r = new HashMap<>();
             for (String f : Util.createFileSet(basedir, includes, excludes).getDirectoryScanner().getIncludedFiles()) {
                 f = f.replace(File.separatorChar, '/');
                 r.put(f, f);

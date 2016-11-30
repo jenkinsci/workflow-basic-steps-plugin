@@ -25,7 +25,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -36,7 +35,7 @@ import java.util.Set;
 /**
  * Temporarily changes the working directory.
  */
-public class PushdStep extends AbstractStepImpl {
+public class PushdStep extends Step {
 
     private final String path;
 
@@ -48,11 +47,11 @@ public class PushdStep extends AbstractStepImpl {
         return path;
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(path, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "dir";
@@ -66,22 +65,29 @@ public class PushdStep extends AbstractStepImpl {
             return true;
         }
 
-        @Override
-        public Set<Class<?>> getProvidedContext() {
-            return ImmutableSet.<Class<?>>of(FilePath.class);
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(TaskListener.class, FilePath.class);
         }
+        
+        @Override public Set<? extends Class<?>> getProvidedContext() {
+            return ImmutableSet.of(FilePath.class);
+        }
+
     }
 
-    public static class Execution extends AbstractStepExecutionImpl {
+    public static class Execution extends StepExecution {
         
-        @Inject(optional=true) private transient PushdStep step;
-        @StepContextParameter private transient TaskListener listener;
-        @StepContextParameter private transient FilePath cwd;
+        private transient final String path;
         private BodyExecution body;
 
+        Execution(String path, StepContext context) {
+            super(context);
+            this.path = path;
+        }
+
         @Override public boolean start() throws Exception {
-            FilePath dir = cwd.child(step.getPath());
-            listener.getLogger().println("Running in " + dir);
+            FilePath dir = getContext().get(FilePath.class).child(path);
+            getContext().get(TaskListener.class).getLogger().println("Running in " + dir);
             body = getContext().newBodyInvoker()
                     .withContext(dir)
                     // Could use a dedicated BodyExecutionCallback here if we wished to print a message at the end ("Returning to ${cwd}"):

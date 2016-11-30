@@ -24,18 +24,23 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.util.Timer;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-public final class SleepStep extends AbstractStepImpl {
+public final class SleepStep extends Step {
+
+    private static final Logger LOGGER = Logger.getLogger(SleepStep.class.getName());
 
     private final int time;
 
@@ -57,14 +62,22 @@ public final class SleepStep extends AbstractStepImpl {
         return unit;
     }
 
-    public static final class Execution extends AbstractStepExecutionImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this, context);
+    }
+
+    public static final class Execution extends StepExecution {
 
         private static final long serialVersionUID = 1L;
 
-        @Inject(optional=true) private transient SleepStep step;
-        @StepContextParameter private transient TaskListener listener;
+        private transient final SleepStep step;
         private long end;
         private transient volatile ScheduledFuture<?> task;
+
+        Execution(SleepStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override public boolean start() throws Exception {
             long now = System.currentTimeMillis();
@@ -74,6 +87,13 @@ public final class SleepStep extends AbstractStepImpl {
         }
 
         private void setupTimer(long now) {
+            TaskListener listener;
+            try {
+                listener = getContext().get(TaskListener.class);
+            } catch (Exception x) {
+                LOGGER.log(Level.WARNING, null, x);
+                listener = TaskListener.NULL;
+            }
             if (end > now) {
                 listener.getLogger().println("Sleeping for " + Util.getTimeSpanString(end - now));
                 task = Timer.get().schedule(new Runnable() {
@@ -110,11 +130,7 @@ public final class SleepStep extends AbstractStepImpl {
 
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "sleep";
@@ -130,6 +146,10 @@ public final class SleepStep extends AbstractStepImpl {
                 r.add(unit.name());
             }
             return r;
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(TaskListener.class);
         }
 
     }

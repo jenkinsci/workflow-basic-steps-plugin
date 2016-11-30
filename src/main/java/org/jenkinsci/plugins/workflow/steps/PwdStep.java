@@ -24,10 +24,11 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.slaves.WorkspaceList;
+import java.util.Collections;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -42,7 +43,7 @@ import org.kohsuke.stapler.DataBoundSetter;
  * }
  * </pre>
  */
-public class PwdStep extends AbstractStepImpl {
+public class PwdStep extends Step {
 
     private boolean tmp;
 
@@ -56,11 +57,11 @@ public class PwdStep extends AbstractStepImpl {
         this.tmp = tmp;
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(tmp, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "pwd";
@@ -70,6 +71,10 @@ public class PwdStep extends AbstractStepImpl {
             return "Determine current directory";
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(FilePath.class);
+        }
+
     }
 
     // TODO use 1.652 use WorkspaceList.tempDir
@@ -77,13 +82,18 @@ public class PwdStep extends AbstractStepImpl {
         return ws.sibling(ws.getName() + System.getProperty(WorkspaceList.class.getName(), "@") + "tmp");
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<String> {
+    public static class Execution extends SynchronousStepExecution<String> {
         
-        @StepContextParameter private transient FilePath cwd;
-        @Inject(optional=true) private transient PwdStep step;
+        private transient final boolean tmp;
+
+        Execution(boolean tmp, StepContext context) {
+            super(context);
+            this.tmp = tmp;
+        }
 
         @Override protected String run() throws Exception {
-            return (step.isTmp() ? tempDir(cwd) : cwd).getRemote();
+            FilePath cwd = getContext().get(FilePath.class);
+            return (tmp ? tempDir(cwd) : cwd).getRemote();
         }
 
         private static final long serialVersionUID = 1L;

@@ -24,14 +24,15 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
 import hudson.Extension;
+import java.util.Collections;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Obtains a Jenkins API object from the current context.
  */
-public class GetContextStep extends AbstractStepImpl {
+public class GetContextStep extends Step {
 
     public final Class<?> type;
 
@@ -39,11 +40,11 @@ public class GetContextStep extends AbstractStepImpl {
         this.type = type;
     }
 
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(type, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "getContext";
@@ -57,16 +58,25 @@ public class GetContextStep extends AbstractStepImpl {
             return true;
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.emptySet(); // depends on the instance
+        }
+
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<Object> {
+    public static class Execution extends SynchronousStepExecution<Object> {
 
         private static final long serialVersionUID = 1;
 
-        @Inject(optional=true) private transient GetContextStep step;
+        private transient final Class<?> type;
+
+        Execution(Class<?> type, StepContext context) {
+            super(context);
+            this.type = type;
+        }
 
         @Override protected Object run() throws Exception {
-            return getContext().get(step.type);
+            return getContext().get(type);
         }
 
     }

@@ -24,19 +24,20 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
 import hudson.EnvVars;
 import hudson.Extension;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-public class EnvStep extends AbstractStepImpl {
+public class EnvStep extends Step {
 
     /**
      * Environment variable overrides.
@@ -50,22 +51,31 @@ public class EnvStep extends AbstractStepImpl {
                 throw new IllegalArgumentException(pair);
             }
         }
-        this.overrides = new ArrayList<String>(overrides);
+        this.overrides = new ArrayList<>(overrides);
     }
     
     public List<String> getOverrides() {
         return overrides;
     }
+
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(overrides, context);
+    }
     
-    public static class Execution extends AbstractStepExecutionImpl {
+    public static class Execution extends StepExecution {
 
         private static final long serialVersionUID = 1;
         
-        @Inject(optional=true) private transient EnvStep step;
+        private transient final List<String> overrides;
+
+        Execution(List<String> overrides, StepContext context) {
+            super(context);
+            this.overrides = overrides;
+        }
         
         @Override public boolean start() throws Exception {
             getContext().newBodyInvoker().
-                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new ExpanderImpl(step.overrides))).
+                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new ExpanderImpl(overrides))).
                 withCallback(BodyExecutionCallback.wrap(getContext())).
                 start();
             return false;
@@ -81,7 +91,7 @@ public class EnvStep extends AbstractStepImpl {
         private static final long serialVersionUID = 1;
         private final Map<String,String> overrides;
         private ExpanderImpl(List<String> overrides) {
-            this.overrides = new HashMap<String,String>();
+            this.overrides = new HashMap<>();
             for (String pair : overrides) {
                 int split = pair.indexOf('=');
                 assert split != -1;
@@ -93,11 +103,7 @@ public class EnvStep extends AbstractStepImpl {
         }
     }
 
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "withEnv";
@@ -114,7 +120,7 @@ public class EnvStep extends AbstractStepImpl {
         // TODO JENKINS-27901: need a standard control for this
         @Override public Step newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             String overridesS = formData.getString("overrides");
-            List<String> overrides = new ArrayList<String>();
+            List<String> overrides = new ArrayList<>();
             for (String line : overridesS.split("\r?\n")) {
                 line = line.trim();
                 if (!line.isEmpty()) {
@@ -122,6 +128,10 @@ public class EnvStep extends AbstractStepImpl {
                 }
             }
             return new EnvStep(overrides);
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.emptySet();
         }
 
     }

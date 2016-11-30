@@ -24,7 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 
 import hudson.Extension;
 import hudson.FilePath;
@@ -39,6 +39,7 @@ import hudson.tasks.Publisher;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -48,7 +49,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  * A step that runs a {@link SimpleBuildStep} as defined in Jenkins core.
  */
-public final class CoreStep extends AbstractStepImpl {
+public final class CoreStep extends Step {
 
     public final SimpleBuildStep delegate;
 
@@ -56,34 +57,36 @@ public final class CoreStep extends AbstractStepImpl {
         this.delegate = delegate;
     }
 
-    private static final class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(delegate, context);
+    }
 
-        @Inject private transient CoreStep step;
-        @StepContextParameter private transient Run<?,?> run;
-        @StepContextParameter private transient FilePath workspace;
-        @StepContextParameter private transient Launcher launcher;
-        @StepContextParameter private transient TaskListener listener;
+    private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
+
+        private transient final SimpleBuildStep delegate;
+
+        Execution(SimpleBuildStep delegate, StepContext context) {
+            super(context);
+            this.delegate = delegate;
+        }
 
         @Override protected Void run() throws Exception {
+            FilePath workspace = getContext().get(FilePath.class);
             workspace.mkdirs();
-            step.delegate.perform(run, workspace, launcher, listener);
+            delegate.perform(getContext().get(Run.class), workspace, getContext().get(Launcher.class), getContext().get(TaskListener.class));
             return null;
         }
 
         @Override public String getStatus() {
             String supe = super.getStatus();
-            return step != null ? step.delegate.getClass().getName() + ": " + supe : supe;
+            return delegate != null ? delegate.getClass().getName() + ": " + supe : supe;
         }
 
         private static final long serialVersionUID = 1L;
 
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "step";
@@ -100,7 +103,7 @@ public final class CoreStep extends AbstractStepImpl {
 
         public Collection<? extends Descriptor<?>> getApplicableDescriptors() {
             // Jenkins.instance.getDescriptorList(SimpleBuildStep) is empty, presumably because that itself is not a Describable.
-            List<Descriptor<?>> r = new ArrayList<Descriptor<?>>();
+            List<Descriptor<?>> r = new ArrayList<>();
             populate(r, Builder.class);
             populate(r, Publisher.class);
             return r;
@@ -115,6 +118,10 @@ public final class CoreStep extends AbstractStepImpl {
                     r.add(d);
                 }
             }
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class);
         }
 
     }

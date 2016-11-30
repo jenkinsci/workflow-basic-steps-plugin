@@ -1,22 +1,26 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
 import hudson.AbortException;
 import hudson.model.TaskListener;
 
 /**
  * @author Kohsuke Kawaguchi
  */
-public class RetryStepExecution extends AbstractStepExecutionImpl {
-    @Inject(optional=true)
-    private transient RetryStep step;
+public class RetryStepExecution extends StepExecution {
+    
+    private transient final int count;
     private volatile BodyExecution body;
+
+    RetryStepExecution(int count, StepContext context) {
+        super(context);
+        this.count = count;
+    }
 
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
         body = context.newBodyInvoker()
-            .withCallback(new Callback(step.getCount()))
+            .withCallback(new Callback(count))
             .start();
         return false;   // execution is asynchronous
     }

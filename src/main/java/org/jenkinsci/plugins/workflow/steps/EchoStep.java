@@ -26,18 +26,14 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
 import hudson.model.TaskListener;
-import javax.inject.Inject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import java.io.PrintStream;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * A simple echo back statement.
- *
- * @author Kohsuke Kawaguchi
  */
-public class EchoStep extends AbstractStepImpl {
+public class EchoStep extends Step {
 
     private final String message;
 
@@ -50,12 +46,13 @@ public class EchoStep extends AbstractStepImpl {
         return message;
     }
 
-    @Extension
-    public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new Execution(message, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
         @Override
         public String getFunctionName() {
@@ -66,15 +63,24 @@ public class EchoStep extends AbstractStepImpl {
         public String getDisplayName() {
             return "Print Message";
         }
+
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(TaskListener.class);
+        }
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<Void> {
+    public static class Execution extends SynchronousStepExecution<Void> {
         
-        @Inject private transient EchoStep step;
-        @StepContextParameter private transient TaskListener listener;
+        private transient final String message;
+
+        Execution(String message, StepContext context) {
+            super(context);
+            this.message = message;
+        }
 
         @Override protected Void run() throws Exception {
-            listener.getLogger().println(step.getMessage());
+            getContext().get(TaskListener.class).getLogger().println(message);
             return null;
         }
 

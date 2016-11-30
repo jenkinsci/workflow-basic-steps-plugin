@@ -24,7 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildWrapper;
@@ -46,7 +47,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  * A step that runs a {@link SimpleBuildWrapper} as defined in Jenkins core.
  */
-public class CoreWrapperStep extends AbstractStepImpl {
+public class CoreWrapperStep extends Step {
 
     private final SimpleBuildWrapper delegate;
 
@@ -58,26 +59,31 @@ public class CoreWrapperStep extends AbstractStepImpl {
         return delegate;
     }
 
-    public static final class Execution extends AbstractStepExecutionImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(delegate, context);
+    }
+
+    public static final class Execution extends StepExecution {
 
         private static final long serialVersionUID = 1;
 
-        @Inject(optional=true) private transient CoreWrapperStep step;
-        @StepContextParameter private transient Run<?,?> run;
-        @StepContextParameter private transient FilePath workspace;
-        @StepContextParameter private transient Launcher launcher;
-        @StepContextParameter private transient TaskListener listener;
-        @StepContextParameter private transient EnvVars env;
+        private transient final SimpleBuildWrapper delegate;
+
+        Execution(SimpleBuildWrapper delegate, StepContext context) {
+            super(context);
+            this.delegate = delegate;
+        }
 
         @Override public boolean start() throws Exception {
             SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
-            step.delegate.setUp(c, run, workspace, launcher, listener, env);
+            Run<?, ?> run = getContext().get(Run.class);
+            delegate.setUp(c, run, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(TaskListener.class), getContext().get(EnvVars.class));
             BodyInvoker bodyInvoker = getContext().newBodyInvoker();
             Map<String,String> overrides = c.getEnv();
             if (!overrides.isEmpty()) {
                 bodyInvoker.withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new ExpanderImpl(overrides)));
             }
-            ConsoleLogFilter filter = step.delegate.createLoggerDecorator(run);
+            ConsoleLogFilter filter = delegate.createLoggerDecorator(run);
             if (filter != null) {
                 bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(getContext().get(ConsoleLogFilter.class), filter));
             }
@@ -96,7 +102,7 @@ public class CoreWrapperStep extends AbstractStepImpl {
         private static final long serialVersionUID = 1;
         private final Map<String,String> overrides;
         ExpanderImpl(Map<String,String> overrides) {
-            this.overrides = /* ensure serializability*/ new HashMap<String,String>(overrides);
+            this.overrides = /* ensure serializability*/ new HashMap<>(overrides);
         }
         @Override public void expand(EnvVars env) throws IOException, InterruptedException {
             env.overrideExpandingAll(overrides);
@@ -119,11 +125,7 @@ public class CoreWrapperStep extends AbstractStepImpl {
 
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "wrap";
@@ -143,13 +145,17 @@ public class CoreWrapperStep extends AbstractStepImpl {
 
         // getPropertyType("delegate").getApplicableDescriptors() does not work, because extension lists do not work on subtypes.
         public Collection<BuildWrapperDescriptor> getApplicableDescriptors() {
-            Collection<BuildWrapperDescriptor> r = new ArrayList<BuildWrapperDescriptor>();
+            Collection<BuildWrapperDescriptor> r = new ArrayList<>();
             for (BuildWrapperDescriptor d : Jenkins.getActiveInstance().getExtensionList(BuildWrapperDescriptor.class)) {
                 if (SimpleBuildWrapper.class.isAssignableFrom(d.clazz)) {
                     r.add(d);
                 }
             }
             return r;
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class, EnvVars.class);
         }
 
     }

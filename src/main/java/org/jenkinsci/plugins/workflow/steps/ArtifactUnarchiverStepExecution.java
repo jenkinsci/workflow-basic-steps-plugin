@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
-
 import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.Run;
@@ -12,35 +10,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 /**
  * @author Kohsuke Kawaguchi
  */
-public class ArtifactUnarchiverStepExecution extends AbstractSynchronousNonBlockingStepExecution<List<FilePath>> {
-    @StepContextParameter
-    private transient FilePath ws;
+public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepExecution<List<FilePath>> {
 
-    @StepContextParameter
-    private transient Run build;
+    private transient final Map<String,String> mapping;
 
-    @Inject
-    private transient ArtifactUnarchiverStep step;
+    ArtifactUnarchiverStepExecution(Map<String, String> mapping, StepContext context) throws Exception {
+        super(context);
+        if (mapping == null) {
+            throw new AbortException("'mapping' has not been defined for this 'unarchive' step");
+        }
+        this.mapping = mapping;
+    }
 
     @Override
     protected List<FilePath> run() throws Exception {
         // where to copy artifacts from?
-        Run r = build; // TODO consider an option to override this (but in what format?)
+        Run<?, ?> r = getContext().get(Run.class); // TODO consider an option to override this (but in what format?)
 
         ArtifactManager am = r.getArtifactManager();
 
-        List<FilePath> files = new ArrayList<FilePath>();
+        List<FilePath> files = new ArrayList<>();
 
-        if (step.mapping == null)
-            throw new AbortException("'mapping' has not been defined for this 'unarchive' step");
-
-        for (Entry<String, String> e : step.mapping.entrySet()) {
-            FilePath dst = new FilePath(ws,e.getValue());
+        for (Entry<String, String> e : mapping.entrySet()) {
+            FilePath dst = new FilePath(getContext().get(FilePath.class), e.getValue());
             String src = e.getKey();
             String[] all = am.root().list(src);
             if (all.length == 0) {
@@ -63,11 +61,8 @@ public class ArtifactUnarchiverStepExecution extends AbstractSynchronousNonBlock
     }
 
     private FilePath copy(VirtualFile src, FilePath dst) throws IOException, InterruptedException {
-        InputStream in = src.open();
-        try {
+        try (InputStream in = src.open()) {
             dst.copyFrom(in);
-        } finally {
-            in.close();
         }
         return dst;
     }

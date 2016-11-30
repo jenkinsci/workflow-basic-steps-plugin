@@ -26,25 +26,28 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
 import hudson.FilePath;
+import java.util.Collections;
+import java.util.Set;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Simple step that will wipe out the current working directory in a workflows workspace.
  */
-public final class DeleteDirStep extends AbstractStepImpl {
+public final class DeleteDirStep extends Step {
 
 
     @DataBoundConstructor 
     public DeleteDirStep() {
     }
 
-    @Extension
-    public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new Execution(context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
         @Override
         public String getFunctionName() {
@@ -56,16 +59,22 @@ public final class DeleteDirStep extends AbstractStepImpl {
             return "Recursively delete the current directory from the workspace";
         }
 
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(FilePath.class);
+        }
+
     }
 
-    public static final class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+    public static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
-        @StepContextParameter
-        private transient FilePath cwd;
+        Execution(StepContext context) {
+            super(context);
+        }
 
         @Override
         protected Void run() throws Exception {
-            cwd.deleteRecursive();
+            getContext().get(FilePath.class).deleteRecursive();
             return null;
         }
 

@@ -24,16 +24,17 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.LauncherDecorator;
 import hudson.console.ConsoleLogFilter;
+import java.util.Collections;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Supplies a contextual Jenkins API object to a block.
  */
-public class WithContextStep extends AbstractStepImpl {
+public class WithContextStep extends Step {
 
     public final Object context;
 
@@ -41,11 +42,11 @@ public class WithContextStep extends AbstractStepImpl {
         this.context = context;
     }
 
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this.context, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "withContext";
@@ -63,16 +64,24 @@ public class WithContextStep extends AbstractStepImpl {
             return true;
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.emptySet();
+        }
+
     }
 
-    public static class Execution extends AbstractStepExecutionImpl {
+    public static class Execution extends StepExecution {
 
         private static final long serialVersionUID = 1;
 
-        @Inject(optional=true) private transient WithContextStep step;
+        private transient Object obj;
+
+        Execution(Object obj, StepContext context) {
+            super(context);
+            this.obj = obj;
+        }
 
         @Override public boolean start() throws Exception {
-            Object obj = step.context;
             StepContext context = getContext();
             if (obj instanceof ConsoleLogFilter) {
                 obj = BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), (ConsoleLogFilter) obj);

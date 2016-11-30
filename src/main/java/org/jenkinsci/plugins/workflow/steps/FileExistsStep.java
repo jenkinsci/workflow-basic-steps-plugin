@@ -26,12 +26,13 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
 import hudson.FilePath;
+import java.util.Collections;
+import java.util.Set;
 
-import javax.inject.Inject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public final class FileExistsStep extends AbstractStepImpl {
+public final class FileExistsStep extends Step {
 
     private final String file;
 
@@ -43,11 +44,11 @@ public final class FileExistsStep extends AbstractStepImpl {
         return file;
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(file, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "fileExists";
@@ -57,15 +58,23 @@ public final class FileExistsStep extends AbstractStepImpl {
             return "Verify if file exists in workspace";
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(FilePath.class);
+        }
+
     }
 
-    public static final class Execution extends AbstractSynchronousNonBlockingStepExecution<Boolean> {
+    public static final class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
 
-        @Inject private transient FileExistsStep step;
-        @StepContextParameter private transient FilePath workspace;
+        private transient final String file;
+
+        Execution(String file, StepContext context) {
+            super(context);
+            this.file = file;
+        }
 
         @Override protected Boolean run() throws Exception {
-        	return workspace.child(step.file).exists();
+        	return getContext().get(FilePath.class).child(file).exists();
         }
 
         private static final long serialVersionUID = 1L;
