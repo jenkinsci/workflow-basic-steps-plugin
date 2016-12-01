@@ -24,26 +24,28 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Runs a block.
  * If it fails, marks the build as failed, but continues execution.
  */
-public final class CatchErrorStep extends AbstractStepImpl {
+public final class CatchErrorStep extends Step {
 
     @DataBoundConstructor public CatchErrorStep() {}
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "catchError";
@@ -61,13 +63,17 @@ public final class CatchErrorStep extends AbstractStepImpl {
             return true;
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Run.class, TaskListener.class);
+        }
+
     }
 
-    public static final class Execution extends AbstractStepExecutionImpl {
+    public static final class Execution extends StepExecution {
 
-        /** Placeholder for getRequiredContext. */
-        @StepContextParameter private transient Run<?,?> run;
-        @StepContextParameter private transient TaskListener listener;
+        Execution(StepContext context) {
+            super(context);
+        }
 
         @Override public boolean start() throws Exception {
             StepContext context = getContext();

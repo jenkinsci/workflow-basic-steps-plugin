@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -37,7 +38,6 @@ import hudson.tools.ToolInstallation;
 import hudson.util.ListBoxModel;
 
 import javax.annotation.CheckForNull;
-import javax.inject.Inject;
 
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -49,7 +49,7 @@ import java.util.Set;
 /**
  * Binds a {@link ToolInstallation} to a variable.
  */
-public final class ToolStep extends AbstractStepImpl {
+public final class ToolStep extends Step {
 
     /** Same as {@link ToolInstallation#getName}. */
     private final String name;
@@ -72,11 +72,11 @@ public final class ToolStep extends AbstractStepImpl {
         this.type = Util.fixEmpty(type);
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "tool";
@@ -118,14 +118,20 @@ public final class ToolStep extends AbstractStepImpl {
             return r;
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class);
+        }
+
     }
 
-    public static final class Execution extends AbstractSynchronousNonBlockingStepExecution<String> {
+    public static final class Execution extends SynchronousNonBlockingStepExecution<String> {
 
-        @Inject private transient ToolStep step;
-        @StepContextParameter transient TaskListener listener;
-        @StepContextParameter transient EnvVars env;
-        @StepContextParameter transient Node node;
+        private transient final ToolStep step;
+
+        Execution(ToolStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override protected String run() throws Exception {
             String name = step.getName();
@@ -137,10 +143,10 @@ public final class ToolStep extends AbstractStepImpl {
                 for (ToolInstallation tool : desc.getInstallations()) {
                     if (tool.getName().equals(name)) {
                         if (tool instanceof NodeSpecific) {
-                            tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(node, listener);
+                            tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(getContext().get(Node.class), getContext().get(TaskListener.class));
                         }
                         if (tool instanceof EnvironmentSpecific) {
-                            tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(env);
+                            tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(getContext().get(EnvVars.class));
                         }
 
                         return tool.getHome();

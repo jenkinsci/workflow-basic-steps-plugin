@@ -26,32 +26,36 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
 import hudson.Launcher;
+import java.util.Collections;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Checks whether we are running on Unix.
  */
-public class IsUnixStep extends AbstractStepImpl {
+public class IsUnixStep extends Step {
 
     @DataBoundConstructor public IsUnixStep() {}
 
-    public static class Execution extends AbstractSynchronousStepExecution<Boolean> {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(context);
+    }
 
-        @StepContextParameter private transient Launcher launcher;
+    public static class Execution extends SynchronousStepExecution<Boolean> {
+
+        Execution(StepContext context) {
+            super(context);
+        }
 
         @Override protected Boolean run() throws Exception {
-            return launcher.isUnix();
+            return getContext().get(Launcher.class).isUnix();
         }
 
         private static final long serialVersionUID = 1L;
 
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "isUnix";
@@ -59,6 +63,10 @@ public class IsUnixStep extends AbstractStepImpl {
 
         @Override public String getDisplayName() {
             return "Checks if running on a Unix-like node";
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(Launcher.class);
         }
 
     }

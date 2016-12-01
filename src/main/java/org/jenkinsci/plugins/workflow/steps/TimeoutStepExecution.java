@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Main;
 import hudson.Util;
@@ -22,20 +21,24 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.LinearBlockHoppingScanner;
 
 @SuppressFBWarnings("SE_INNER_CLASS")
-public class TimeoutStepExecution extends AbstractStepExecutionImpl {
+public class TimeoutStepExecution extends StepExecution {
 
     private static final Logger LOGGER = Logger.getLogger(TimeoutStepExecution.class.getName());
     private static final long GRACE_PERIOD = Main.isUnitTest ? /* 5s */5_000 : /* 1m */60_000;
 
-    @Inject(optional=true)
-    private transient TimeoutStep step;
-    @StepContextParameter private transient TaskListener listener;
+    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+    private transient final TimeoutStep step;
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
     private long end = 0;
     /** whether we are forcing the body to end */
     private boolean forcible;
+
+    TimeoutStepExecution(TimeoutStep step, StepContext context) {
+        super(context);
+        this.step = step;
+    }
 
     @Override
     public boolean start() throws Exception {
@@ -51,8 +54,16 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     @Override
     public void onResume() {
-        super.onResume();
         setupTimer(System.currentTimeMillis());
+    }
+
+    private TaskListener listener() {
+        try {
+            return getContext().get(TaskListener.class);
+        } catch (Exception x) {
+            LOGGER.log(Level.WARNING, null, x);
+            return TaskListener.NULL;
+        }
     }
 
     /**
@@ -64,7 +75,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         if (end > now) {
             long delay = end - now;
             if (!forcible) {
-                listener.getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
+                listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
             }
             killer = Timer.get().schedule(new Runnable() {
                 @Override
@@ -80,7 +91,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private void cancel() {
         if (forcible) {
             if (!killer.isCancelled()) {
-                listener.getLogger().println("Body did not finish within grace period; terminating with extreme prejudice");
+                listener().getLogger().println("Body did not finish within grace period; terminating with extreme prejudice");
                 FlowExecution exec;
                 try {
                     exec = getContext().get(FlowExecution.class);
@@ -117,7 +128,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 }, MoreExecutors.sameThreadExecutor());
             }
         } else {
-            listener.getLogger().println("Cancelling nested steps due to timeout");
+            listener().getLogger().println("Cancelling nested steps due to timeout");
             body.cancel(new ExceededTimeout());
             forcible = true;
             long now = System.currentTimeMillis();

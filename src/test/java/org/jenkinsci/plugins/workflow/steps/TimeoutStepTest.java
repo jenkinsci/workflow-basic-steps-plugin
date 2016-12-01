@@ -26,7 +26,9 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
 import hudson.model.TaskListener;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
@@ -210,23 +212,28 @@ public class TimeoutStepTest extends Assert {
             }
         });
     }
-    public static class UnkillableStep extends AbstractStepImpl {
+    public static class UnkillableStep extends Step {
         @DataBoundConstructor public UnkillableStep() {}
-        public static class Execution extends AbstractStepExecutionImpl {
-            @StepContextParameter transient TaskListener listener;
+        @Override public StepExecution start(StepContext context) throws Exception {
+            return new Execution(context);
+        }
+        private static class Execution extends StepExecution {
+            private Execution(StepContext context) {
+                super(context);
+            }
             @Override public boolean start() throws Exception {
                 return false;
             }
             @Override public void stop(Throwable cause) throws Exception {
-                listener.getLogger().println("ignoring " + cause);
+                getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }
-        @TestExtension("unresponsiveBody") public static class DescriptorImpl extends AbstractStepDescriptorImpl {
-            public DescriptorImpl() {
-                super(Execution.class);
-            }
+        @TestExtension("unresponsiveBody") public static class DescriptorImpl extends StepDescriptor {
             @Override public String getFunctionName() {
                 return "unkillable";
+            }
+            @Override public Set<? extends Class<?>> getRequiredContext() {
+                return Collections.singleton(TaskListener.class);
             }
         }
     }

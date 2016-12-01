@@ -24,12 +24,14 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
-import javax.inject.Inject;
+import java.util.Collections;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public final class ErrorStep extends AbstractStepImpl {
+public final class ErrorStep extends Step {
 
     private final String message;
 
@@ -41,23 +43,29 @@ public final class ErrorStep extends AbstractStepImpl {
         return message;
     }
 
-    public static final class Execution extends AbstractSynchronousStepExecution<Void> {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(message, context);
+    }
+
+    public static final class Execution extends SynchronousStepExecution<Void> {
 
         private static final long serialVersionUID = 1L;
 
-        @Inject private transient ErrorStep step;
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+        private transient final String message;
+
+        Execution(String message, StepContext context) {
+            super(context);
+            this.message = message;
+        }
 
         @Override protected Void run() throws Exception {
-            throw new AbortException(step.getMessage());
+            throw new AbortException(message);
         }
 
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "error";
@@ -65,6 +73,10 @@ public final class ErrorStep extends AbstractStepImpl {
 
         @Override public String getDisplayName() {
             return "Error signal";
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.emptySet();
         }
 
     }

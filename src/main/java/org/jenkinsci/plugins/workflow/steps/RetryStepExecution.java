@@ -1,22 +1,28 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.inject.Inject;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.model.TaskListener;
 
 /**
  * @author Kohsuke Kawaguchi
  */
-public class RetryStepExecution extends AbstractStepExecutionImpl {
-    @Inject(optional=true)
-    private transient RetryStep step;
+public class RetryStepExecution extends StepExecution {
+    
+    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+    private transient final int count;
     private volatile BodyExecution body;
+
+    RetryStepExecution(int count, StepContext context) {
+        super(context);
+        this.count = count;
+    }
 
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
         body = context.newBodyInvoker()
-            .withCallback(new Callback(step.getCount()))
+            .withCallback(new Callback(count))
             .start();
         return false;   // execution is asynchronous
     }

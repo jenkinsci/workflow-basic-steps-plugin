@@ -28,6 +28,8 @@ import com.google.common.base.Function;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -35,15 +37,17 @@ import javax.annotation.Nonnull;
 import jenkins.util.Timer;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public final class WaitForConditionStep extends AbstractStepImpl {
+public final class WaitForConditionStep extends Step {
 
     @DataBoundConstructor public WaitForConditionStep() {}
 
-    public static final class Execution extends AbstractStepExecutionImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(context);
+    }
+
+    public static final class Execution extends StepExecution {
 
         private static final long serialVersionUID = 1;
-        /** Unused, just to force the descriptor to request it. */
-        @StepContextParameter private transient TaskListener listener;
         private volatile BodyExecution body;
         private transient volatile ScheduledFuture<?> task;
         /**
@@ -55,6 +59,10 @@ public final class WaitForConditionStep extends AbstractStepImpl {
         static final long MIN_RECURRENCE_PERIOD = 250; // ¼s
         static final long MAX_RECURRENCE_PERIOD = 15000; // ¼min
         long recurrencePeriod = MIN_RECURRENCE_PERIOD;
+
+        Execution(StepContext context) {
+            super(context);
+        }
 
         @Override public boolean start() throws Exception {
             body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
@@ -152,11 +160,7 @@ public final class WaitForConditionStep extends AbstractStepImpl {
 
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "waitUntil";
@@ -168,6 +172,10 @@ public final class WaitForConditionStep extends AbstractStepImpl {
 
         @Override public boolean takesImplicitBlockArgument() {
             return true;
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(TaskListener.class);
         }
 
     }

@@ -24,25 +24,27 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Set;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
-public class StashStep extends AbstractStepImpl {
+public class StashStep extends Step {
 
     private final @Nonnull String name;
     private @CheckForNull String includes;
@@ -82,28 +84,30 @@ public class StashStep extends AbstractStepImpl {
         this.useDefaultExcludes = useDefaultExcludes;
     }
 
-    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this, context);
+    }
+
+    public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
         private static final long serialVersionUID = 1L;
 
-        @Inject private transient StashStep step;
-        @StepContextParameter private transient Run<?,?> build;
-        @StepContextParameter private transient FilePath workspace;
-        @StepContextParameter private transient TaskListener listener;
+        private transient final StashStep step;
+
+        Execution(StashStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override protected Void run() throws Exception {
-            StashManager.stash(build, step.name, workspace, listener, step.includes, step.excludes,
+            StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(TaskListener.class), step.includes, step.excludes,
                     step.useDefaultExcludes);
             return null;
         }
 
     }
 
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "stash";
@@ -111,6 +115,10 @@ public class StashStep extends AbstractStepImpl {
 
         @Override public String getDisplayName() {
             return "Stash some files to be used later in the build";
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Run.class, FilePath.class, TaskListener.class);
         }
 
     }

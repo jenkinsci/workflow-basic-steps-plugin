@@ -25,16 +25,17 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
+import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-import java.io.Serializable;
 
 /**
  * Executes the body up to N times.
  *
  * @author Kohsuke Kawaguchi
  */
-public class RetryStep extends AbstractStepImpl {
+public class RetryStep extends Step {
     
     private final int count;
 
@@ -52,12 +53,13 @@ public class RetryStep extends AbstractStepImpl {
         return (DescriptorImpl)super.getDescriptor();
     }
 
-    @Extension
-    public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new RetryStepExecution(count, context);
+    }
 
-        public DescriptorImpl() {
-            super(RetryStepExecution.class);
-        }
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
         @Override
         public String getFunctionName() {
@@ -73,6 +75,12 @@ public class RetryStep extends AbstractStepImpl {
         public String getDisplayName() {
             return "Retry the body up to N times";
         }
+
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(TaskListener.class);
+        }
+
     }
 
 }

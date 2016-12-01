@@ -29,14 +29,15 @@ import hudson.FilePath;
 import hudson.Util;
 
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.Set;
 
-import javax.inject.Inject;
 
 import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-public final class ReadFileStep extends AbstractStepImpl {
+public final class ReadFileStep extends Step {
 
     private final String file;
     private String encoding;
@@ -62,11 +63,11 @@ public final class ReadFileStep extends AbstractStepImpl {
         this.encoding = Util.fixEmptyAndTrim(encoding);
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "readFile";
@@ -76,19 +77,24 @@ public final class ReadFileStep extends AbstractStepImpl {
             return "Read file from workspace";
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(FilePath.class);
+        }
+
     }
 
-    public static final class Execution extends AbstractSynchronousNonBlockingStepExecution<String> {
+    public static final class Execution extends SynchronousNonBlockingStepExecution<String> {
 
-        @Inject private transient ReadFileStep step;
-        @StepContextParameter private transient FilePath workspace;
+        private transient final ReadFileStep step;
+
+        Execution(ReadFileStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override protected String run() throws Exception {
-            InputStream is = workspace.child(step.file).read();
-            try {
+            try (InputStream is = getContext().get(FilePath.class).child(step.file).read()) {
                 return IOUtils.toString(is, step.encoding);
-            } finally {
-                is.close();
             }
         }
 

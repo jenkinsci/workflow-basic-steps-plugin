@@ -1,15 +1,19 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
+import hudson.FilePath;
+import hudson.model.Run;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Kohsuke Kawaguchi
  */
-public class ArtifactUnarchiverStep extends AbstractStepImpl {
+public class ArtifactUnarchiverStep extends Step {
     /**
      * Files to copy over.
      */
@@ -19,12 +23,12 @@ public class ArtifactUnarchiverStep extends AbstractStepImpl {
 
     @DataBoundConstructor public ArtifactUnarchiverStep() {}
 
-    @Extension
-    public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new ArtifactUnarchiverStepExecution(mapping, context);
+    }
 
-        public DescriptorImpl() {
-            super(ArtifactUnarchiverStepExecution.class);
-        }
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
         @Override
         public String getFunctionName() {
@@ -38,6 +42,10 @@ public class ArtifactUnarchiverStep extends AbstractStepImpl {
 
         @Override public boolean isAdvanced() {
             return true;
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(FilePath.class, Run.class);
         }
 
     }

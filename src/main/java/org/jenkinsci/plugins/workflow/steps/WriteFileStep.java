@@ -27,13 +27,14 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
+import java.util.Collections;
+import java.util.Set;
 
-import javax.inject.Inject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-public final class WriteFileStep extends AbstractStepImpl {
+public final class WriteFileStep extends Step {
 
     private final String file;
     private final String text;
@@ -60,11 +61,11 @@ public final class WriteFileStep extends AbstractStepImpl {
         this.encoding = Util.fixEmptyAndTrim(encoding);
     }
 
-    @Extension public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this, context);
+    }
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static final class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "writeFile";
@@ -74,15 +75,23 @@ public final class WriteFileStep extends AbstractStepImpl {
             return "Write file to workspace";
         }
 
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return Collections.singleton(FilePath.class);
+        }
+
     }
 
-    public static final class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+    public static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
-        @Inject private transient WriteFileStep step;
-        @StepContextParameter private transient FilePath workspace;
+        private transient final WriteFileStep step;
+
+        Execution(WriteFileStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override protected Void run() throws Exception {
-            workspace.child(step.file).write(step.text, /* TODO consider specifying encoding */ null);
+            getContext().get(FilePath.class).child(step.file).write(step.text, /* TODO consider specifying encoding */ null);
             return null;
         }
 

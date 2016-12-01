@@ -1,8 +1,14 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.Util;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.ArtifactArchiver;
+import java.util.Set;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -12,7 +18,7 @@ import org.kohsuke.stapler.DataBoundSetter;
  *
  * @author Kohsuke Kawaguchi
  */
-public class ArtifactArchiverStep extends AbstractStepImpl {
+public class ArtifactArchiverStep extends Step {
 
     private final String includes;
     private String excludes;
@@ -34,12 +40,13 @@ public class ArtifactArchiverStep extends AbstractStepImpl {
         this.excludes = Util.fixEmptyAndTrim(excludes);
     }
 
-    @Extension
-    public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new ArtifactArchiverStepExecution(this, context);
+    }
 
-        public DescriptorImpl() {
-            super(ArtifactArchiverStepExecution.class);
-        }
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
         @Override
         public String getFunctionName() {
@@ -58,6 +65,11 @@ public class ArtifactArchiverStep extends AbstractStepImpl {
         @Override
         public boolean isAdvanced() {
             return ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class);
+        }
+
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(FilePath.class, Run.class, Launcher.class, TaskListener.class);
         }
 
     }
