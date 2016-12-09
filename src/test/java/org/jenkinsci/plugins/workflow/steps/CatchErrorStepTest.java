@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
+import hudson.model.User;
 import jenkins.model.CauseOfInterruption;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -39,11 +40,12 @@ public class CatchErrorStepTest {
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test public void specialStatus() throws Exception {
+        User.get("smrt");
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
                 "catchError {\n" +
                 "  semaphore 'specialStatus'\n" +
-                "}"));
+                "}", true));
         SemaphoreStep.failure("specialStatus/1", new FlowInterruptedException(Result.UNSTABLE, new CauseOfInterruption.UserInterruption("smrt")));
         WorkflowRun b = p.scheduleBuild2(0).get();
         r.assertLogContains("smrt", r.assertBuildStatus(Result.UNSTABLE, b));
