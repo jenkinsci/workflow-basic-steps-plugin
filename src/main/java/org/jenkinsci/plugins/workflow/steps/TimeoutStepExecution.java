@@ -21,7 +21,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.LinearBlockHoppingScanner;
 
 @SuppressFBWarnings("SE_INNER_CLASS")
-public class TimeoutStepExecution extends StepExecution {
+public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     private static final Logger LOGGER = Logger.getLogger(TimeoutStepExecution.class.getName());
     private static final long GRACE_PERIOD = Main.isUnitTest ? /* 5s */5_000 : /* 1m */60_000;
@@ -72,8 +72,8 @@ public class TimeoutStepExecution extends StepExecution {
      * @param now Current time in milliseconds.
      */
     private void setupTimer(final long now) {
-        if (end > now) {
-            long delay = end - now;
+        long delay = end - now;
+        if (delay > 0) {
             if (!forcible) {
                 listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
             }
@@ -84,6 +84,7 @@ public class TimeoutStepExecution extends StepExecution {
                 }
             }, delay, TimeUnit.MILLISECONDS);
         } else {
+            listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(- delay) + " ago");
             cancel();
         }
     }

@@ -7,7 +7,7 @@ import hudson.model.TaskListener;
 /**
  * @author Kohsuke Kawaguchi
  */
-public class RetryStepExecution extends StepExecution {
+public class RetryStepExecution extends AbstractStepExecutionImpl {
     
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final int count;
@@ -32,6 +32,8 @@ public class RetryStepExecution extends StepExecution {
         if (body!=null)
             body.cancel(cause);
     }
+
+    @Override public void onResume() {}
 
     private static class Callback extends BodyExecutionCallback {
 

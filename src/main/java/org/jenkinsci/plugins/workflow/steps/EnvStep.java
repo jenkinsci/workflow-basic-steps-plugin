@@ -63,7 +63,7 @@ public class EnvStep extends Step {
         return new Execution(overrides, context);
     }
     
-    public static class Execution extends StepExecution {
+    public static class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
         
@@ -87,6 +87,8 @@ public class EnvStep extends Step {
             // should be no need to do anything special (but verify in JENKINS-26148)
         }
         
+        @Override public void onResume() {}
+
     }
     
     private static final class ExpanderImpl extends EnvironmentExpander {

@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<org.jenkinsci.plugins.workflow.support.storage.SimpleXStreamFlowNodeStorage_-Tag plugin="workflow-support@1.4.3">
+  <node class="org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode" plugin="workflow-cps@1.4.3">
+    <parentIds>
+      <string>3</string>
+    </parentIds>
+    <id>4</id>
+    <descriptorId>org.jenkinsci.plugins.workflow.steps.TimeoutStep</descriptorId>
+  </node>
+  <actions>
+    <org.jenkinsci.plugins.workflow.actions.BodyInvocationAction plugin="workflow-api@2.8"/>
+    <org.jenkinsci.plugins.workflow.actions.TimingAction plugin="workflow-api@2.8">
+      <startTime>1484006054823</startTime>
+    </org.jenkinsci.plugins.workflow.actions.TimingAction>
+  </actions>
+</org.jenkinsci.plugins.workflow.support.storage.SimpleXStreamFlowNodeStorage_-Tag>

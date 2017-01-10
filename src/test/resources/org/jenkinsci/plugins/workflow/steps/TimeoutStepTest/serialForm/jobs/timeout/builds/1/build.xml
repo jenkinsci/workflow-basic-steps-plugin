@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-build plugin="workflow-job@1.4.3">
+  <actions>
+    <hudson.model.CauseAction>
+      <causes>
+        <hudson.model.Cause_-UserIdCause/>
+      </causes>
+    </hudson.model.CauseAction>
+  </actions>
+  <queueId>1</queueId>
+  <timestamp>1484006053835</timestamp>
+  <startTime>1484006053839</startTime>
+  <duration>0</duration>
+  <keepLog>false</keepLog>
+  <execution class="org.jenkinsci.plugins.workflow.cps.CpsFlowExecution">
+    <result>SUCCESS</result>
+    <script>timeout(time: 9999999, unit: &apos;DAYS&apos;) {
+  sleep time: 2, unit: &apos;MINUTES&apos;
+}
+</script>
+    <loadedScripts class="map"/>
+    <owner class="flow-owner">
+      <job>timeout</job>
+      <id>1</id>
+    </owner>
+    <iota>5</iota>
+    <head>1:5</head>
+    <start>2</start>
+  </execution>
+  <logsToCopy class="linked-hash-map">
+    <entry>
+      <string>5</string>
+      <long>25</long>
+    </entry>
+  </logsToCopy>
+  <checkouts class="hudson.util.PersistedList"/>
+</flow-build>

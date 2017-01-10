@@ -76,7 +76,7 @@ public class PushdStep extends Step {
 
     }
 
-    public static class Execution extends StepExecution {
+    public static class Execution extends AbstractStepExecutionImpl {
         
         @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final String path;
@@ -103,6 +103,8 @@ public class PushdStep extends Step {
             if (body!=null)
                 body.cancel(cause);
         }
+
+        @Override public void onResume() {}
 
         private static final long serialVersionUID = 1L;
 

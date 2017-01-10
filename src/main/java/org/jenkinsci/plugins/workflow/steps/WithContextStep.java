@@ -71,7 +71,7 @@ public class WithContextStep extends Step {
 
     }
 
-    public static class Execution extends StepExecution {
+    public static class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
 
@@ -99,6 +99,8 @@ public class WithContextStep extends Step {
         @Override public void stop(Throwable cause) throws Exception {
             getContext().onFailure(cause);
         }
+
+        @Override public void onResume() {}
 
     }
 

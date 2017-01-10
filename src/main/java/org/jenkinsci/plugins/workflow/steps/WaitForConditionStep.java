@@ -45,7 +45,7 @@ public final class WaitForConditionStep extends Step {
         return new Execution(context);
     }
 
-    public static final class Execution extends StepExecution {
+    public static final class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
         private volatile BodyExecution body;
@@ -80,7 +80,6 @@ public final class WaitForConditionStep extends Step {
         }
 
         @Override public void onResume() {
-            super.onResume();
             recurrencePeriod = MIN_RECURRENCE_PERIOD;
             if (body == null) {
                 // Restarted while waiting for the timer to go off. Rerun now.

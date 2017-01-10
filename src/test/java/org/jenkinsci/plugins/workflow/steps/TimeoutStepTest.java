@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
 import hudson.model.TaskListener;
+import hudson.model.listeners.RunListener;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -47,6 +48,7 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
+import org.jvnet.hudson.test.recipes.LocalData;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class TimeoutStepTest extends Assert {
@@ -252,4 +254,16 @@ public class TimeoutStepTest extends Assert {
 
     // TODO: timeout inside parallel
 
+    @Issue("JENKINS-39134")
+    @LocalData
+    @Test public void serialForm() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.getItemByFullName("timeout", WorkflowJob.class);
+                WorkflowRun b = p.getBuildByNumber(1);
+                RunListener.fireStarted(b, TaskListener.NULL);
+                story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
+            }
+        });
+    }
 }
