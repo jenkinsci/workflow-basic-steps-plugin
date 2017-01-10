@@ -175,4 +175,7 @@ public class WaitForConditionStepTest {
         });
     }
 
+    // TODO add @LocalData serialForm test proving compatibility with executions dating back to workflow 1.4.3 on 1.580.1
+    // (same for RetryStep, though where is its test?)
+
 }

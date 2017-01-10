@@ -63,7 +63,7 @@ public class CoreWrapperStep extends Step {
         return new Execution(delegate, context);
     }
 
-    public static final class Execution extends StepExecution {
+    public static final class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
 
@@ -95,6 +95,8 @@ public class CoreWrapperStep extends Step {
         @Override public void stop(Throwable cause) throws Exception {
             // should be no need to do anything special (but verify in JENKINS-26148)
         }
+
+        @Override public void onResume() {}
 
     }
 

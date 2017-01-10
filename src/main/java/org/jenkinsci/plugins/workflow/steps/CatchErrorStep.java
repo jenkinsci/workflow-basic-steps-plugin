@@ -69,7 +69,7 @@ public final class CatchErrorStep extends Step {
 
     }
 
-    public static final class Execution extends StepExecution {
+    public static final class Execution extends AbstractStepExecutionImpl {
 
         Execution(StepContext context) {
             super(context);
@@ -86,6 +86,8 @@ public final class CatchErrorStep extends Step {
         @Override public void stop(Throwable cause) throws Exception {
             // nothing to do
         }
+
+        @Override public void onResume() {}
 
         private static final class Callback extends BodyExecutionCallback {
 

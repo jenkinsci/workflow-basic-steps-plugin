@@ -220,6 +220,8 @@ public class CoreWrapperStepTest {
         }
     }
 
+    // TODO add @LocalData serialForm test proving compatibility with executions dating back to workflow 1.4.3 on 1.580.1
+
     // TODO add to jenkins-test-harness
     /**
      * Akin to {@link JenkinsRule#createSlave(String, String, EnvVars)} but allows {@link Computer#getEnvironment} to be controlled rather than directly modifying launchers.

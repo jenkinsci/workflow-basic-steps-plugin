@@ -66,7 +66,7 @@ public final class SleepStep extends Step {
         return new Execution(this, context);
     }
 
-    public static final class Execution extends StepExecution {
+    public static final class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1L;
 
@@ -115,7 +115,6 @@ public final class SleepStep extends Step {
         }
 
         @Override public void onResume() {
-            super.onResume();
             setupTimer(System.currentTimeMillis());
         }
 
