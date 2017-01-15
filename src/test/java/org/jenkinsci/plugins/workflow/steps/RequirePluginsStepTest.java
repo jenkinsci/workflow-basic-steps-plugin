@@ -24,8 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.AbortException;
 import hudson.model.Result;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -34,6 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
+
+import java.util.Random;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -47,44 +49,80 @@ public class RequirePluginsStepTest {
 
     @Test
     public void allPluginsPresent() throws Exception {
-        String requirement = "workflow-step-api workflow-job";
-        requirePlugins(requirement, Result.SUCCESS);
+        requirePlugins(new String[]{"workflow-step-api", "workflow-job"},
+                       new String[]{},
+                       new String[]{"workflow-step-api", "workflow-job"},
+                       Result.SUCCESS);
     }
-
 
     @Test
     public void absentPlugin() throws Exception {
-        try {
-            requirePlugins("absent ,  workflow-step-api otherabsent", Result.FAILURE);
-        } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("absent"));
-            assertTrue(e.getMessage().contains("otherabsent"));
-            assertFalse(e.getMessage().contains("workflow-step-api"));
-        }
+        requirePlugins(new String[]{"absent", "workflow-step-api", "nonthereatall"},
+                       new String[]{"absent", "nonthereatall"},
+                       new String[]{"workflow-step-api"},
+                       Result.FAILURE);
     }
 
     @Test
     public void versionOK() throws Exception {
-        requirePlugins("junit,workflow-step-api@1.0 ", Result.SUCCESS);
+        requirePlugins(new String[]{"junit", " workflow-step-api@1.0 "},
+                       new String[]{},
+                       new String[]{"junit", "workflow-step-api@1.0"},
+                       Result.SUCCESS);
+    }
+
+    @Test
+    public void disabledPlugin() throws Exception {
+        requirePlugins(new String[]{"junit"},
+                       new String[]{},
+                       new String[]{"junit"},
+                       Result.SUCCESS);
+
+        // Now mock the checker to force junit as inactive, and re-run the same test
+        RequirePluginsStep.PLUGIN_CHECKER = new RequirePluginsStep.DefaultPluginChecker() {
+            @Override
+            public boolean isInstalledButInactive(String pluginId) {
+                if ("junit".equals(pluginId)) {
+                    return true;
+                }
+                return super.isInstalledButInactive(pluginId);
+            }
+        };
+
+        requirePlugins(new String[]{"junit"},
+                       new String[]{"junit"},
+                       new String[]{},
+                       Result.FAILURE);
     }
 
     @Test
     public void tooOld() throws Exception {
-        try {
-            requirePlugins(" workflow-step-api@9.5 ", Result.FAILURE);
-        } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("workflow-step-api@9.5"));
+        requirePlugins(new String[]{"workflow-step-api@9.5"},
+                       new String[]{"workflow-step-api@9.5"},
+                       new String[]{},
+                       Result.FAILURE);
+
+    }
+
+
+    private void requirePlugins(String[] requirement, String[] notInstalled, String[] installed, Result result) throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p" + new Random().nextInt());
+        final String script = "requirePlugins plugins:" + asText(requirement);
+
+        p.setDefinition(new CpsFlowDefinition(script, true));
+        WorkflowRun b = r.assertBuildStatus(result, p.scheduleBuild2(0));
+
+        String log = StringUtils.join(b.getLog(10), " ");
+        for (String absent : notInstalled) {
+            assertTrue(log.contains(absent));
+        }
+
+        for (String absent : installed) {
+            assertFalse(log.contains(absent));
         }
     }
 
-    @Test
-    public void funkySpec() throws Exception {
-        requirePlugins(", junit,, workflow-step-api  workflow-step-api@1.0  ,", Result.SUCCESS);
-    }
-
-    private void requirePlugins(String requirement, Result result) throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("requirePlugins '" + requirement + "'", true));
-        WorkflowRun b = r.assertBuildStatus(result, p.scheduleBuild2(0));
+    private String asText(String[] requirement) {
+        return "['" + StringUtils.join(requirement, "','") + "']";
     }
 }

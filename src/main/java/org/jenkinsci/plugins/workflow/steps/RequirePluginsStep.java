@@ -24,10 +24,11 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
-import hudson.Plugin;
+import hudson.PluginWrapper;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -45,6 +46,8 @@ import java.util.Set;
  */
 public class RequirePluginsStep extends Step {
 
+    @VisibleForTesting
+    static PluginChecker PLUGIN_CHECKER = new DefaultPluginChecker();
     private final List<String> plugins;
 
     @DataBoundConstructor
@@ -59,6 +62,49 @@ public class RequirePluginsStep extends Step {
     @Override
     public StepExecution start(StepContext context) throws Exception {
         return new Execution(plugins, context);
+    }
+
+    /**
+     * Separate behaviour to make it testable
+     */
+    interface PluginChecker {
+        PluginWrapper getPlugin(String pluginId);
+
+        boolean isNotInstalled(String pluginId);
+
+        boolean isPluginVersionTooLow(String pluginId, String version);
+
+        boolean isInstalledButInactive(String pluginId);
+    }
+
+    static class DefaultPluginChecker implements PluginChecker {
+        @Override
+        public PluginWrapper getPlugin(String pluginId) {
+            return Jenkins.getActiveInstance().getPluginManager().getPlugin(pluginId);
+        }
+
+        @Override
+        public boolean isNotInstalled(String pluginId) {
+            return Jenkins.getActiveInstance().getPluginManager().getPlugin(pluginId) == null;
+        }
+
+        @Override
+        public boolean isPluginVersionTooLow(String pluginId, String version) {
+            final PluginWrapper plugin = Jenkins.getActiveInstance().getPluginManager().getPlugin(pluginId);
+            if (plugin == null) {
+                throw new IllegalStateException("call isNotInstalled() before");
+            }
+            return plugin.getVersion().compareTo(version) < 0;
+        }
+
+        @Override
+        public boolean isInstalledButInactive(String pluginId) {
+            final PluginWrapper plugin = Jenkins.getActiveInstance().getPluginManager().getPlugin(pluginId);
+            if (plugin == null) {
+                throw new IllegalStateException("call isNotInstalled() before");
+            }
+            return plugin.isActive() == false;
+        }
     }
 
     @Extension
@@ -79,7 +125,8 @@ public class RequirePluginsStep extends Step {
             return Collections.singleton(TaskListener.class);
         }
 
-        @Override public Step newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+        @Override
+        public Step newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             String pluginsString = formData.getString("plugins");
             List<String> plugins = new ArrayList<>();
             for (String line : pluginsString.split("\r?\n")) {
@@ -96,7 +143,7 @@ public class RequirePluginsStep extends Step {
 
         private static final long serialVersionUID = 1L;
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
         private transient final List<String> plugins;
 
         Execution(List<String> plugins, StepContext context) {
@@ -107,11 +154,13 @@ public class RequirePluginsStep extends Step {
         @Override
         protected Void run() throws Exception {
 
-            List<String> absentIds = new ArrayList<>();
+            List<String> notInstalled = new ArrayList<>();
             List<String> insufficientVersionIds = new ArrayList<>();
+            List<String> installedButNotActive = new ArrayList<>();
 
             for (String pluginSpec : plugins) {
-                if(StringUtils.isBlank(pluginSpec)) {
+                pluginSpec = pluginSpec.trim();
+                if (StringUtils.isBlank(pluginSpec)) {
                     continue;
                 }
                 String pluginId = pluginSpec;
@@ -122,18 +171,19 @@ public class RequirePluginsStep extends Step {
                     version = versioned[1];
                 }
 
-                final Plugin plugin = Jenkins.getActiveInstance().getPlugin(pluginId);
-                if (plugin == null) {
-                    absentIds.add(pluginSpec);
-                }
-                else if (version != null && plugin.getWrapper().getVersion().compareTo(version) < 0) {
+                if (PLUGIN_CHECKER.isNotInstalled(pluginId)) {
+                    notInstalled.add(pluginSpec);
+                } else if (PLUGIN_CHECKER.isInstalledButInactive(pluginId)) {
+                    installedButNotActive.add(pluginId);
+                } else if (version != null && PLUGIN_CHECKER.isPluginVersionTooLow(pluginId, version)) {
                     insufficientVersionIds.add(pluginSpec);
                 }
             }
 
-            if (!(absentIds.isEmpty() && insufficientVersionIds.isEmpty())) {
-                throw new AbortException("Some plugins are not installed or a too old version: " +
-                                                 "Not installed:" + absentIds +
+            if (!(notInstalled.isEmpty() && insufficientVersionIds.isEmpty() && installedButNotActive.isEmpty())) {
+                throw new AbortException("Some requirement was not fulfilled: " +
+                                                 "Not installed:" + notInstalled +
+                                                 ", Installed, but inactive: " + installedButNotActive +
                                                  ", Too old: " + insufficientVersionIds);
             }
             return null;
