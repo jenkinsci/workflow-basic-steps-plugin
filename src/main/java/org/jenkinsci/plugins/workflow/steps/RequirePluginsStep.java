@@ -30,8 +30,10 @@ import hudson.Extension;
 import hudson.Plugin;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,14 +45,14 @@ import java.util.Set;
  */
 public class RequirePluginsStep extends Step {
 
-    private final String plugins;
+    private final List<String> plugins;
 
     @DataBoundConstructor
-    public RequirePluginsStep(String plugins) {
+    public RequirePluginsStep(List<String> plugins) {
         this.plugins = plugins;
     }
 
-    public String getPlugins() {
+    public List<String> getPlugins() {
         return plugins;
     }
 
@@ -76,6 +78,18 @@ public class RequirePluginsStep extends Step {
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
+
+        @Override public Step newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            String pluginsString = formData.getString("plugins");
+            List<String> plugins = new ArrayList<>();
+            for (String line : pluginsString.split("\r?\n")) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    plugins.add(line);
+                }
+            }
+            return new RequirePluginsStep(plugins);
+        }
     }
 
     public static class Execution extends SynchronousStepExecution<Void> {
@@ -83,9 +97,9 @@ public class RequirePluginsStep extends Step {
         private static final long serialVersionUID = 1L;
 
         @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String plugins;
+        private transient final List<String> plugins;
 
-        Execution(String plugins, StepContext context) {
+        Execution(List<String> plugins, StepContext context) {
             super(context);
             this.plugins = plugins;
         }
@@ -93,11 +107,10 @@ public class RequirePluginsStep extends Step {
         @Override
         protected Void run() throws Exception {
 
-            String[] pluginIds = plugins.split("[, ]");
             List<String> absentIds = new ArrayList<>();
             List<String> insufficientVersionIds = new ArrayList<>();
 
-            for (String pluginSpec : pluginIds) {
+            for (String pluginSpec : plugins) {
                 if(StringUtils.isBlank(pluginSpec)) {
                     continue;
                 }
