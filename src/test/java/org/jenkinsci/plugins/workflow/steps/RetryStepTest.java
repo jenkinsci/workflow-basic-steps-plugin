@@ -31,7 +31,7 @@ public class RetryStepTest {
     public void abortShouldNotRetry() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; sleep 10; echo 'NotHere' }", false));
+                "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; echo 'NotHere' }", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("start/1", b);
         b.doStop();

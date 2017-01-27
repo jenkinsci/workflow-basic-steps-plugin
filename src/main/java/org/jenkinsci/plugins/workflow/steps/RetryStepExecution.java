@@ -67,13 +67,11 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
             try {
                 Run run = context.get(Run.class);
                 if (run != null && t instanceof FlowInterruptedException) {
-                    InterruptedBuildAction action = run.getAction(InterruptedBuildAction.class);
-                    if (action != null) {
-                        for (CauseOfInterruption cause : action.getCauses()) {
-                            if (cause instanceof CauseOfInterruption.UserInterruption) {
-                                context.onFailure(t);
-                                return;
-                            }
+                    FlowInterruptedException fie = (FlowInterruptedException) t;
+                    for (CauseOfInterruption cause : fie.getCauses()) {
+                        if (cause instanceof CauseOfInterruption.UserInterruption) {
+                            context.onFailure(t);
+                            return;
                         }
                     }
                 }
