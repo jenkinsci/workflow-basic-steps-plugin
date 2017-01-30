@@ -12,8 +12,6 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.io.IOException;
-
 import static org.junit.Assert.*;
 
 /**
@@ -31,7 +29,7 @@ public class RetryStepTest {
     public void abortShouldNotRetry() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; echo 'NotHere' }", true));
+                "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; echo 'NotHere' } echo 'NotHere'", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("start/1", b);
         b.doStop();
