@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
+import hudson.model.queue.QueueTaskFuture;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -23,6 +24,57 @@ public class RetryStepTest {
     public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule
     public JenkinsRule r = new JenkinsRule();
+
+    @Test
+    public void smokes() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+            "int i = 0;\n" +
+            "retry(3) {\n" +
+            "    println 'Trying!'\n" +
+            "    if (i++ < 2) error('oops');\n" +
+            "    println 'Done!'\n" +
+            "}\n" +
+            "println 'Over!'"
+        , true));
+
+        QueueTaskFuture<WorkflowRun> f = p.scheduleBuild2(0);
+        WorkflowRun b = r.assertBuildStatusSuccess(f);
+
+        String log = JenkinsRule.getLog(b);
+        r.assertLogNotContains("\tat ", b);
+
+        int idx = 0;
+        for (String msg : new String[] {
+            "Trying!",
+            "oops",
+            "Retrying",
+            "Trying!",
+            "oops",
+            "Retrying",
+            "Trying!",
+            "Done!",
+            "Over!",
+        }) {
+            idx = log.indexOf(msg, idx + 1);
+            assertTrue(msg + " not found", idx != -1);
+        }
+
+        idx = 0;
+        for (String msg : new String[] {
+            "[Pipeline] retry",
+            "[Pipeline] {",
+            "[Pipeline] }",
+            "[Pipeline] {",
+            "[Pipeline] }",
+            "[Pipeline] {",
+            "[Pipeline] }",
+            "[Pipeline] // retry",
+        }) {
+            idx = log.indexOf(msg, idx + 1);
+            assertTrue(msg + " not found", idx != -1);
+        }
+    }
 
     @Test(timeout = 50000)
     @Issue("JENKINS-41276")
