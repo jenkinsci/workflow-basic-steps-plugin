@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.model.TaskListener;
+import jenkins.model.CauseOfInterruption;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -61,6 +62,14 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
         @Override
         public void onFailure(StepContext context, Throwable t) {
             try {
+                if (t instanceof FlowInterruptedException) {
+                    for (CauseOfInterruption cause : ((FlowInterruptedException) t).getCauses()) {
+                        if (cause instanceof CauseOfInterruption.UserInterruption) {
+                            context.onFailure(t);
+                            return;
+                        }
+                    }
+                }
                 left--;
                 if (left>0) {
                     TaskListener l = context.get(TaskListener.class);
