@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
+import hudson.Functions;
 import hudson.model.TaskListener;
 import jenkins.model.CauseOfInterruption;
 
@@ -76,7 +77,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                     if (t instanceof AbortException) {
                         l.error(t.getMessage());
                     } else {
-                        t.printStackTrace(l.error("Execution failed"));
+                        l.error("Execution failed").println(Functions.printThrowable(t).trim()); // TODO 2.43+ use Functions.printStackTrace
                     }
                     l.getLogger().println("Retrying");
                     context.newBodyInvoker().withCallback(this).start();

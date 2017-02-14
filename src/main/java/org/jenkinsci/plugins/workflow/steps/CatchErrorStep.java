@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import com.google.common.collect.ImmutableSet;
 import hudson.AbortException;
 import hudson.Extension;
+import hudson.Functions;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -106,7 +107,7 @@ public final class CatchErrorStep extends Step {
                         fie.handle(context.get(Run.class), listener);
                         r = fie.getResult();
                     } else {
-                        t.printStackTrace(listener.getLogger());
+                        listener.getLogger().println(Functions.printThrowable(t).trim()); // TODO 2.43+ use Functions.printStackTrace
                     }
                     context.get(Run.class).setResult(r);
                     context.onSuccess(null);
