@@ -31,6 +31,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class ReadWriteFileStepTest {
@@ -66,5 +67,39 @@ public class ReadWriteFileStepTest {
 		r.assertLogContains("test.txt - FileExists: false", run); 
 		r.assertLogContains("test2.txt - FileExists: true", run);
 		r.assertBuildStatusSuccess(run);
+    }
+
+    @Issue(("JENKINS-27094"))
+    @Test
+    public void readAndwriteFileUsesCorrectEncoding() throws Exception
+    {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        boolean win = Functions.isWindows();
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  def text = 'HELLO'\n" +
+                        "  writeFile file: 'f1', text: text, encoding: 'utf-32le'\n" +
+                        "  def text2 = readFile file: 'f1', encoding: 'utf-32le'\n" +
+                        "  echo text2\n" +
+                        "}"));
+        r.assertLogContains("HELLO", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+    }
+
+
+
+
+    @Issue(("JENKINS-27094"))
+    @Test
+    public void testKnownCharsetRoundtrip() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        boolean win = Functions.isWindows();
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  def text = 'HELLO'\n" +
+                        "  writeFile file: 'f1', text: '¤', encoding: 'iso-8859-1'\n" +
+                        "  def text2 = readFile file: 'f1', encoding: 'iso-8859-15'\n" +
+                        "  echo text2\n" +
+                        "}"));
+        r.assertLogContains("€", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 }
