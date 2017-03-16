@@ -28,6 +28,7 @@ import com.google.common.base.Function;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.util.ListBoxModel;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -36,13 +37,45 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import jenkins.util.Timer;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public final class WaitForConditionStep extends Step {
+    
+    static final long DEFAULT_MIN_RECURRENCE_PERIOD = 250; // ¼s
+    static final long DEFAULT_MAX_RECURRENCE_PERIOD = 15000; // ¼min
+    
+    private long minRecurrencePeriod = DEFAULT_MIN_RECURRENCE_PERIOD;
+    private long maxRecurrencePeriod = DEFAULT_MAX_RECURRENCE_PERIOD;
+    private TimeUnit unit = TimeUnit.MILLISECONDS;
+    
+    @DataBoundConstructor
+    public WaitForConditionStep() {}
 
-    @DataBoundConstructor public WaitForConditionStep() {}
+    @DataBoundSetter
+    public void setUnit(TimeUnit unit) {
+        this.unit = unit;
+    }
+
+    @DataBoundSetter    
+    public void setMinRecurrencePeriod(long minRecurrencePeriod) {
+        this.minRecurrencePeriod = minRecurrencePeriod;
+    }
+    
+    @DataBoundSetter    
+    public void setMaxRecurrencePeriod(long maxRecurrencePeriod) {
+        this.maxRecurrencePeriod = maxRecurrencePeriod;
+    }
+
+    public long getMinRecurrencePeriod() {
+        return minRecurrencePeriod;
+    }
+
+    public long getMaxRecurrencePeriod() {
+        return maxRecurrencePeriod;
+    }
 
     @Override public StepExecution start(StepContext context) throws Exception {
-        return new Execution(context);
+        return new Execution(this, context);
     }
 
     public static final class Execution extends AbstractStepExecutionImpl {
@@ -56,16 +89,19 @@ public final class WaitForConditionStep extends Step {
          */
         private final String id = UUID.randomUUID().toString();
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
-        static final long MIN_RECURRENCE_PERIOD = 250; // ¼s
-        static final long MAX_RECURRENCE_PERIOD = 15000; // ¼min
-        long recurrencePeriod = MIN_RECURRENCE_PERIOD;
-
-        Execution(StepContext context) {
+        long currentRecurrencePeriod;
+        long maxRecurrencePeriod;
+        private transient final WaitForConditionStep step;
+        
+        Execution(WaitForConditionStep step, StepContext context) {
             super(context);
+            this.step = step;
         }
 
         @Override public boolean start() throws Exception {
             body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
+            this.currentRecurrencePeriod = step.unit.toMillis(step.getMinRecurrencePeriod());
+            this.maxRecurrencePeriod = step.unit.toMillis(step.getMaxRecurrencePeriod());
             return false;
         }
 
@@ -80,7 +116,6 @@ public final class WaitForConditionStep extends Step {
         }
 
         @Override public void onResume() {
-            recurrencePeriod = MIN_RECURRENCE_PERIOD;
             if (body == null) {
                 // Restarted while waiting for the timer to go off. Rerun now.
                 body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
@@ -102,7 +137,7 @@ public final class WaitForConditionStep extends Step {
             body = null;
             getContext().saveState();
             try {
-                perBodyContext.get(TaskListener.class).getLogger().println("Will try again after " + Util.getTimeSpanString(recurrencePeriod));
+                perBodyContext.get(TaskListener.class).getLogger().println("Will try again after " + Util.getTimeSpanString(currentRecurrencePeriod));
             } catch (Exception x) {
                 getContext().onFailure(x);
                 return;
@@ -112,8 +147,8 @@ public final class WaitForConditionStep extends Step {
                     task = null;
                     body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
                 }
-            }, recurrencePeriod, TimeUnit.MILLISECONDS);
-            recurrencePeriod = Math.min((long)(recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
+            }, currentRecurrencePeriod, TimeUnit.MILLISECONDS);
+            currentRecurrencePeriod = Math.min((long)(currentRecurrencePeriod * RECURRENCE_PERIOD_BACKOFF), maxRecurrencePeriod);
         }
 
         @Override public String getStatus() {
@@ -126,7 +161,7 @@ public final class WaitForConditionStep extends Step {
             } else if (task.isCancelled()) {
                 return "scheduled task was cancelled";
             } else {
-                return "waiting to rerun; next recurrence period: " + recurrencePeriod + "ms";
+                return "waiting to rerun; next recurrence period: " + currentRecurrencePeriod + "ms";
             }
         }
 
@@ -171,6 +206,14 @@ public final class WaitForConditionStep extends Step {
 
         @Override public boolean takesImplicitBlockArgument() {
             return true;
+        }
+        
+        public ListBoxModel doFillUnitItems() {
+            ListBoxModel r = new ListBoxModel();
+            for (TimeUnit unit : TimeUnit.values()) {
+                r.add(unit.name());
+            }
+            return r;
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
