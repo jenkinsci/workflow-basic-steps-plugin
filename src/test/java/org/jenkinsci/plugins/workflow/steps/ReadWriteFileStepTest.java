@@ -74,7 +74,6 @@ public class ReadWriteFileStepTest {
     public void readAndwriteFileUsesCorrectEncoding() throws Exception
     {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        boolean win = Functions.isWindows();
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
                         "  def text = 'HELLO'\n" +
@@ -92,7 +91,6 @@ public class ReadWriteFileStepTest {
     @Test
     public void testKnownCharsetRoundtrip() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        boolean win = Functions.isWindows();
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
                         "  def text = 'HELLO'\n" +
