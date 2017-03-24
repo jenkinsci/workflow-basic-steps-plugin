@@ -111,11 +111,7 @@ public final class CoreStep extends Step {
             return r;
         }
         private <T extends Describable<T>,D extends Descriptor<T>> void populate(List<Descriptor<?>> r, Class<T> c) {
-            Jenkins j = Jenkins.getInstance();
-            if (j == null) {
-                return;
-            }
-            for (Descriptor<?> d : j.getDescriptorList(c)) {
+            for (Descriptor<?> d : Jenkins.getActiveInstance().getDescriptorList(c)) {
                 if (SimpleBuildStep.class.isAssignableFrom(d.clazz)) {
                     r.add(d);
                 }

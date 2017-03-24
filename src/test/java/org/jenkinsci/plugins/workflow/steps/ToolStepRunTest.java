@@ -46,6 +46,7 @@ import org.jvnet.hudson.test.ToolInstallations;
 import java.io.File;
 import java.util.List;
 import java.util.Set;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 
 public class ToolStepRunTest {
 
@@ -69,10 +70,11 @@ public class ToolStepRunTest {
         }
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'; sh \"M2_HOME=${home} ${home}/bin/mvn -version\"}",
+        ScriptApproval.get().approveSignature("staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods split java.lang.String"); // TODO pending https://github.com/jenkinsci/script-security-plugin/pull/113
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'; def settings = readFile($/$home/conf/settings.xml/$).split(); echo settings[-1]}",
                 true));
 
-        r.assertLogContains("Apache Maven 3", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        r.assertLogContains("</settings>", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     @Test public void toolWithSymbol() throws Exception {

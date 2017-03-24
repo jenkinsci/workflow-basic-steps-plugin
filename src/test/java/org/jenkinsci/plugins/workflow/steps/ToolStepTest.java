@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.JDK;
+import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
@@ -36,7 +37,8 @@ public class ToolStepTest {
 
     @Test public void configRoundTrip() throws Exception {
         String name = "My JDK";
-        String type = r.jenkins.getDescriptorByType(JDK.DescriptorImpl.class).getId();
+        JDK.DescriptorImpl desc = r.jenkins.getDescriptorByType(JDK.DescriptorImpl.class);
+        String type = desc.getId();
         r.jenkins.getJDKs().add(new JDK(name, "/wherever"));
         ToolStep s = new StepConfigTester(r).configRoundTrip(new ToolStep(name));
         assertEquals(name, s.getName());
@@ -44,7 +46,9 @@ public class ToolStepTest {
         s.setType(type);
         s = new StepConfigTester(r).configRoundTrip(s);
         assertEquals(name, s.getName());
-        assertEquals(type, s.getType());
+        if (SymbolLookup.getSymbolValue(desc).isEmpty()) {
+            assertEquals(type, s.getType());
+        } // else (Jenkins 2.x) StepConfigTester does not make sense since in real life we would not read an existing value (an ID) into a pulldown listing only symbols
     }
 
 }

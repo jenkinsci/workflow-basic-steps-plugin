@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.Functions;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -46,19 +47,19 @@ public class EnvStepRunTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "env.CUSTOM = 'initial'\n" +
-                    "env.FOOPATH = '/opt/foos'\n" +
+                    "env.FOOPATH = node {isUnix() ? '/opt/foos' : 'C:\\\\foos'}\n" +
                     "env.NULLED = 'outside'\n" +
                     "node {\n" +
-                    "  withEnv(['CUSTOM=override', 'NOVEL=val', 'BUILD_TAG=custom', 'NULLED=', 'FOOPATH+BALL=/opt/ball']) {\n" +
-                    "    sh 'echo inside CUSTOM=$CUSTOM NOVEL=$NOVEL BUILD_TAG=$BUILD_TAG NULLED=$NULLED FOOPATH=$FOOPATH:'\n" +
+                    "  withEnv(['CUSTOM=override', 'NOVEL=val', 'BUILD_TAG=custom', 'NULLED=', isUnix() ? 'FOOPATH+BALL=/opt/ball' : 'FOOPATH+BALL=C:\\\\ball']) {\n" +
+                    "    isUnix() ? sh('echo inside CUSTOM=$CUSTOM NOVEL=$NOVEL BUILD_TAG=$BUILD_TAG NULLED=$NULLED FOOPATH=$FOOPATH:') : bat('echo inside CUSTOM=%CUSTOM% NOVEL=%NOVEL% BUILD_TAG=%BUILD_TAG% NULLED=%NULLED% FOOPATH=%FOOPATH%;')\n" +
                     "    echo \"groovy NULLED=${env.NULLED}\"\n" +
                     "  }\n" +
-                    "  sh 'echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside:'\n" +
-                    "}"));
+                    "  isUnix() ? sh('echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside') : bat('echo outside CUSTOM=%CUSTOM% NOVEL=%NOVEL% NULLED=outside')\n" +
+                    "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
+                story.j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
                 story.j.assertLogContains("groovy NULLED=null", b);
-                story.j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside:", b);
+                story.j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside", b);
             }
         });
     }
@@ -69,10 +70,10 @@ public class EnvStepRunTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "parallel a: {\n" +
-                    "  node {withEnv(['TOOL=aloc']) {semaphore 'a'; sh 'echo TOOL=$TOOL'}}\n" +
+                    "  node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo TOOL=$TOOL') : bat('echo TOOL=%TOOL%')}}\n" +
                     "}, b: {\n" +
-                    "  node {withEnv(['TOOL=bloc']) {semaphore 'b'; sh 'echo TOOL=$TOOL'}}\n" +
-                    "}"));
+                    "  node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo TOOL=$TOOL') : bat('echo TOOL=%TOOL%')}}\n" +
+                    "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("a/1", b);
                 SemaphoreStep.waitForStart("b/1", b);
@@ -92,7 +93,7 @@ public class EnvStepRunTest {
                 p.setDefinition(new CpsFlowDefinition(
                     "def show(which) {\n" +
                     "  echo \"groovy ${which} ${env.TESTVAR}:\"\n" +
-                    "  sh \"echo shell ${which} \\$TESTVAR:\"\n" +
+                    "  isUnix() ? sh(\"echo shell ${which} \\$TESTVAR:\") : bat(\"echo shell ${which} %TESTVAR%:\")\n" +
                     "}\n" +
                     "node {\n" +
                     "  withEnv(['TESTVAR=val']) {\n" +
@@ -101,7 +102,7 @@ public class EnvStepRunTest {
                     "    show 'after'\n" +
                     "  }\n" +
                     "  show 'outside'\n" +
-                    "}"));
+                    "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
             }
@@ -128,7 +129,7 @@ public class EnvStepRunTest {
                     "node {\n" +
                     "  withEnv(['A=one']) {\n" +
                     "    withEnv(['B=two']) {\n" +
-                    "      sh 'echo A=$A B=$B'\n" +
+                    "      isUnix() ? sh('echo A=$A B=$B') : bat('echo A=%A% B=%B%')\n" +
                     "    }\n" +
                     "  }\n" +
                     "}"));
