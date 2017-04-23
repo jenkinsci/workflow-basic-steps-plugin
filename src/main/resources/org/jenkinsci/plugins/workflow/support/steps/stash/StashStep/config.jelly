@@ -37,4 +37,7 @@ THE SOFTWARE.
     <f:entry field="useDefaultExcludes" title="Use Default Ant Excludes">
         <f:checkbox default="true" />
     </f:entry>
+    <f:entry field="allowEmpty" title="Allow empty stash">
+        <f:checkbox default="false" />
+    </f:entry>
 </j:jelly>
