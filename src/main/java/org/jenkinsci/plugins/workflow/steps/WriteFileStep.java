@@ -91,7 +91,7 @@ public final class WriteFileStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            getContext().get(FilePath.class).child(step.file).write(step.text, /* TODO consider specifying encoding */ null);
+            getContext().get(FilePath.class).child(step.file).write(step.text, step.encoding);
             return null;
         }
 
