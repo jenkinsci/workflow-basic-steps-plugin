@@ -92,4 +92,22 @@ public class StashTest {
         r.assertLogContains("gitignore exists? true", b);
         r.assertLogContains("gitignore does not exist? false", b);
     }
+
+    @Issue("JENKINS-37327")
+    @Test public void testAllowEmpty() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  stash name: 'whatever', allowEmpty: true\n" +
+                        "  semaphore 'ending'\n" +
+                        "}\n"
+                        , true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ending/1", b);
+        assertEquals("{whatever={}}", StashManager.stashesOf(b).toString());
+        SemaphoreStep.success("ending/1", null);
+        r.assertBuildStatusSuccess(r.waitForCompletion(b));
+        r.assertLogContains("Stashed 0 file(s)", b);
+        assertEquals("{}", StashManager.stashesOf(b).toString());
+    }
 }

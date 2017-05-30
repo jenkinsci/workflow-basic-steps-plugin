@@ -63,7 +63,7 @@
     </pluginRepositories>
     <properties>
         <jenkins.version>1.642.3</jenkins.version>
-        <workflow-step-api-plugin.version>2.9</workflow-step-api-plugin.version>
+        <workflow-step-api-plugin.version>2.10</workflow-step-api-plugin.version>
         <workflow-cps-plugin.version>2.30</workflow-cps-plugin.version>
         <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
     </properties>
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>2.11</version>
+            <version>2.16</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jenkins-ci.plugins</groupId>

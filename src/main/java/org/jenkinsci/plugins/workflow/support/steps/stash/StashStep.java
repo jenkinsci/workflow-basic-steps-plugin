@@ -50,6 +50,7 @@ public class StashStep extends Step {
     private @CheckForNull String includes;
     private @CheckForNull String excludes;
     private boolean useDefaultExcludes = true;
+    private boolean allowEmpty = false;
 
     @DataBoundConstructor public StashStep(@Nonnull String name) {
         Jenkins.checkGoodName(name);
@@ -84,6 +85,14 @@ public class StashStep extends Step {
         this.useDefaultExcludes = useDefaultExcludes;
     }
 
+    public boolean isAllowEmpty() {
+        return allowEmpty;
+    }
+
+    @DataBoundSetter public void setAllowEmpty(boolean allowEmpty) {
+        this.allowEmpty = allowEmpty;
+    }
+
     @Override public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
@@ -101,7 +110,7 @@ public class StashStep extends Step {
 
         @Override protected Void run() throws Exception {
             StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(TaskListener.class), step.includes, step.excludes,
-                    step.useDefaultExcludes);
+                    step.useDefaultExcludes, step.allowEmpty);
             return null;
         }
 
