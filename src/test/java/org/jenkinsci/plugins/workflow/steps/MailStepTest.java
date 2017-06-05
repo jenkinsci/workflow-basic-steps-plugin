@@ -23,10 +23,17 @@
  */
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.model.Result;
+import javax.mail.Message;
+import javax.mail.internet.MimeMultipart;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.mock_javamail.Mailbox;
 
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
@@ -35,6 +42,53 @@ public class MailStepTest {
 
     @Rule
     public JenkinsRule r = new JenkinsRule();
+
+    @Test
+    public void test_missing_subject() throws Exception {
+        WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
+        // leave out the subject
+        job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', body: 'body');", true));
+
+        WorkflowRun run = r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
+        r.assertLogContains("Email not sent. All mandatory properties must be supplied ('subject', 'body').", run);
+    }
+
+    @Test
+    public void test_missing_body() throws Exception {
+        WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
+        // leave out the body
+        job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', subject: 'subject');", true));
+
+        WorkflowRun run = r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
+        r.assertLogContains("Email not sent. All mandatory properties must be supplied ('subject', 'body').", run);
+    }
+
+    @Test
+    public void test_missing_recipient() throws Exception {
+        WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
+        // leave out the subject and body
+        job.setDefinition(new CpsFlowDefinition("mail(subject: 'Hello friend', body: 'Missing you!');", true));
+
+        WorkflowRun run = r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
+        r.assertLogContains("Email not sent. No recipients of any kind specified ('to', 'cc', 'bcc').", run);
+    }
+
+    @Test
+    public void test_send() throws Exception {
+        Mailbox.clearAll();
+
+        WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
+        job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', subject: 'Hello friend', body: 'Missing you!');", true));
+
+        r.assertBuildStatusSuccess(job.scheduleBuild2(0));
+
+        Mailbox mailbox = Mailbox.get("tom.abcd@jenkins.org");
+        Assert.assertEquals(1, mailbox.getNewMessageCount());
+        Message message = mailbox.get(0);
+        Assert.assertEquals("Hello friend", message.getSubject());
+        Assert.assertEquals("Missing you!", ((MimeMultipart)message.getContent()).getBodyPart(0).getContent().toString());
+
+    }
 
     @Test
     public void configRoundTrip() throws Exception {
