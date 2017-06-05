@@ -29,24 +29,22 @@ import hudson.tasks.Maven;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolProperty;
+import java.io.File;
+import java.util.List;
+import java.util.Set;
 import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.ClassRule;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.ToolInstallations;
-
-import java.io.File;
-import java.util.List;
-import java.util.Set;
-import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 
 public class ToolStepRunTest {
 
@@ -70,7 +68,6 @@ public class ToolStepRunTest {
         }
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        ScriptApproval.get().approveSignature("staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods split java.lang.String"); // TODO pending https://github.com/jenkinsci/script-security-plugin/pull/113
         p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'; def settings = readFile($/$home/conf/settings.xml/$).split(); echo settings[-1]}",
                 true));
 
