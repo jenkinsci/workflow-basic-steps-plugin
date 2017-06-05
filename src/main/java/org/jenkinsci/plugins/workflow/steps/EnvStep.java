@@ -76,8 +76,14 @@ public class EnvStep extends Step {
         }
         
         @Override public boolean start() throws Exception {
+            Map<String, String> overridesM = new HashMap<>();
+            for (String pair : overrides) {
+                int split = pair.indexOf('=');
+                assert split != -1;
+                overridesM.put(pair.substring(0, split), pair.substring(split + 1));
+            }
             getContext().newBodyInvoker().
-                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new ExpanderImpl(overrides))).
+                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), EnvironmentExpander.constant(overridesM))).
                 withCallback(BodyExecutionCallback.wrap(getContext())).
                 start();
             return false;
@@ -90,18 +96,11 @@ public class EnvStep extends Step {
         @Override public void onResume() {}
 
     }
-    
+
+    @Deprecated // kept only for serial compatibility
     private static final class ExpanderImpl extends EnvironmentExpander {
         private static final long serialVersionUID = 1;
-        private final Map<String,String> overrides;
-        private ExpanderImpl(List<String> overrides) {
-            this.overrides = new HashMap<>();
-            for (String pair : overrides) {
-                int split = pair.indexOf('=');
-                assert split != -1;
-                this.overrides.put(pair.substring(0, split), pair.substring(split + 1));
-            }
-        }
+        private Map<String,String> overrides;
         @Override public void expand(EnvVars env) throws IOException, InterruptedException {
             env.overrideAll(overrides);
         }

@@ -107,6 +107,7 @@ public class CoreWrapperStep extends Step {
             this.overrides = /* ensure serializability*/ new HashMap<>(overrides);
         }
         @Override public void expand(EnvVars env) throws IOException, InterruptedException {
+            // Distinct from EnvironmentExpander.constant since we are also expanding variables.
             env.overrideExpandingAll(overrides);
         }
     }
