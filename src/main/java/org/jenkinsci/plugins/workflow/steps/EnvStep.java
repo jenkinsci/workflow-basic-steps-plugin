@@ -97,6 +97,7 @@ public class EnvStep extends Step {
 
     }
 
+    @SuppressFBWarnings(value="UWF_UNWRITTEN_FIELD", justification="no longer used")
     @Deprecated // kept only for serial compatibility
     private static final class ExpanderImpl extends EnvironmentExpander {
         private static final long serialVersionUID = 1;
