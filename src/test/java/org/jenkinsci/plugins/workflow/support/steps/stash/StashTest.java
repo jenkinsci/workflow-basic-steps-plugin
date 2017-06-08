@@ -67,7 +67,7 @@ public class StashTest {
         SemaphoreStep.success("ending/1", null);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("got fname: whatever other: more", b);
-        assertEquals("{}", StashManager.stashesOf(b).toString());
+        assertEquals("{}", StashManager.stashesOf(b).toString()); // TODO flake expected:<{[]}> but was:<{[from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}]}>
     }
 
     @Issue("JENKINS-31086")
