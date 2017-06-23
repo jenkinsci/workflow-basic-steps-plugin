@@ -114,9 +114,6 @@ public class CoreStepTest {
         assertNotNull(a);
         assertEquals(4, a.getTotalCount());
         assertEquals(1, a.getFailCount());
-        /* TODO impossible prior to JENKINS-31582:
-        r.assertLogContains("[Pipeline] junit", b);
-        */
     }
 
     @Test public void javadoc() throws Exception {
