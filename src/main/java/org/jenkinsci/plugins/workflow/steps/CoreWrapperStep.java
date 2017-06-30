@@ -161,6 +161,11 @@ public class CoreWrapperStep extends Step {
             return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class, EnvVars.class);
         }
 
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Map<String, Object> delegateArguments = CoreStep.DescriptorImpl.delegateArguments(namedArgs.get("delegate"));
+            return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
+        }
+
     }
 
 }

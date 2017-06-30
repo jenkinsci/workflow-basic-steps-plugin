@@ -36,6 +36,7 @@ import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.util.ListBoxModel;
+import java.util.Map;
 
 import javax.annotation.CheckForNull;
 
@@ -120,6 +121,11 @@ public final class ToolStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object name = namedArgs.get("name");
+            return name instanceof String ? (String) name : null;
         }
 
     }

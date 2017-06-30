@@ -32,9 +32,14 @@ import hudson.tasks.junit.TestResultAction;
 import java.util.List;
 import javax.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
+import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import static org.junit.Assert.*;
@@ -108,12 +113,15 @@ public class CoreStepTest {
                 + "    writeFile text: '''<testsuite name='a'><testcase name='a1'/><testcase name='a2'><error>a2 failed</error></testcase></testsuite>''', file: 'a.xml'\n"
                 + "    writeFile text: '''<testsuite name='b'><testcase name='b1'/><testcase name='b2'/></testsuite>''', file: 'b.xml'\n"
                 + "    junit '*.xml'\n"
-                + "}"));
+                + "}", true));
         WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0).get());
         TestResultAction a = b.getAction(TestResultAction.class);
         assertNotNull(a);
         assertEquals(4, a.getTotalCount());
         assertEquals(1, a.getFailCount());
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("step"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals("*.xml", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
     @Test public void javadoc() throws Exception {
@@ -122,9 +130,12 @@ public class CoreStepTest {
                   "node {\n"
                 + "    writeFile text: 'hello world', file: 'docs/index.html'\n"
                 + "    step([$class: 'JavadocArchiver', javadocDir: 'docs'])\n"
-                + "}"));
-        r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                + "}", true));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         assertEquals("hello world", r.createWebClient().getPage(p, "javadoc/").getWebResponse().getContentAsString());
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("step"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals("docs", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
     @Test public void mailer() throws Exception {

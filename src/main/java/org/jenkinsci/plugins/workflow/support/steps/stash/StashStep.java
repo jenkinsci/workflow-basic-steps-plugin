@@ -30,6 +30,7 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Map;
 import java.util.Set;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
@@ -128,6 +129,11 @@ public class StashStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, FilePath.class, TaskListener.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object name = namedArgs.get("name");
+            return name instanceof String ? (String) name : null;
         }
 
     }

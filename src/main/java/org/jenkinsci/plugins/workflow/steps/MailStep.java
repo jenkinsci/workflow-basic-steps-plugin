@@ -28,6 +28,7 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
 
@@ -113,6 +114,11 @@ public class MailStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object subject = namedArgs.get("subject");
+            return subject instanceof String ? (String) subject : null;
         }
     }
 

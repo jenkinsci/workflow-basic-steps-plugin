@@ -34,10 +34,16 @@ import java.io.File;
 import java.util.List;
 import java.util.Set;
 import jenkins.model.Jenkins;
+import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -72,7 +78,11 @@ public class ToolStepTest {
         p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'; def settings = readFile($/$home/conf/settings.xml/$).split(); echo settings[-1]}",
                 true));
 
-        r.assertLogContains("</settings>", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.assertLogContains("</settings>", b);
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("tool"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals(name, ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
     @Test public void toolWithSymbol() throws Exception {
