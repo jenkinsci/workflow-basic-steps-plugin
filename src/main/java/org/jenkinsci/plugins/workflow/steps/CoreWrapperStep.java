@@ -162,7 +162,8 @@ public class CoreWrapperStep extends Step {
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {
-            return super.argumentsToString(CoreStep.DescriptorImpl.delegateArguments(namedArgs.get("delegate")));
+            Map<String, Object> delegateArguments = CoreStep.DescriptorImpl.delegateArguments(namedArgs.get("delegate"));
+            return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
         }
 
     }

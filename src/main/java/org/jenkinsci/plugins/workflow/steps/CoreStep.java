@@ -125,7 +125,8 @@ public final class CoreStep extends Step {
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {
-            return super.argumentsToString(delegateArguments(namedArgs.get("delegate")));
+            Map<String, Object> delegateArguments = delegateArguments(namedArgs.get("delegate"));
+            return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
         }
 
         @SuppressWarnings("unchecked")
