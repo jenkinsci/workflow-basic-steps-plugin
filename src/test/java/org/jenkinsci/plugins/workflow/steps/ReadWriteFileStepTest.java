@@ -25,10 +25,18 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Functions;
+import java.util.List;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
@@ -48,8 +56,12 @@ public class ReadWriteFileStepTest {
                 "  text = text.toUpperCase()\n" +
                 "  writeFile file: 'f2', text: text\n" +
                 (win ? "  bat 'type f2'\n" : "  sh 'cat f2'\n") +
-                "}"));
-        r.assertLogContains("HELLO", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+                "}", true));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.assertLogContains("HELLO", b);
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("writeFile"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals("f2", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
 	@Test

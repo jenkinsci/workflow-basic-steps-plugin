@@ -24,15 +24,24 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import hudson.Functions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,6 +73,13 @@ public class EnvStepTest {
                 story.j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
                 story.j.assertLogContains("groovy NULLED=null", b);
                 story.j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside", b);
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), Predicates.and(new NodeStepTypePredicate("withEnv"), new Predicate<FlowNode>() {
+                    @Override public boolean apply(FlowNode n) {
+                        return n instanceof StepStartNode && !((StepStartNode) n).isBody();
+                    }
+                }));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("CUSTOM, NOVEL, BUILD_TAG, NULLED, FOOPATH+BALL", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
             }
         });
     }

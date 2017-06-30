@@ -29,6 +29,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.slaves.WorkspaceList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -74,6 +75,10 @@ public class PwdStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(FilePath.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            return null; // "true" is not a reasonable description
         }
 
     }

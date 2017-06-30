@@ -81,6 +81,8 @@ public class TimeoutStep extends Step implements Serializable {
             return Collections.singleton(TaskListener.class);
         }
 
+        // TODO argumentsToString as for SleepStep
+
     }
 
     private static final long serialVersionUID = 1L;

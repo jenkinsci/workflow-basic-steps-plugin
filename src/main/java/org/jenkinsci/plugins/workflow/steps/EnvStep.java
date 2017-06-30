@@ -138,6 +138,27 @@ public class EnvStep extends Step {
             return Collections.emptySet();
         }
 
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object overrides = namedArgs.get("overrides");
+            if (overrides instanceof List) {
+                StringBuilder b = new StringBuilder();
+                for (Object pair : (List) overrides) {
+                    if (pair instanceof String) {
+                        int idx = ((String) pair).indexOf('=');
+                        if (idx > 0) {
+                            if (b.length() > 0) {
+                                b.append(", ");
+                            }
+                            b.append(((String) pair).substring(0, idx));
+                        }
+                    }
+                }
+                return b.toString();
+            } else {
+                return null;
+            }
+        }
+
     }
 
 }

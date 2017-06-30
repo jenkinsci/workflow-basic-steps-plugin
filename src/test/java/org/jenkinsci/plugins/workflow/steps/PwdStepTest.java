@@ -26,8 +26,17 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.FilePath;
 import hudson.slaves.WorkspaceList;
+import java.util.List;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -50,7 +59,11 @@ public class PwdStepTest {
     @Test public void tmp() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {echo \"tmp='${pwd tmp: true}'\"}", true));
-        r.assertLogContains("tmp='" + tempDir(r.jenkins.getWorkspaceFor(p)) + "'", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.assertLogContains("tmp='" + tempDir(r.jenkins.getWorkspaceFor(p)) + "'", b);
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("pwd"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals(null, ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
 }
