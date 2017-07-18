@@ -89,8 +89,9 @@ public final class WaitForConditionStep extends Step {
          */
         private final String id = UUID.randomUUID().toString();
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
-        long currentRecurrencePeriod;
+        long recurrencePeriod;
         long maxRecurrencePeriod;
+        long minRecurrencePeriod;
         private transient final WaitForConditionStep step;
         
         Execution(WaitForConditionStep step, StepContext context) {
@@ -100,8 +101,11 @@ public final class WaitForConditionStep extends Step {
 
         @Override public boolean start() throws Exception {
             body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
-            this.currentRecurrencePeriod = step.unit.toMillis(step.getMinRecurrencePeriod());
+            this.recurrencePeriod = step.unit.toMillis(step.getMinRecurrencePeriod());
             this.maxRecurrencePeriod = step.unit.toMillis(step.getMaxRecurrencePeriod());
+            // When we resume, we won't have the step any longer, so we reset the
+            // recurrence period from this.
+            this.minRecurrencePeriod = step.unit.toMillis(step.getMinRecurrencePeriod());
             return false;
         }
 
@@ -116,6 +120,7 @@ public final class WaitForConditionStep extends Step {
         }
 
         @Override public void onResume() {
+            this.recurrencePeriod = this.minRecurrencePeriod;
             if (body == null) {
                 // Restarted while waiting for the timer to go off. Rerun now.
                 body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
@@ -137,7 +142,7 @@ public final class WaitForConditionStep extends Step {
             body = null;
             getContext().saveState();
             try {
-                perBodyContext.get(TaskListener.class).getLogger().println("Will try again after " + Util.getTimeSpanString(currentRecurrencePeriod));
+                perBodyContext.get(TaskListener.class).getLogger().println("Will try again after " + Util.getTimeSpanString(recurrencePeriod));
             } catch (Exception x) {
                 getContext().onFailure(x);
                 return;
@@ -147,8 +152,8 @@ public final class WaitForConditionStep extends Step {
                     task = null;
                     body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
                 }
-            }, currentRecurrencePeriod, TimeUnit.MILLISECONDS);
-            currentRecurrencePeriod = Math.min((long)(currentRecurrencePeriod * RECURRENCE_PERIOD_BACKOFF), maxRecurrencePeriod);
+            }, recurrencePeriod, TimeUnit.MILLISECONDS);
+            recurrencePeriod = Math.min((long)(recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), maxRecurrencePeriod);
         }
 
         @Override public String getStatus() {
@@ -161,7 +166,7 @@ public final class WaitForConditionStep extends Step {
             } else if (task.isCancelled()) {
                 return "scheduled task was cancelled";
             } else {
-                return "waiting to rerun; next recurrence period: " + currentRecurrencePeriod + "ms";
+                return "waiting to rerun; next recurrence period: " + recurrencePeriod + "ms";
             }
         }
 

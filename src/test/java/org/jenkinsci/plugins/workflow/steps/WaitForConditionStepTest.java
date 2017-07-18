@@ -192,9 +192,9 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.success("wait/1", false);
                 SemaphoreStep.waitForStart("wait/2", b);
                 final long LONG_TIME = Long.MAX_VALUE / /* > RECURRENCE_PERIOD_BACKOFF */ 10;
-                executions.get(0).currentRecurrencePeriod = LONG_TIME;
+                executions.get(0).recurrencePeriod = LONG_TIME;
                 SemaphoreStep.success("wait/2", false);
-                while (executions.get(0).currentRecurrencePeriod == LONG_TIME) {
+                while (executions.get(0).recurrencePeriod == LONG_TIME) {
                     Thread.sleep(100);
                 }
                 story.j.waitForMessage("Will try again after " + Util.getTimeSpanString(LONG_TIME), b);
