@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import com.google.common.base.Function;
 import hudson.Extension;
 import hudson.Util;
+import hudson.model.Label;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import java.util.Collections;
@@ -36,18 +37,15 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import jenkins.util.Timer;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public final class WaitForConditionStep extends Step {
-    
-    static final long DEFAULT_MIN_RECURRENCE_PERIOD = 250; // ¼s
-    static final long DEFAULT_MAX_RECURRENCE_PERIOD = 15000; // ¼min
-    
-    private long minRecurrencePeriod = DEFAULT_MIN_RECURRENCE_PERIOD;
-    private long maxRecurrencePeriod = DEFAULT_MAX_RECURRENCE_PERIOD;
+    private long minRecurrencePeriod = DescriptorImpl.DEFAULT_MIN_RECURRENCE_PERIOD;
+    private long maxRecurrencePeriod = DescriptorImpl.DEFAULT_MAX_RECURRENCE_PERIOD;
     private TimeUnit unit = TimeUnit.MILLISECONDS;
-    
+
     @DataBoundConstructor
     public WaitForConditionStep() {}
 
@@ -56,12 +54,16 @@ public final class WaitForConditionStep extends Step {
         this.unit = unit;
     }
 
-    @DataBoundSetter    
+    public TimeUnit getUnit() {
+        return unit;
+    }
+
+    @DataBoundSetter
     public void setMinRecurrencePeriod(long minRecurrencePeriod) {
         this.minRecurrencePeriod = minRecurrencePeriod;
     }
-    
-    @DataBoundSetter    
+
+    @DataBoundSetter
     public void setMaxRecurrencePeriod(long maxRecurrencePeriod) {
         this.maxRecurrencePeriod = maxRecurrencePeriod;
     }
@@ -93,10 +95,16 @@ public final class WaitForConditionStep extends Step {
         long maxRecurrencePeriod;
         long minRecurrencePeriod;
         private transient final WaitForConditionStep step;
-        
+
         Execution(WaitForConditionStep step, StepContext context) {
             super(context);
             this.step = step;
+        }
+        
+        private Object readResolve() {
+            minRecurrencePeriod = DescriptorImpl.DEFAULT_MIN_RECURRENCE_PERIOD;
+            maxRecurrencePeriod = DescriptorImpl.DEFAULT_MAX_RECURRENCE_PERIOD;
+            return this;
         }
 
         @Override public boolean start() throws Exception {
@@ -200,7 +208,9 @@ public final class WaitForConditionStep extends Step {
     }
 
     @Extension public static final class DescriptorImpl extends StepDescriptor {
-
+        static final long DEFAULT_MIN_RECURRENCE_PERIOD = 250;
+        static final long DEFAULT_MAX_RECURRENCE_PERIOD = 15000;
+        
         @Override public String getFunctionName() {
             return "waitUntil";
         }
@@ -212,7 +222,7 @@ public final class WaitForConditionStep extends Step {
         @Override public boolean takesImplicitBlockArgument() {
             return true;
         }
-        
+
         public ListBoxModel doFillUnitItems() {
             ListBoxModel r = new ListBoxModel();
             for (TimeUnit unit : TimeUnit.values()) {
@@ -224,7 +234,6 @@ public final class WaitForConditionStep extends Step {
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
-
     }
 
 }

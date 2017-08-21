@@ -61,7 +61,9 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.success("wait/3", true);
                 SemaphoreStep.waitForStart("waited/1", b);
                 SemaphoreStep.success("waited/1", null);
-                story.j.assertLogContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.DEFAULT_MIN_RECURRENCE_PERIOD), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+                story.j.assertLogContains("Will try again after " +
+                    Util.getTimeSpanString(WaitForConditionStep.DescriptorImpl.DEFAULT_MIN_RECURRENCE_PERIOD),
+                    story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
             }
         });
     }
@@ -118,7 +120,7 @@ public class WaitForConditionStepTest {
                 // TODO the following fails (missing message) when run as part of whole suite, but not standalone: story.j.assertLogContains(message, story.j.assertBuildStatus(Result.FAILURE, story.j.waitForCompletion(b)));
                 story.j.waitForCompletion(b);
                 story.j.assertBuildStatus(Result.FAILURE, b);
-                story.j.assertLogContains(message, b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a “Will try again after 0.25 sec” but no such message
+                story.j.assertLogContains(message, b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a â€œWill try again after 0.25 secâ€� but no such message
             }
         });
     }

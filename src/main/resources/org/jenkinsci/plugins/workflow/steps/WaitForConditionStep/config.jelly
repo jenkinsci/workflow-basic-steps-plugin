@@ -26,10 +26,10 @@ THE SOFTWARE.
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:entry field="minRecurrencePeriod" title="${%Minimum Recurrence Period}">
-        <f:number clazz="positive-number"/>
+        <f:number clazz="positive-number" default="${descriptor.DEFAULT_MIN_RECURRENCE_PERIOD}"/>
     </f:entry>
     <f:entry field="maxRecurrencePeriod" title="${%Maximum Recurrence Period}">
-        <f:number clazz="positive-number"/>
+        <f:number clazz="positive-number" default="${descriptor.DEFAULT_MAX_RECURRENCE_PERIOD}"/>
     </f:entry>
     <f:entry field="unit" title="Unit">
         <f:select/>
