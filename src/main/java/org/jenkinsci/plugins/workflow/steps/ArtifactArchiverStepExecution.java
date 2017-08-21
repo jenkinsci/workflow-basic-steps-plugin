@@ -32,6 +32,10 @@ public class ArtifactArchiverStepExecution extends SynchronousNonBlockingStepExe
     protected Void run() throws Exception {
         FilePath ws = getContext().get(FilePath.class);
         ws.mkdirs();
+        TaskListener listener = getContext().get(TaskListener.class);
+        if (listener != null) {
+            listener.getLogger().println("The 'archive' step is deprecated and may not work properly, please use 'archiveArtifacts' instead.");
+        }
         Map<String,String> files = ws.act(new ListFiles(step.getIncludes(), step.getExcludes()));
         getContext().get(Run.class).pickArtifactManager().archive(ws, getContext().get(Launcher.class), new BuildListenerAdapter(getContext().get(TaskListener.class)), files);
         return null;
