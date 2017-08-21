@@ -28,6 +28,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -79,6 +80,11 @@ public final class WriteFileStep extends Step {
             return Collections.singleton(FilePath.class);
         }
 
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object file = namedArgs.get("file");
+            return file instanceof String ? (String) file : null;
+        }
+
     }
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
@@ -91,7 +97,7 @@ public final class WriteFileStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            getContext().get(FilePath.class).child(step.file).write(step.text, /* TODO consider specifying encoding */ null);
+            getContext().get(FilePath.class).child(step.file).write(step.text, step.encoding);
             return null;
         }
 

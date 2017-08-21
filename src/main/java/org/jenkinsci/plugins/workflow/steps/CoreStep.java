@@ -36,15 +36,17 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
+import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
-
+import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -120,6 +122,28 @@ public final class CoreStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Map<String, Object> delegateArguments = delegateArguments(namedArgs.get("delegate"));
+            return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
+        }
+
+        @SuppressWarnings("unchecked")
+        static @CheckForNull Map<String, Object> delegateArguments(@CheckForNull Object delegate) {
+            if (delegate instanceof UninstantiatedDescribable) {
+                // TODO JENKINS-45101 getStepArgumentsAsString does not resolve its arguments
+                // thus delegate.model == null and we cannot inspect DescribableModel.soleRequiredParameter
+                // thus for, e.g., `junit testResults: '*.xml', keepLongStdio: true` we will get null
+                return new HashMap<>(((UninstantiatedDescribable) delegate).getArguments());
+            } else if (delegate instanceof Map) {
+                Map<String, Object> r = new HashMap<>();
+                r.putAll((Map) delegate);
+                r.remove(DescribableModel.CLAZZ);
+                return r;
+            } else {
+                return null;
+            }
         }
 
     }

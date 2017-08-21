@@ -107,6 +107,7 @@ public class CoreWrapperStep extends Step {
             this.overrides = /* ensure serializability*/ new HashMap<>(overrides);
         }
         @Override public void expand(EnvVars env) throws IOException, InterruptedException {
+            // Distinct from EnvironmentExpander.constant since we are also expanding variables.
             env.overrideExpandingAll(overrides);
         }
     }
@@ -158,6 +159,11 @@ public class CoreWrapperStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class, EnvVars.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Map<String, Object> delegateArguments = CoreStep.DescriptorImpl.delegateArguments(namedArgs.get("delegate"));
+            return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
         }
 
     }

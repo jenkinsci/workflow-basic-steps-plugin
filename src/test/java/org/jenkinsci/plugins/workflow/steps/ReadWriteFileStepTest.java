@@ -25,12 +25,21 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Functions;
+import java.util.List;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class ReadWriteFileStepTest {
@@ -47,8 +56,12 @@ public class ReadWriteFileStepTest {
                 "  text = text.toUpperCase()\n" +
                 "  writeFile file: 'f2', text: text\n" +
                 (win ? "  bat 'type f2'\n" : "  sh 'cat f2'\n") +
-                "}"));
-        r.assertLogContains("HELLO", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+                "}", true));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.assertLogContains("HELLO", b);
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("writeFile"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals("f2", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
 	@Test
@@ -66,5 +79,37 @@ public class ReadWriteFileStepTest {
 		r.assertLogContains("test.txt - FileExists: false", run); 
 		r.assertLogContains("test2.txt - FileExists: true", run);
 		r.assertBuildStatusSuccess(run);
+    }
+
+    @Issue(("JENKINS-27094"))
+    @Test
+    public void readAndwriteFileUsesCorrectEncoding() throws Exception
+    {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  def text = 'HELLO'\n" +
+                        "  writeFile file: 'f1', text: text, encoding: 'utf-32le'\n" +
+                        "  def text2 = readFile file: 'f1', encoding: 'utf-32le'\n" +
+                        "  echo text2\n" +
+                        "}"));
+        r.assertLogContains("HELLO", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+    }
+
+
+
+
+    @Issue(("JENKINS-27094"))
+    @Test
+    public void testKnownCharsetRoundtrip() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  def text = 'HELLO'\n" +
+                        "  writeFile file: 'f1', text: '¤', encoding: 'iso-8859-1'\n" +
+                        "  def text2 = readFile file: 'f1', encoding: 'iso-8859-15'\n" +
+                        "  echo text2\n" +
+                        "}"));
+        r.assertLogContains("€", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 }

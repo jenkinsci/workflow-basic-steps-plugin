@@ -24,8 +24,14 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
+import java.util.List;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
@@ -67,7 +73,7 @@ public class StashTest {
         SemaphoreStep.success("ending/1", null);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("got fname: whatever other: more", b);
-        assertEquals("{}", StashManager.stashesOf(b).toString());
+        assertEquals("{}", StashManager.stashesOf(b).toString()); // TODO flake expected:<{[]}> but was:<{[from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}]}>
     }
 
     @Issue("JENKINS-31086")
@@ -91,5 +97,26 @@ public class StashTest {
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("gitignore exists? true", b);
         r.assertLogContains("gitignore does not exist? false", b);
+    }
+
+    @Issue("JENKINS-37327")
+    @Test public void testAllowEmpty() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  stash name: 'whatever', allowEmpty: true\n" +
+                        "  semaphore 'ending'\n" +
+                        "}\n"
+                        , true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ending/1", b);
+        assertEquals("{whatever={}}", StashManager.stashesOf(b).toString());
+        SemaphoreStep.success("ending/1", null);
+        r.assertBuildStatusSuccess(r.waitForCompletion(b));
+        r.assertLogContains("Stashed 0 file(s)", b);
+        assertEquals("{}", StashManager.stashesOf(b).toString());
+        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("stash"));
+        assertThat(coreStepNodes, Matchers.hasSize(1));
+        assertEquals("whatever", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 }

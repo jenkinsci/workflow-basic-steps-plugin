@@ -195,7 +195,7 @@ public class TimeoutStepTest extends Assert {
                 SemaphoreStep.success("timeIsConsumed/1", null);
                 WorkflowRun run = story.j.waitForCompletion(b);
                 InterruptedBuildAction action = b.getAction(InterruptedBuildAction.class);
-                assertNotNull(action);
+                assertNotNull(action); // TODO flaked on windows-8-2.32.3
                 List<CauseOfInterruption> causes = action.getCauses();
                 assertEquals(1, causes.size());
                 assertEquals(TimeoutStepExecution.ExceededTimeout.class, causes.get(0).getClass());

@@ -30,6 +30,7 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Map;
 import java.util.Set;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
@@ -50,6 +51,7 @@ public class StashStep extends Step {
     private @CheckForNull String includes;
     private @CheckForNull String excludes;
     private boolean useDefaultExcludes = true;
+    private boolean allowEmpty = false;
 
     @DataBoundConstructor public StashStep(@Nonnull String name) {
         Jenkins.checkGoodName(name);
@@ -84,6 +86,14 @@ public class StashStep extends Step {
         this.useDefaultExcludes = useDefaultExcludes;
     }
 
+    public boolean isAllowEmpty() {
+        return allowEmpty;
+    }
+
+    @DataBoundSetter public void setAllowEmpty(boolean allowEmpty) {
+        this.allowEmpty = allowEmpty;
+    }
+
     @Override public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
@@ -101,7 +111,7 @@ public class StashStep extends Step {
 
         @Override protected Void run() throws Exception {
             StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(TaskListener.class), step.includes, step.excludes,
-                    step.useDefaultExcludes);
+                    step.useDefaultExcludes, step.allowEmpty);
             return null;
         }
 
@@ -119,6 +129,11 @@ public class StashStep extends Step {
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, FilePath.class, TaskListener.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object name = namedArgs.get("name");
+            return name instanceof String ? (String) name : null;
         }
 
     }
