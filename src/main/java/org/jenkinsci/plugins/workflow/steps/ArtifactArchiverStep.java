@@ -64,7 +64,7 @@ public class ArtifactArchiverStep extends Step {
          */
         @Override
         public boolean isAdvanced() {
-            return ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class);
+            return true;
         }
 
         @Override
