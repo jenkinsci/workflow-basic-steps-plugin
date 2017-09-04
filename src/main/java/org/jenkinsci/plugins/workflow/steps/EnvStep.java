@@ -89,10 +89,6 @@ public class EnvStep extends Step {
             return false;
         }
         
-        @Override public void stop(Throwable cause) throws Exception {
-            // should be no need to do anything special (but verify in JENKINS-26148)
-        }
-        
         @Override public void onResume() {}
 
     }

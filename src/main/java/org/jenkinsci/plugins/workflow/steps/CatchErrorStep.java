@@ -84,10 +84,6 @@ public final class CatchErrorStep extends Step {
             return false;
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
-            // nothing to do
-        }
-
         @Override public void onResume() {}
 
         private static final class Callback extends BodyExecutionCallback {

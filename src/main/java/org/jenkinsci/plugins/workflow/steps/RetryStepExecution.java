@@ -13,7 +13,6 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
     
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final int count;
-    private volatile BodyExecution body;
 
     RetryStepExecution(int count, StepContext context) {
         super(context);
@@ -23,16 +22,10 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
-        body = context.newBodyInvoker()
+        context.newBodyInvoker()
             .withCallback(new Callback(count))
             .start();
         return false;   // execution is asynchronous
-    }
-
-    @Override
-    public void stop(Throwable cause) throws Exception {
-        if (body!=null)
-            body.cancel(cause);
     }
 
     @Override public void onResume() {}
