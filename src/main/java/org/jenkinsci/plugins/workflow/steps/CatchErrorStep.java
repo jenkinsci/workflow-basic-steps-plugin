@@ -32,6 +32,10 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.util.Set;
+
+import org.jenkinsci.plugins.scriptsecurity.sandbox.RejectedAccessException;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ApprovalContext;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -107,6 +111,9 @@ public final class CatchErrorStep extends Step {
                         fie.handle(context.get(Run.class), listener);
                         r = fie.getResult();
                     } else {
+                        if (t instanceof RejectedAccessException) {
+                            ScriptApproval.get().accessRejected((RejectedAccessException) t, ApprovalContext.create());
+                        }
                         listener.getLogger().println(Functions.printThrowable(t).trim()); // TODO 2.43+ use Functions.printStackTrace
                     }
                     context.get(Run.class).setResult(r);

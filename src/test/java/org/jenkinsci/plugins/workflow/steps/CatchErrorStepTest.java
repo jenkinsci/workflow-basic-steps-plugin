@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.model.Result;
 import hudson.model.User;
 import jenkins.model.CauseOfInterruption;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -34,6 +35,10 @@ import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.JenkinsRule;
+
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
 
 public class CatchErrorStepTest {
 
@@ -56,4 +61,19 @@ public class CatchErrorStepTest {
         */
     }
 
+    @Test public void scriptApproval() throws Exception {
+        User.get("smrt");
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError {\n" +
+                        "  jenkins.model.Jenkins.getInstance()\n" +
+                        "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).get();
+        r.assertBuildStatus(Result.FAILURE, r.waitForCompletion(b));
+        r.assertLogContains("org.jenkinsci.plugins.scriptsecurity.sandbox.RejectedAccessException: Scripts not permitted to use staticMethod jenkins.model.Jenkins getInstance", b);
+        Set<ScriptApproval.PendingSignature> pending = ScriptApproval.get().getPendingSignatures();
+        assertEquals(1, pending.size());
+        ScriptApproval.PendingSignature signature = pending.iterator().next();
+        assertEquals("staticMethod jenkins.model.Jenkins getInstance", signature.signature);
+    }
 }
