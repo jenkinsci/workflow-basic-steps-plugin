@@ -41,6 +41,7 @@ public class ArtifactArchiverStepTest extends Assert {
         VirtualFile archivedFile = b.getArtifactManager().root().child("msg.out");
         assertTrue(archivedFile.exists());
         assertEquals("hello world", IOUtils.toString(archivedFile.open()));
+        j.assertLogContains(Messages.ArtifactArchiverStepExecution_Deprecated(), b);
     }
 
     @Issue("JENKINS-31931")
