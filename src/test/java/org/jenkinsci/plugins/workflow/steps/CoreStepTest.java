@@ -59,11 +59,7 @@ public class CoreStepTest {
 
     @Test public void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        if (ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
-            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; archiveArtifacts artifacts: 'x.txt', fingerprint: true}", true));
-        } else { // TODO 2.x delete
-            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'ArtifactArchiver', artifacts: 'x.txt', fingerprint: true])}", true));
-        }
+        p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; archiveArtifacts artifacts: 'x.txt', fingerprint: true}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         List<WorkflowRun.Artifact> artifacts = b.getArtifacts();
         assertEquals(1, artifacts.size());
@@ -76,17 +72,9 @@ public class CoreStepTest {
     @Issue("JENKINS-31931")
     @Test public void artifactArchiverNonexistent() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        if (ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
-            p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts artifacts: 'nonexistent/', allowEmptyArchive: true}", true));
-        } else { // TODO 2.x delete
-            p.setDefinition(new CpsFlowDefinition("node {step([$class: 'ArtifactArchiver', artifacts: 'nonexistent/', allowEmptyArchive: true])}", true));
-        }
+        p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts artifacts: 'nonexistent/', allowEmptyArchive: true}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
-        if (ArtifactArchiver.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
-            p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts 'nonexistent/'}", true));
-        } else { // TODO 2.x delete
-            p.setDefinition(new CpsFlowDefinition("node {step([$class: 'ArtifactArchiver', artifacts: 'nonexistent/'])}", true));
-        }
+        p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts 'nonexistent/'}", true));
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         /* TODO bug in ArtifactArchiver:
         r.assertLogContains(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound("nonexistent/"), b);
@@ -95,11 +83,7 @@ public class CoreStepTest {
 
     @Test public void fingerprinter() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        if (Fingerprinter.DescriptorImpl.class.isAnnotationPresent(Symbol.class)) {
-            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; fingerprint 'x.txt'}"));
-        } else { // TODO 2.x delete
-            p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; step([$class: 'Fingerprinter', targets: 'x.txt'])}"));
-        }
+        p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; fingerprint 'x.txt'}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         Fingerprinter.FingerprintAction fa = b.getAction(Fingerprinter.FingerprintAction.class);
         assertNotNull(fa);
@@ -146,7 +130,7 @@ public class CoreStepTest {
                 + "    writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'\n"
                 + "    junit 'r.xml'\n"
                 + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}"));
+                + "}", true));
         Mailbox inbox = Mailbox.get(new InternetAddress(recipient));
         inbox.clear();
         WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0).get());
@@ -156,7 +140,7 @@ public class CoreStepTest {
                   "node {\n"
                 + "    catchError {error 'oops'}\n"
                 + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}"));
+                + "}", true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
@@ -165,7 +149,7 @@ public class CoreStepTest {
                   "node {\n"
                 + "    catchError {echo 'ok'}\n"
                 + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}"));
+                + "}", true));
         inbox.clear();
         b = r.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
         assertEquals(0, inbox.size());
@@ -173,7 +157,7 @@ public class CoreStepTest {
                   "node {\n"
                 + "    try {error 'oops'} catch (e) {echo \"caught ${e}\"; currentBuild.result = 'FAILURE'}\n"
                 + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}"));
+                + "}", true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
