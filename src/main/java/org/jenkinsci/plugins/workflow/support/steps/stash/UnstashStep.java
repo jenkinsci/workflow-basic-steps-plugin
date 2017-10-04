@@ -73,8 +73,7 @@ public class UnstashStep extends Step {
         }
 
         @Override protected List<String> run() throws Exception {
-            StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(TaskListener.class));
-            return StashManager.fileNamesForStash(getContext().get(Run.class), name);
+            return StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(TaskListener.class));
         }
 
     }
