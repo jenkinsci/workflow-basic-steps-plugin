@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
+import java.io.File;
 import java.util.List;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -145,7 +146,7 @@ public class StashTest {
                         "  writeFile file: 'at-top', text: 'ignored'\n" +
                         "  def l3 = stash name: 'from-top', includes: 'elsewhere/', excludes: '**/other'\n" +
                         "  assert l3.size() == 1\n" +
-                        "  assert l3.contains('elsewhere/fname')\n" +
+                        "  assert l3.contains('elsewhere" + File.separator + "fname')\n" +
                         "  semaphore 'ending'\n" +
                         "}", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
