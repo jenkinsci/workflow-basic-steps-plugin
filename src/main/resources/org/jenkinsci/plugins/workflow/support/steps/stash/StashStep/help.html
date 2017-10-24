@@ -1,5 +1,6 @@
 <div>
     Saves a set of files for use later in the same build, generally on another node/workspace.
+    The step will return a list of files that are included in the stash.
     Stashed files are not otherwise available and are generally discarded at the end of the build.
     <strong>Note</strong> that the <code>stash</code> and <code>unstash</code> steps are designed for use with small files.
     For large data transfers, use the External Workspace Manager plugin,
