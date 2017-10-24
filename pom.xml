@@ -88,7 +88,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>2.23-20171023.102122-8</version> <!-- TODO: Switch to release once https://github.com/jenkinsci/workflow-api-plugin/pull/56 is merged and released -->
+            <version>2.23</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jenkins-ci.plugins</groupId>
