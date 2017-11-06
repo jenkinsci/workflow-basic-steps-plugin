@@ -111,7 +111,7 @@ public final class SleepStep extends Step {
             if (task != null) {
                 task.cancel(false);
             }
-            getContext().onFailure(cause);
+            super.stop(cause);
         }
 
         @Override public void onResume() {

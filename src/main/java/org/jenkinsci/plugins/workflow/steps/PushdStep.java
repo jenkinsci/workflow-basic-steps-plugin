@@ -80,7 +80,6 @@ public class PushdStep extends Step {
         
         @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final String path;
-        private BodyExecution body;
 
         Execution(String path, StepContext context) {
             super(context);
@@ -90,18 +89,12 @@ public class PushdStep extends Step {
         @Override public boolean start() throws Exception {
             FilePath dir = getContext().get(FilePath.class).child(path);
             getContext().get(TaskListener.class).getLogger().println("Running in " + dir);
-            body = getContext().newBodyInvoker()
+            getContext().newBodyInvoker()
                     .withContext(dir)
                     // Could use a dedicated BodyExecutionCallback here if we wished to print a message at the end ("Returning to ${cwd}"):
                     .withCallback(BodyExecutionCallback.wrap(getContext()))
                     .start();
             return false;
-        }
-
-        @Override
-        public void stop(Throwable cause) throws Exception {
-            if (body!=null)
-                body.cancel(cause);
         }
 
         @Override public void onResume() {}

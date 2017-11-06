@@ -138,12 +138,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    @Override
-    public void stop(Throwable cause) throws Exception {
-        if (body!=null)
-            body.cancel(cause);
-    }
-
     @Override public String getStatus() {
         if (killer == null) {
             return "killer task nowhere to be found";

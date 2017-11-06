@@ -48,7 +48,7 @@ public final class WaitForConditionStep extends Step {
     public static final class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
-        private volatile BodyExecution body;
+        private volatile BodyExecution body; // TODO could be replaced with a simple boolean flag
         private transient volatile ScheduledFuture<?> task;
         /**
          * TODO JENKINS-26148 is there no cleaner way of finding the StepExecution that created a BodyExecutionCallback?
@@ -70,13 +70,10 @@ public final class WaitForConditionStep extends Step {
         }
 
         @Override public void stop(Throwable cause) throws Exception {
-            if (body != null) {
-                body.cancel(cause);
-            }
             if (task != null) {
                 task.cancel(false);
-                getContext().onFailure(cause);
             }
+            super.stop(cause);
         }
 
         @Override public void onResume() {

@@ -96,10 +96,6 @@ public class WithContextStep extends Step {
             return false;
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
-            getContext().onFailure(cause);
-        }
-
         @Override public void onResume() {}
 
     }
