@@ -65,7 +65,7 @@
         <jenkins.version>2.7.3</jenkins.version>
         <java.level>7</java.level>
         <workflow-step-api-plugin.version>2.13</workflow-step-api-plugin.version>
-        <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
+        <workflow-cps-plugin.version>2.41</workflow-cps-plugin.version>
         <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
     </properties>
     <dependencies>
@@ -179,7 +179,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>script-security</artifactId>
-            <version>1.28</version>
+            <version>1.36</version>
             <scope>test</scope>
         </dependency>
         <dependency>
