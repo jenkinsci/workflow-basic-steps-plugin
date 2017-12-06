@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>2.33</version>
+        <version>3.1</version>
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -36,7 +36,7 @@
     <version>2.7-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Pipeline: Basic Steps</name>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Basic+Steps+Plugin</url>
+    <url>https://wiki.jenkins.io/display/JENKINS/Pipeline+Basic+Steps+Plugin</url>
     <licenses>
         <license>
             <name>MIT License</name>
@@ -63,6 +63,7 @@
     </pluginRepositories>
     <properties>
         <jenkins.version>2.7.3</jenkins.version>
+        <java.level>7</java.level>
         <workflow-step-api-plugin.version>2.13</workflow-step-api-plugin.version>
         <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
         <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
@@ -88,7 +89,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>2.16</version>
+            <version>2.25-20171206.163743-1</version> <!-- TODO: Replace with release once https://github.com/jenkinsci/workflow-api-plugin/pull/62 is merged and released -->
             <exclusions>
                 <exclusion>
                     <groupId>org.jenkins-ci.plugins</groupId>
@@ -99,7 +100,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>structs</artifactId>
-            <version>1.6</version>
+            <version>1.7</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>

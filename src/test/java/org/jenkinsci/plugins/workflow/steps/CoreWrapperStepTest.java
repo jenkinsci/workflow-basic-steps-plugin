@@ -261,7 +261,7 @@ public class CoreWrapperStepTest {
     public static Slave createSpecialEnvSlave(JenkinsRule rule, String nodeName, @CheckForNull String labels, Map<String,String> env) throws Exception {
         @SuppressWarnings("deprecation") // keep consistency with original signature rather than force the caller to pass in a TemporaryFolder rule
         File remoteFS = rule.createTmpDir();
-        SpecialEnvSlave slave = new SpecialEnvSlave(remoteFS, rule.createComputerLauncher(/* yes null */null), nodeName, labels != null ? labels : "", env);
+        SpecialEnvSlave slave = new SpecialEnvSlave(remoteFS, (CommandLauncher)rule.createComputerLauncher(/* yes null */null), nodeName, labels != null ? labels : "", env);
         rule.jenkins.addNode(slave);
         return slave;
     }
