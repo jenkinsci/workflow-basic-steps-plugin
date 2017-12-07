@@ -37,7 +37,15 @@ public class ArtifactArchiverStepExecution extends SynchronousNonBlockingStepExe
             listener.getLogger().println(Messages.ArtifactArchiverStepExecution_Deprecated());
         }
         Map<String,String> files = ws.act(new ListFiles(step.getIncludes(), step.getExcludes()));
-        getContext().get(Run.class).pickArtifactManager().archive(ws, getContext().get(Launcher.class), new BuildListenerAdapter(getContext().get(TaskListener.class)), files);
+        if (files.isEmpty()) {
+            if (step.getExcludes() != null && !step.getExcludes().equals("")) {
+                listener.getLogger().println(Messages.ArtifactArchiverStepExecution_NoFilesWithExcludes(step.getIncludes(), step.getExcludes()));
+            } else {
+                listener.getLogger().println(Messages.ArtifactArchiverStepExecution_NoFiles(step.getIncludes()));
+            }
+        } else {
+            getContext().get(Run.class).pickArtifactManager().archive(ws, getContext().get(Launcher.class), new BuildListenerAdapter(getContext().get(TaskListener.class)), files);
+        }
         return null;
     }
 

@@ -48,7 +48,12 @@ public class ArtifactArchiverStepTest extends Assert {
     @Test public void nonexistent() throws Exception {
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {archive 'nonexistent/'}", true));
-        j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        WorkflowRun b = j.buildAndAssertSuccess(p);
+        j.assertLogContains(Messages.ArtifactArchiverStepExecution_NoFiles("nonexistent/"), b);
+
+        p.setDefinition(new CpsFlowDefinition("node { archive includes:'nonexistent/', excludes:'pants' }", true));
+        WorkflowRun b2 = j.buildAndAssertSuccess(p);
+        j.assertLogContains(Messages.ArtifactArchiverStepExecution_NoFilesWithExcludes("nonexistent/", "pants"), b2);
     }
 
     @Test public void unarchiveDir() throws Exception {
