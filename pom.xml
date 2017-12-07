@@ -89,7 +89,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>2.25-20171206.163743-1</version> <!-- TODO: Replace with release once https://github.com/jenkinsci/workflow-api-plugin/pull/62 is merged and released -->
+            <version>2.25-20171207.203122-3</version> <!-- TODO: Replace with release once https://github.com/jenkinsci/workflow-api-plugin/pull/62 is merged and released -->
             <exclusions>
                 <exclusion>
                     <groupId>org.jenkins-ci.plugins</groupId>
