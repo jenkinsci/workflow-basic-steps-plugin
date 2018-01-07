@@ -30,6 +30,8 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+
+import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -58,7 +60,7 @@ public class UnstashStep extends Step {
         return new Execution(name, context);
     }
 
-    public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
+    public static class Execution extends SynchronousNonBlockingStepExecution<List<String>> {
 
         private static final long serialVersionUID = 1L;
 
@@ -70,9 +72,9 @@ public class UnstashStep extends Step {
             this.name = name;
         }
 
-        @Override protected Void run() throws Exception {
+        @Override protected List<String> run() throws Exception {
             StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(TaskListener.class));
-            return null;
+            return StashManager.stashFileList(getContext().get(Run.class), name);
         }
 
     }
