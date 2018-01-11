@@ -1,12 +1,16 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import hudson.model.Result;
 import hudson.model.User;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.security.ACL;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.support.steps.input.InputAction;
+import org.jenkinsci.plugins.workflow.support.steps.input.InputStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -99,6 +103,39 @@ public class RetryStepTest {
         r.assertLogNotContains("trying 2", b);
         r.assertLogNotContains("NotHere", b);
 
+    }
+
+    @Issue("JENKINS-44379")
+    @Test
+    public void inputAbortShouldNotRetry() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("int count = 0\n" +
+                "retry(3) {\n" +
+                "  echo 'trying '+(count++)\n" +
+                "  input id: 'InputX', message: 'OK?', ok: 'Yes'\n" +
+                "}\n", true));
+
+        QueueTaskFuture<WorkflowRun> queueTaskFuture = p.scheduleBuild2(0);
+        WorkflowRun run = queueTaskFuture.getStartCondition().get();
+        CpsFlowExecution execution = (CpsFlowExecution) run.getExecutionPromise().get();
+
+        while (run.getAction(InputAction.class) == null) {
+            execution.waitForSuspension();
+        }
+
+        InputAction inputAction = run.getAction(InputAction.class);
+        InputStepExecution is = inputAction.getExecution("InputX");
+        HtmlPage page = r.createWebClient().getPage(run, inputAction.getUrlName());
+
+        r.submit(page.getFormByName(is.getId()), "abort");
+        assertEquals(0, inputAction.getExecutions().size());
+        queueTaskFuture.get();
+
+        r.assertBuildStatus(Result.ABORTED, r.waitForCompletion(run));
+
+        r.assertLogContains("trying 0", run);
+        r.assertLogNotContains("trying 1", run);
+        r.assertLogNotContains("trying 2", run);
     }
 
 }
