@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.Set;
 
 
+import hudson.model.TaskListener;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public final class FileExistsStep extends Step {
@@ -76,6 +78,9 @@ public final class FileExistsStep extends Step {
         }
 
         @Override protected Boolean run() throws Exception {
+            if (StringUtils.isEmpty(file)) {
+                getContext().get(TaskListener.class).getLogger().println(Messages.FileExistsStep_EmptyString());
+            }
         	return getContext().get(FilePath.class).child(file).exists();
         }
 
