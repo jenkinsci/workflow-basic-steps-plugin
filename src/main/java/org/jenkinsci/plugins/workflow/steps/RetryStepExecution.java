@@ -57,12 +57,8 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
         public void onFailure(StepContext context, Throwable t) {
             try {
                 if (t instanceof FlowInterruptedException) {
-                    for (CauseOfInterruption cause : ((FlowInterruptedException) t).getCauses()) {
-                        if (cause instanceof CauseOfInterruption.UserInterruption) {
-                            context.onFailure(t);
-                            return;
-                        }
-                    }
+                    context.onFailure(t);
+                    return;
                 }
                 left--;
                 if (left>0) {
