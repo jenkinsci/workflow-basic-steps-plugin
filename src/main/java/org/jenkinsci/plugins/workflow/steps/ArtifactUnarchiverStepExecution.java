@@ -4,20 +4,17 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.Run;
-import jenkins.model.ArtifactManager;
-import jenkins.util.VirtualFile;
-
+import hudson.remoting.VirtualChannel;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import jenkins.MasterToSlaveFileCallable;
+import jenkins.util.VirtualFile;
 
-/**
- * @author Kohsuke Kawaguchi
- */
-public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepExecution<List<FilePath>> {
+public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepExecution<Void> {
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final Map<String,String> mapping;
@@ -31,48 +28,74 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
     }
 
     @Override
-    protected List<FilePath> run() throws Exception {
+    protected Void run() throws Exception {
         // where to copy artifacts from?
         Run<?, ?> r = getContext().get(Run.class); // TODO consider an option to override this (but in what format?)
 
-        ArtifactManager am = r.getArtifactManager();
-
-        List<FilePath> files = new ArrayList<>();
-
-        for (Entry<String, String> e : mapping.entrySet()) {
-            FilePath dst = new FilePath(getContext().get(FilePath.class), e.getValue());
-            String src = e.getKey();
-            String[] all = am.root().list(src);
-            if (all.length == 0) {
-                throw new AbortException("no artifacts to unarchive in " + src);
-            } else if (all.length == 1 && all[0].equals(src)) {
-                // the source is a file
-                if (dst.isDirectory())
-                    dst = dst.child(getFileName(all[0]));
-
-                files.add(copy(am.root().child(all[0]), dst));
+        VirtualFile root = r.getArtifactManager().root();
+        FilePath target = getContext().get(FilePath.class);
+        if (target.isRemote()) {
+            VirtualFile rootR = root.asRemotable();
+            if (rootR != null) {
+                return target.act(new Copy(mapping, target, rootR));
             } else {
-                // copy into a directory
-                for (String path : all) {
-                    files.add(copy(am.root().child(path), dst.child(path)));
-                }
+                return new Copy(mapping, target, root).invoke(null, null);
             }
+        } else {
+            return new Copy(mapping, target, root).invoke(null, null);
         }
-
-        return files;
     }
 
-    private FilePath copy(VirtualFile src, FilePath dst) throws IOException, InterruptedException {
+    private static class Copy extends MasterToSlaveFileCallable<Void> {
+
+        private static final long serialVersionUID = 1L;
+
+        private final Map<String, String> _mapping;
+        private final FilePath target;
+        private final VirtualFile root;
+
+        Copy(Map<String, String> _mapping, FilePath target, VirtualFile root) {
+            this._mapping = _mapping;
+            this.target = target;
+            this.root = root;
+        }
+
+        @Override public Void invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+            for (Entry<String, String> e : _mapping.entrySet()) {
+                FilePath dst = new FilePath(target, e.getValue());
+                String src = e.getKey();
+                Collection<String> all = root.list(src, null, false);
+                if (all.isEmpty()) {
+                    throw new AbortException("no artifacts to unarchive in " + src);
+                } else if (all.size() == 1 && all.iterator().next().equals(src)) {
+                    // the source is a file
+                    if (dst.isDirectory()) {
+                        dst = dst.child(getFileName(all.iterator().next()));
+                    }
+
+                    copy(root.child(all.iterator().next()), dst);
+                } else {
+                    // copy into a directory
+                    for (String path : all) {
+                        copy(root.child(path), dst.child(path));
+                    }
+                }
+            }
+            return null;
+        }
+
+    }
+
+    private static void copy(VirtualFile src, FilePath dst) throws IOException, InterruptedException {
         try (InputStream in = src.open()) {
             dst.copyFrom(in);
         }
-        return dst;
     }
 
     /**
      * Grabs the file name portion out of a path name.
      */
-    private String getFileName(String s) {
+    private static String getFileName(String s) {
         int idx = s.lastIndexOf('/');
         if (idx>=0) s=s.substring(idx+1);
         idx = s.lastIndexOf('\\');

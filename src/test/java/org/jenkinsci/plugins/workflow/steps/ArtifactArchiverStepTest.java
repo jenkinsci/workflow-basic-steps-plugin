@@ -1,22 +1,26 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import java.util.Arrays;
+import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.util.VirtualFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.DirectArtifactManagerFactory;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Assert;
+import static org.junit.Assert.*;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 
-/**
- * @author Kohsuke Kawaguchi
- */
-public class ArtifactArchiverStepTest extends Assert {
+public class ArtifactArchiverStepTest {
+
+    @ClassRule public static BuildWatcher watcher = new BuildWatcher();
+
     @Rule public JenkinsRule j = new JenkinsRule();
 
     /**
@@ -74,5 +78,15 @@ public class ArtifactArchiverStepTest extends Assert {
         j.assertLogContains("one/two", b);
     }
 
-}
+    @Issue("JENKINS-49635")
+    @Test
+    public void directDownload() throws Exception {
+        ArtifactManagerConfiguration.get().getArtifactManagerFactories().add(new DirectArtifactManagerFactory());
+        j.createSlave("remote1", null, null);
+        j.createSlave("remote2", null, null);
+        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node('remote1') {writeFile file: 'x', text: 'contents'; archiveArtifacts 'x'}; node('remote2') {unarchive mapping: [x: 'x']; echo(/loaded ${readFile('x')}/)}", true));
+        j.assertLogContains("loaded contents", j.buildAndAssertSuccess(p));
+    }
 
+}
