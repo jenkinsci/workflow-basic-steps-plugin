@@ -25,32 +25,32 @@ THE SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry field="to" title="To">
+    <f:entry field="to" title="${%To}">
         <f:textbox />
     </f:entry>
-    <f:entry field="cc" title="CC">
+    <f:entry field="cc" title="${%CC}">
         <f:textbox />
     </f:entry>
-    <f:entry field="bcc" title="BCC">
+    <f:entry field="bcc" title="${%BCC}">
         <f:textbox />
     </f:entry>
-    <f:entry field="subject" title="Subject">
+    <f:entry field="subject" title="${%Subject}">
         <f:textbox />
     </f:entry>
-    <f:entry field="body" title="Body">
+    <f:entry field="body" title="${%Body}">
         <f:textarea />
     </f:entry>
     <f:advanced>
-        <f:entry field="from" title="From">
+        <f:entry field="from" title="${%From}">
             <f:textbox />
         </f:entry>
-        <f:entry field="replyTo" title="Reply-To">
+        <f:entry field="replyTo" title="${%Reply-To}">
             <f:textbox />
         </f:entry>
-        <f:entry field="mimeType" title="Body MIME Type">
+        <f:entry field="mimeType" title="${%Body MIME Type}">
             <f:textbox />
         </f:entry>
-        <f:entry field="charset" title="Body Character Set">
+        <f:entry field="charset" title="${%Body Character Set}">
             <f:textbox />
         </f:entry>
     </f:advanced>
