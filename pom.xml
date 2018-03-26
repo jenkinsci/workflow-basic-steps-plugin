@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.6</version>
+        <version>3.7-20180326.223441-1</version> <!-- TODO https://github.com/jenkinsci/plugin-pom/pull/98 -->
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -62,13 +62,14 @@
         </pluginRepository>
     </pluginRepositories>
     <properties>
-        <jenkins-core.version>2.112-20180314.180003-1</jenkins-core.version> <!-- TODO https://github.com/jenkinsci/jenkins/pull/3302 -->
-        <jenkins-war.version>2.112-20180314.180029-1</jenkins-war.version>
+        <jenkins-core.version>2.114-20180326.224001-1</jenkins-core.version> <!-- TODO https://github.com/jenkinsci/jenkins/pull/3302 -->
+        <jenkins-war.version>2.114-20180326.224035-1</jenkins-war.version>
         <java.level>8</java.level>
         <workflow-step-api-plugin.version>2.15-20180228.225735-2</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/33 -->
         <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
         <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
-        <workflow-api-plugin.version>2.27-20180314.181920-4</workflow-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/67 -->
+        <workflow-api-plugin.version>2.27-20180326.224801-10</workflow-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/67 -->
+        <useBeta>true</useBeta>
     </properties>
     <dependencies>
         <dependency>
