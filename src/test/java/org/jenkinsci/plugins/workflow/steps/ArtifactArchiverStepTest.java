@@ -86,7 +86,10 @@ public class ArtifactArchiverStepTest {
         j.createSlave("remote2", null, null);
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node('remote1') {writeFile file: 'x', text: 'contents'; archiveArtifacts 'x'}; node('remote2') {unarchive mapping: [x: 'x']; echo(/loaded ${readFile('x')}/)}", true));
-        j.assertLogContains("loaded contents", j.buildAndAssertSuccess(p));
+        DirectArtifactManagerFactory.whileBlockingOpen(() -> {
+            j.assertLogContains("loaded contents", j.buildAndAssertSuccess(p));
+            return null;
+        });
     }
 
 }
