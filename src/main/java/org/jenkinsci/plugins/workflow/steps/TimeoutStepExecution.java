@@ -10,6 +10,7 @@ import hudson.console.LineTransformationOutputStream;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Channel;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -61,7 +62,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
-                            new ConsoleLogFilterImpl(new ResetCallback())
+                            new ConsoleLogFilterImpl(new ResetCallbackImpl())
                     )
             );
         }
@@ -229,21 +230,29 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    private class ResetCallback implements Serializable {
-        private static final long serialVersionUID = 1L;
+    public interface ResetCallback extends Serializable {
+        void logWritten();
+    }
 
-        private void logWritten() {
+    private class ResetCallbackImpl implements ResetCallback {
+        private static final long serialVersionUID = 1L;
+        @Override public void logWritten() {
             resetTimer();
         }
     }
 
-    private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements Serializable {
+    private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
         private static final long serialVersionUID = 1L;
 
         private final ResetCallback callback;
 
-        public ConsoleLogFilterImpl(ResetCallback callback) {
+        ConsoleLogFilterImpl(ResetCallback callback) {
             this.callback = callback;
+        }
+
+        private Object writeReplace() {
+            Channel ch = Channel.current();
+            return ch == null ? this : new ConsoleLogFilterImpl(ch.export(ResetCallback.class, callback));
         }
 
         @Override
