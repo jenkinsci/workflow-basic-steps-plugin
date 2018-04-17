@@ -90,24 +90,6 @@ public class CoreStepTest {
         assertEquals("[x.txt]", fa.getRecords().keySet().toString());
     }
 
-    @Test public void junitResultArchiver() throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                  "node {\n"
-                + "    writeFile text: '''<testsuite name='a'><testcase name='a1'/><testcase name='a2'><error>a2 failed</error></testcase></testsuite>''', file: 'a.xml'\n"
-                + "    writeFile text: '''<testsuite name='b'><testcase name='b1'/><testcase name='b2'/></testsuite>''', file: 'b.xml'\n"
-                + "    junit '*.xml'\n"
-                + "}", true));
-        WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0).get());
-        TestResultAction a = b.getAction(TestResultAction.class);
-        assertNotNull(a);
-        assertEquals(4, a.getTotalCount());
-        assertEquals(1, a.getFailCount());
-        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("step"));
-        assertThat(coreStepNodes, Matchers.hasSize(1));
-        assertEquals("*.xml", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
-    }
-
     @Test public void javadoc() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
@@ -165,14 +147,14 @@ public class CoreStepTest {
     }
 
     @Test public void coreStepWithSymbol() throws Exception {
-        JUnitResultArchiver aa = new JUnitResultArchiver("target/surefire/*.xml");
-        aa.setAllowEmptyResults(true);
-        st.assertRoundTrip(new CoreStep(aa), "junit allowEmptyResults: true, testResults: 'target/surefire/*.xml'");
+        ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
+        aa.setFingerprint(true);
+        st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts artifacts: 'some-artifacts', fingerprint: true");
     }
 
     @Test public void coreStepWithSymbolWithSoleArg() throws Exception {
-        JUnitResultArchiver aa = new JUnitResultArchiver("target/surefire/*.xml");
-        st.assertRoundTrip(new CoreStep(aa), "junit 'target/surefire/*.xml'");
+        ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
+        st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts 'some-artifacts'");
     }
 
 }
