@@ -96,7 +96,7 @@ public class WaitForConditionStepTest {
                     "      readFile 'flag'\n" +
                     "      true\n" +
                     // Note that catching a specific type verifies JENKINS-26164:
-                    "    } catch (FileNotFoundException x) {\n" +
+                    "    } catch (FileNotFoundException | java.nio.file.NoSuchFileException x) {\n" +
                     "      // x.printStackTrace()\n" +
                     "      semaphore 'wait'\n" +
                     "      false\n" +
