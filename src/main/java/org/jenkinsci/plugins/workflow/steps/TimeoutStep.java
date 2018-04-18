@@ -22,6 +22,8 @@ public class TimeoutStep extends Step implements Serializable {
 
     private TimeUnit unit = TimeUnit.MINUTES;
 
+    private boolean activity = false;
+
     @DataBoundConstructor
     public TimeoutStep(int time) {
         this.time = time;
@@ -38,6 +40,15 @@ public class TimeoutStep extends Step implements Serializable {
 
     public TimeUnit getUnit() {
         return unit;
+    }
+
+    @DataBoundSetter
+    public void setActivity(boolean activity) {
+        this.activity = activity;
+    }
+
+    public boolean isActivity() {
+        return activity;
     }
 
     @Override
