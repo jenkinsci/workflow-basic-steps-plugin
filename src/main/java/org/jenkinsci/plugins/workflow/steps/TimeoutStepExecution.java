@@ -5,9 +5,15 @@ import com.google.common.util.concurrent.MoreExecutors;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Main;
 import hudson.Util;
+import hudson.console.ConsoleLogFilter;
+import hudson.console.LineTransformationOutputStream;
 import hudson.model.Result;
+import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Channel;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -31,30 +37,45 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
+    private long timeout = 0;
     private long end = 0;
+
+    /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
+    private boolean activity = false;
+
     /** whether we are forcing the body to end */
     private boolean forcible;
 
     TimeoutStepExecution(TimeoutStep step, StepContext context) {
         super(context);
         this.step = step;
+        this.activity = step.isActivity();
     }
 
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
-        body = context.newBodyInvoker()
-                .withCallback(new Callback())
-                .start();
-        long now = System.currentTimeMillis();
-        end = now + step.getUnit().toMillis(step.getTime());
-        setupTimer(now);
+        BodyInvoker bodyInvoker = context.newBodyInvoker()
+                .withCallback(new Callback());
+
+        if (step.isActivity()) {
+            bodyInvoker = bodyInvoker.withContext(
+                    BodyInvoker.mergeConsoleLogFilters(
+                            context.get(ConsoleLogFilter.class),
+                            new ConsoleLogFilterImpl(new ResetCallbackImpl())
+                    )
+            );
+        }
+
+        body = bodyInvoker.start();
+        timeout = step.getUnit().toMillis(step.getTime());
+        resetTimer();
         return false;   // execution is asynchronous
     }
 
     @Override
     public void onResume() {
-        setupTimer(System.currentTimeMillis());
+        setupTimer(System.currentTimeMillis(), false);
     }
 
     private TaskListener listener() {
@@ -70,12 +91,30 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
      * Sets the timer to manage the timeout.
      *
      * @param now Current time in milliseconds.
+     * @param forceReset reset timer if already set
      */
-    private void setupTimer(final long now) {
+    private void setupTimer(final long now, boolean forceReset) {
+        // Used to track whether we should be logging the timeout setup/reset - for activity resets, we don't actually
+        // want to log the "Timeout set to expire..." line every single time.
+        boolean resettingKiller = false;
+
+        if (killer != null) {
+            if (!forceReset) {
+                // already set
+                return;
+            }
+            resettingKiller = true;
+            killer.cancel(true);
+            killer = null;
+        }
         long delay = end - now;
         if (delay > 0) {
-            if (!forcible) {
-                listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
+            if (!forcible && !resettingKiller) {
+                if (activity) {
+                    listener().getLogger().println("Timeout set to expire after " + Util.getTimeSpanString(delay) + " without activity");
+                } else {
+                    listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
+                }
             }
             killer = Timer.get().schedule(new Runnable() {
                 @Override
@@ -87,6 +126,12 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(- delay) + " ago");
             cancel();
         }
+    }
+
+    private void resetTimer() {
+        long now = System.currentTimeMillis();
+        end = now + timeout;
+        setupTimer(now, true);
     }
 
     private void cancel() {
@@ -134,7 +179,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             forcible = true;
             long now = System.currentTimeMillis();
             end = now + GRACE_PERIOD;
-            setupTimer(now);
+            resetTimer();
         }
     }
 
@@ -182,6 +227,56 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         @Override
         public String getShortDescription() {
             return "Timeout has been exceeded";
+        }
+    }
+
+    public interface ResetCallback extends Serializable {
+        void logWritten();
+    }
+
+    private class ResetCallbackImpl implements ResetCallback {
+        private static final long serialVersionUID = 1L;
+        @Override public void logWritten() {
+            resetTimer();
+        }
+    }
+
+    private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final ResetCallback callback;
+
+        ConsoleLogFilterImpl(ResetCallback callback) {
+            this.callback = callback;
+        }
+
+        private Object writeReplace() {
+            Channel ch = Channel.current();
+            return ch == null ? this : new ConsoleLogFilterImpl(ch.export(ResetCallback.class, callback));
+        }
+
+        @Override
+        public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
+                throws IOException, InterruptedException {
+            return new LineTransformationOutputStream() {
+                @Override
+                protected void eol(byte[] b, int len) throws IOException {
+                    logger.write(b, 0, len);
+                    callback.logWritten();
+                }
+
+                @Override
+                public void flush() throws IOException {
+                    super.flush();
+                    logger.flush();
+                }
+
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    logger.close();
+                }
+            };
         }
     }
 
