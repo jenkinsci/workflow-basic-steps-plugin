@@ -66,7 +66,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.121</jenkins.version>
         <java.level>8</java.level>
-        <workflow-step-api-plugin.version>2.15-rc308.607bdefd8c6a</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/33 + https://github.com/jenkinsci/workflow-step-api-plugin/pull/34 -->
+        <workflow-step-api-plugin.version>2.15</workflow-step-api-plugin.version>
         <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
         <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
         <workflow-api-plugin.version>2.28-rc337.8abe7c5204d9</workflow-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/67 -->
