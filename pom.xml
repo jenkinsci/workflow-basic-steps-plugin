@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.12</version>
+        <version>3.13</version>
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -69,7 +69,7 @@
         <workflow-step-api-plugin.version>2.15</workflow-step-api-plugin.version>
         <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
         <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
-        <workflow-api-plugin.version>2.28-rc337.8abe7c5204d9</workflow-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/67 -->
+        <workflow-api-plugin.version>2.28-rc343.e9b9e0610374</workflow-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/67 -->
         <useBeta>true</useBeta>
     </properties>
     <dependencies>
@@ -99,6 +99,11 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>structs</artifactId>
             <version>1.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>apache-httpcomponents-client-4-api</artifactId>
+            <version>4.5.5-2.2-rc32.4a9f3bcc3908</version> <!-- TODO https://github.com/jenkinsci/apache-httpcomponents-client-4-api-plugin/pull/9 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
