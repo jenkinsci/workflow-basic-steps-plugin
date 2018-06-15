@@ -4,19 +4,19 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.Run;
+import hudson.model.TaskListener;
+import io.jenkins.plugins.httpclient.RobustHTTPClient;
 import jenkins.model.ArtifactManager;
 import jenkins.util.VirtualFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-/**
- * @author Kohsuke Kawaguchi
- */
 public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepExecution<List<FilePath>> {
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
@@ -34,6 +34,7 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
     protected List<FilePath> run() throws Exception {
         // where to copy artifacts from?
         Run<?, ?> r = getContext().get(Run.class); // TODO consider an option to override this (but in what format?)
+        TaskListener listener = getContext().get(TaskListener.class);
 
         ArtifactManager am = r.getArtifactManager();
 
@@ -50,11 +51,11 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
                 if (dst.isDirectory())
                     dst = dst.child(getFileName(all[0]));
 
-                files.add(copy(am.root().child(all[0]), dst));
+                files.add(copy(am.root().child(all[0]), dst, listener));
             } else {
                 // copy into a directory
                 for (String path : all) {
-                    files.add(copy(am.root().child(path), dst.child(path)));
+                    files.add(copy(am.root().child(path), dst.child(path), listener));
                 }
             }
         }
@@ -62,9 +63,14 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
         return files;
     }
 
-    private FilePath copy(VirtualFile src, FilePath dst) throws IOException, InterruptedException {
-        try (InputStream in = src.open()) {
-            dst.copyFrom(in);
+    private FilePath copy(VirtualFile src, FilePath dst, TaskListener listener) throws IOException, InterruptedException {
+        URL u = src.toExternalURL();
+        if (u != null) {
+            new RobustHTTPClient().copyFromRemotely(dst, u, listener);
+        } else {
+            try (InputStream in = src.open()) {
+                dst.copyFrom(in);
+            }
         }
         return dst;
     }

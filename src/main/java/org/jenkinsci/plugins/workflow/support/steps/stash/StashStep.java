@@ -25,8 +25,10 @@
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
 import com.google.common.collect.ImmutableSet;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -110,7 +112,7 @@ public class StashStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(TaskListener.class), step.includes, step.excludes,
+            StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class), step.includes, step.excludes,
                     step.useDefaultExcludes, step.allowEmpty);
             return null;
         }
@@ -128,7 +130,7 @@ public class StashStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

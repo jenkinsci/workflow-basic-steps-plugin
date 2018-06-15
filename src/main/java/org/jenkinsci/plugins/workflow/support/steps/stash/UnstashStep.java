@@ -26,8 +26,10 @@ package org.jenkinsci.plugins.workflow.support.steps.stash;
 
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.util.Set;
@@ -71,7 +73,7 @@ public class UnstashStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(TaskListener.class));
+            StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class));
             return null;
         }
 
@@ -88,7 +90,7 @@ public class UnstashStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
         }
 
     }
