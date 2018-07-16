@@ -25,7 +25,9 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Functions;
+import hudson.model.TopLevelItem;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 
@@ -35,6 +37,9 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import org.junit.Rule;
@@ -111,5 +116,35 @@ public class ReadWriteFileStepTest {
                         "  echo text2\n" +
                         "}"));
         r.assertLogContains("€", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+    }
+
+    @Issue("JENKINS-52313")
+    @Test
+    public void testBinaryFileRoundtrip() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  semaphore 'file-created'\n" +
+                        "  def utf8Text = readFile file: 'binary-file', encoding: 'UTF-8'\n" +
+                        "  writeFile file: 'round-trip-utf8', text: utf8Text, encoding: 'UTF-8'\n" +
+                        "  def base64Text = readFile file: 'binary-file', encoding: 'Base64'\n" +
+                        "  writeFile file: 'round-trip-base64', text: base64Text, encoding: 'Base64'\n" +
+                        "  semaphore 'bytes-checked'\n" +
+                        "}"));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("file-created/1", b);
+        byte[] bytes = {0x48, 0x45, 0x4c, 0x4c, 0x4f, (byte) 0x80, (byte) 0xec, (byte) 0xf4, 0x00, 0x0d, 0x1b};
+        r.jenkins.getWorkspaceFor(p).child("binary-file").write().write(bytes);
+        SemaphoreStep.success("file-created/1", null);
+        SemaphoreStep.waitForStart("bytes-checked/1", b);
+        assertThat("The data should not round-trip correctly using UTF-8 encoding",
+                getBytes(p, "round-trip-utf8"), not(equalTo(bytes)));
+        assertThat("The data should round-trip correctly using Base64 encoding",
+                getBytes(p, "round-trip-base64"), equalTo(bytes));
+        SemaphoreStep.success("bytes-checked/1", null);
+    }
+
+    private byte[] getBytes(TopLevelItem item, String fileName) throws Exception {
+        return IOUtils.toByteArray(r.jenkins.getWorkspaceFor(item).child(fileName).read());
     }
 }

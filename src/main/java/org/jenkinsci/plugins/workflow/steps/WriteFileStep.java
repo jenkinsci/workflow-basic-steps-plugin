@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 
 
+import org.apache.commons.codec.binary.Base64;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -97,7 +98,12 @@ public final class WriteFileStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            getContext().get(FilePath.class).child(step.file).write(step.text, step.encoding);
+            FilePath file = getContext().get(FilePath.class).child(step.file);
+            if (ReadFileStep.BASE64_ENCODING.equals(step.encoding)) {
+                file.write().write(Base64.decodeBase64(step.text));
+            } else {
+                file.write(step.text, step.encoding);
+            }
             return null;
         }
 

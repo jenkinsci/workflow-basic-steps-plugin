@@ -33,11 +33,14 @@ import java.util.Collections;
 import java.util.Set;
 
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public final class ReadFileStep extends Step {
+
+    /*package*/ static final String BASE64_ENCODING = "Base64";
 
     private final String file;
     private String encoding;
@@ -94,7 +97,11 @@ public final class ReadFileStep extends Step {
 
         @Override protected String run() throws Exception {
             try (InputStream is = getContext().get(FilePath.class).child(step.file).read()) {
-                return IOUtils.toString(is, step.encoding);
+                if (BASE64_ENCODING.equals(step.encoding)) {
+                    return Base64.encodeBase64String(IOUtils.toByteArray(is));
+                } else {
+                    return IOUtils.toString(is, step.encoding);
+                }
             }
         }
 
