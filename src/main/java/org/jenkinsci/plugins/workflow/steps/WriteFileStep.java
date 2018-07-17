@@ -27,12 +27,12 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 
-import org.apache.commons.codec.binary.Base64;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -100,7 +100,7 @@ public final class WriteFileStep extends Step {
         @Override protected Void run() throws Exception {
             FilePath file = getContext().get(FilePath.class).child(step.file);
             if (ReadFileStep.BASE64_ENCODING.equals(step.encoding)) {
-                file.write().write(Base64.decodeBase64(step.text));
+                file.write().write(Base64.getDecoder().decode(step.text));
             } else {
                 file.write(step.text, step.encoding);
             }
