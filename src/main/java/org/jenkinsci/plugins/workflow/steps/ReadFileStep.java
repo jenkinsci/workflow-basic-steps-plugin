@@ -29,6 +29,7 @@ import hudson.FilePath;
 import hudson.Util;
 
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Set;
 
@@ -38,6 +39,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public final class ReadFileStep extends Step {
+
+    /*package*/ static final String BASE64_ENCODING = "Base64";
 
     private final String file;
     private String encoding;
@@ -59,6 +62,11 @@ public final class ReadFileStep extends Step {
         return encoding;
     }
 
+    /**
+     * Set the encoding to be used when reading the file. If the specified value is null or
+     * whitespace-only, then the platform default encoding will be used. Binary resources can be
+     * loaded as a Base64-encoded string by specifying {@code Base64} as the encoding.
+     */
     @DataBoundSetter public void setEncoding(String encoding) {
         this.encoding = Util.fixEmptyAndTrim(encoding);
     }
@@ -94,7 +102,11 @@ public final class ReadFileStep extends Step {
 
         @Override protected String run() throws Exception {
             try (InputStream is = getContext().get(FilePath.class).child(step.file).read()) {
-                return IOUtils.toString(is, step.encoding);
+                if (BASE64_ENCODING.equals(step.encoding)) {
+                    return Base64.getEncoder().encodeToString(IOUtils.toByteArray(is));
+                } else {
+                    return IOUtils.toString(is, step.encoding); // The platform default is used if encoding is null.
+                }
             }
         }
 
