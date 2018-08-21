@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +59,12 @@ public final class WriteFileStep extends Step {
         return encoding;
     }
 
+    /**
+     * Set the encoding to be used when writing the file. If the specified value is null or
+     * whitespace-only, then the platform default encoding will be used. If the text is a
+     * Base64-encoded string, the decoded binary data can be written to the file by specifying
+     * {@code Base64} as the encoding.
+     */
     @DataBoundSetter public void setEncoding(String encoding) {
         this.encoding = Util.fixEmptyAndTrim(encoding);
     }
@@ -97,7 +104,12 @@ public final class WriteFileStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            getContext().get(FilePath.class).child(step.file).write(step.text, step.encoding);
+            FilePath file = getContext().get(FilePath.class).child(step.file);
+            if (ReadFileStep.BASE64_ENCODING.equals(step.encoding)) {
+                file.write().write(Base64.getDecoder().decode(step.text));
+            } else {
+                file.write(step.text, step.encoding); // The platform default is used if encoding is null.
+            }
             return null;
         }
 
