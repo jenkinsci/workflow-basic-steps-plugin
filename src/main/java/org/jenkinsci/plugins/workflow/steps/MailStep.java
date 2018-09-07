@@ -30,6 +30,10 @@ import hudson.model.TaskListener;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import jenkins.model.Jenkins;
 import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
 
 import org.apache.commons.lang.StringUtils;
@@ -48,6 +52,8 @@ import javax.mail.internet.MimeMessage;
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
 public class MailStep extends Step {
+
+    private static final Logger LOGGER = Logger.getLogger(MailStep.class.getName());
 
     private String charset;
 
@@ -139,6 +145,14 @@ public class MailStep extends Step {
         @Override
         protected Void run() throws Exception {
             MimeMessage mimeMessage = buildMimeMessage();
+            // JENKINS-53305 - contextClassLoader can _sometimes_ be null, which causes the obtuse error message
+            // javax.activation.UnsupportedDataTypeException: no object DCH for MIME type multipart/mixed;
+            // I can't see why this would ever be valid and don't know the cause, but if we encounter it, then set
+            // it to the uberclass loader
+            if (Thread.currentThread().getContextClassLoader() == null) {
+                LOGGER.log(Level.WARNING, "contextClassLoader is null - re-setting to uberClassLoader");
+                Thread.currentThread().setContextClassLoader(Jenkins.getInstance().getPluginManager().uberClassLoader);
+            }
             Transport.send(mimeMessage);
             return null;
         }
