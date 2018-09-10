@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
+import java.io.OutputStream;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
@@ -106,7 +107,9 @@ public final class WriteFileStep extends Step {
         @Override protected Void run() throws Exception {
             FilePath file = getContext().get(FilePath.class).child(step.file);
             if (ReadFileStep.BASE64_ENCODING.equals(step.encoding)) {
-                file.write().write(Base64.getDecoder().decode(step.text));
+                try (OutputStream os = file.write()) {
+                    os.write(Base64.getDecoder().decode(step.text));
+                }
             } else {
                 file.write(step.text, step.encoding); // The platform default is used if encoding is null.
             }
