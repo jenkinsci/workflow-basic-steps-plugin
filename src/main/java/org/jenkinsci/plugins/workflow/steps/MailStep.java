@@ -148,10 +148,10 @@ public class MailStep extends Step {
             // JENKINS-53305 - contextClassLoader can _sometimes_ be null, which causes the obtuse error message
             // javax.activation.UnsupportedDataTypeException: no object DCH for MIME type multipart/mixed;
             // I can't see why this would ever be valid and don't know the cause, but if we encounter it, then set
-            // it to the uberclass loader
+            // it to the Jenkins loader
             if (Thread.currentThread().getContextClassLoader() == null) {
-                LOGGER.log(Level.WARNING, "contextClassLoader is null - re-setting to uberClassLoader");
-                Thread.currentThread().setContextClassLoader(Jenkins.getInstance().getPluginManager().uberClassLoader);
+                LOGGER.log(Level.WARNING, "contextClassLoader is null - re-setting to Jenkins.class.classLoader");
+                Thread.currentThread().setContextClassLoader(Jenkins.class.getClassLoader());
             }
             Transport.send(mimeMessage);
             return null;
