@@ -67,8 +67,8 @@
         <jenkins.version>2.121.1</jenkins.version>
         <java.level>8</java.level>
         <workflow-step-api-plugin.version>2.15</workflow-step-api-plugin.version>
-        <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
-        <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
+        <workflow-cps-plugin.version>2.55</workflow-cps-plugin.version>
+        <workflow-support-plugin.version>2.20</workflow-support-plugin.version>
         <workflow-api-plugin.version>2.28</workflow-api-plugin.version>
         <useBeta>true</useBeta>
     </properties>
@@ -182,7 +182,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>script-security</artifactId>
-            <version>1.28</version>
+            <version>1.46</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -205,4 +205,13 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>scm-api</artifactId>
+                <version>2.2.7</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
