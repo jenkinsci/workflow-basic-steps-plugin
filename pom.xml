@@ -71,6 +71,8 @@
         <workflow-support-plugin.version>2.21-beta-1</workflow-support-plugin.version>
         <workflow-api-plugin.version>2.30-beta-1</workflow-api-plugin.version>
         <useBeta>true</useBeta>
+        <git-plugin.version>4.0.0-beta3</git-plugin.version>
+        <scm-api-plugin.version>2.2.6</scm-api-plugin.version>
     </properties>
     <dependencies>
         <dependency>
@@ -204,13 +206,33 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>${git-plugin.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>scm-api</artifactId>
+            <version>${scm-api-plugin.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>${git-plugin.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.jenkins-ci.plugins</groupId>
                 <artifactId>scm-api</artifactId>
-                <version>2.2.6</version>
+                <version>${scm-api-plugin.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
