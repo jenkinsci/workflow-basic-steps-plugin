@@ -10,17 +10,22 @@ import hudson.console.LineTransformationOutputStream;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import jenkins.model.CauseOfInterruption;
+import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.Timer;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -46,10 +51,14 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     /** whether we are forcing the body to end */
     private boolean forcible;
 
+    /** Token for {@link #activity} callbacks. */
+    private final String id;
+
     TimeoutStepExecution(TimeoutStep step, StepContext context) {
         super(context);
         this.step = step;
         this.activity = step.isActivity();
+        id = activity ? UUID.randomUUID().toString() : null;
     }
 
     @Override
@@ -62,7 +71,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
-                            new ConsoleLogFilterImpl(new ResetCallbackImpl())
+                            new ConsoleLogFilterImpl(id)
                     )
             );
         }
@@ -230,29 +239,41 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    public interface ResetCallback extends Serializable {
-        void logWritten();
-    }
+    private static final class ResetTimer extends SlaveToMasterCallable<Void, RuntimeException> {
 
-    private class ResetCallbackImpl implements ResetCallback {
         private static final long serialVersionUID = 1L;
-        @Override public void logWritten() {
-            resetTimer();
+
+        private final String id;
+
+        ResetTimer(String id) {
+            this.id = id;
         }
+
+        @Override public Void call() throws RuntimeException {
+            StepExecution.applyAll(TimeoutStepExecution.class, e -> {
+                if (id.equals(e.id)) {
+                    e.resetTimer();
+                }
+                return null;
+            });
+            return null;
+        }
+
     }
 
     private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
         private static final long serialVersionUID = 1L;
 
-        private final ResetCallback callback;
+        private final @Nonnull String id;
+        private transient @CheckForNull Channel channel;
 
-        ConsoleLogFilterImpl(ResetCallback callback) {
-            this.callback = callback;
+        ConsoleLogFilterImpl(String id) {
+            this.id = id;
         }
 
-        private Object writeReplace() {
-            Channel ch = Channel.current();
-            return ch == null ? this : new ConsoleLogFilterImpl(ch.export(ResetCallback.class, callback));
+        private Object readResolve() {
+            channel = Channel.current();
+            return this;
         }
 
         @Override
@@ -262,7 +283,12 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 @Override
                 protected void eol(byte[] b, int len) throws IOException {
                     logger.write(b, 0, len);
-                    callback.logWritten();
+                    Callable<Void, RuntimeException> resetTimer = new ResetTimer(id);
+                    if (channel != null) {
+                        channel.callAsync(resetTimer);
+                    } else {
+                        resetTimer.call();
+                    }
                 }
 
                 @Override

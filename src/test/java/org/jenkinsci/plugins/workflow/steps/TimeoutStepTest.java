@@ -262,7 +262,6 @@ public class TimeoutStepTest extends Assert {
         });
     }
 
-    @Ignore("TODO")
     @Issue("JENKINS-54078")
     @Test public void activityGit() {
         story.then(r -> {
