@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import jenkins.model.CauseOfInterruption;
 import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.Timer;
@@ -243,7 +242,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1L;
 
-        private final String id;
+        /** non-null unless running from an old deserialized ConsoleLogFilterImpl */
+        private final @CheckForNull String id;
 
         ResetTimer(String id) {
             this.id = id;
@@ -251,7 +251,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         @Override public Void call() throws RuntimeException {
             StepExecution.applyAll(TimeoutStepExecution.class, e -> {
-                if (id.equals(e.id)) {
+                if (id == null || id.equals(e.id)) {
                     e.resetTimer();
                 }
                 return null;
@@ -264,7 +264,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
         private static final long serialVersionUID = 1L;
 
-        private final @Nonnull String id;
+        private final @CheckForNull String id;
         private transient @CheckForNull Channel channel;
 
         ConsoleLogFilterImpl(String id) {
