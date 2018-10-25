@@ -287,6 +287,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             if (id == null) {
                 return logger; // TODO restore compatibility
             }
+            // TODO if channel == null, we can safely ResetTimer.call synchronously from eol and skip the Tick
             AtomicBoolean active = new AtomicBoolean();
             OutputStream decorated = new LineTransformationOutputStream() {
                 @Override
@@ -307,8 +308,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     logger.close();
                 }
             };
-            long period = timeout / 2; // less than the full timeout, to give some grace period, but in the same ballpark to avoid overhead
-            new Tick(active, new WeakReference<>(decorated), period, channel, id).schedule();
+            new Tick(active, new WeakReference<>(decorated), timeout, channel, id).schedule();
             return decorated;
         }
     }
@@ -316,13 +316,13 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private static final class Tick implements Runnable {
         private final AtomicBoolean active;
         private final Reference<?> stream;
-        private final long period;
+        private final long timeout;
         private final @CheckForNull Channel channel;
         private final @Nonnull String id;
-        Tick(AtomicBoolean active, Reference<?> stream, long period, Channel channel, String id) {
+        Tick(AtomicBoolean active, Reference<?> stream, long timeout, Channel channel, String id) {
             this.active = active;
             this.stream = stream;
-            this.period = period;
+            this.timeout = timeout;
             this.channel = channel;
             this.id = id;
         }
@@ -332,7 +332,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 // Not only idle but gone—stop the timer.
                 return;
             }
-            if (active.getAndSet(false)) {
+            boolean currentlyActive = active.getAndSet(false);
+            if (currentlyActive) {
                 Callable<Void, RuntimeException> resetTimer = new ResetTimer(id);
                 if (channel != null) {
                     try {
@@ -343,11 +344,17 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 } else {
                     resetTimer.call();
                 }
+                schedule();
+            } else {
+                // Idle at the moment, but check well before the timeout expires in case new output appears.
+                schedule(timeout / 10);
             }
-            schedule();
         }
         void schedule() {
-            Timer.get().schedule(this, period, TimeUnit.MILLISECONDS);
+            schedule(timeout / 2); // less than the full timeout, to give some grace period, but in the same ballpark to avoid overhead
+        }
+        private void schedule(long delay) {
+            Timer.get().schedule(this, delay, TimeUnit.MILLISECONDS);
         }
     }
 
