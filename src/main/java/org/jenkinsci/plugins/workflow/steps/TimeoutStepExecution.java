@@ -15,14 +15,18 @@ import hudson.remoting.Channel;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import jenkins.model.CauseOfInterruption;
 import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.Timer;
@@ -41,7 +45,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
-    private long timeout = 0;
+    private final long timeout;
     private long end = 0;
 
     /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
@@ -58,6 +62,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         this.step = step;
         this.activity = step.isActivity();
         id = activity ? UUID.randomUUID().toString() : null;
+        timeout = step.getUnit().toMillis(step.getTime());
     }
 
     @Override
@@ -70,13 +75,12 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
-                            new ConsoleLogFilterImpl(id)
+                            new ConsoleLogFilterImpl(id, timeout)
                     )
             );
         }
 
         body = bodyInvoker.start();
-        timeout = step.getUnit().toMillis(step.getTime());
         resetTimer();
         return false;   // execution is asynchronous
     }
@@ -242,8 +246,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1L;
 
-        /** non-null unless running from an old deserialized ConsoleLogFilterImpl */
-        private final @CheckForNull String id;
+        private final @Nonnull String id;
 
         ResetTimer(String id) {
             this.id = id;
@@ -251,7 +254,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         @Override public Void call() throws RuntimeException {
             StepExecution.applyAll(TimeoutStepExecution.class, e -> {
-                if (id == null || id.equals(e.id)) {
+                if (id.equals(e.id)) {
                     e.resetTimer();
                 }
                 return null;
@@ -265,10 +268,12 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private static final long serialVersionUID = 1L;
 
         private final @CheckForNull String id;
+        private final long timeout;
         private transient @CheckForNull Channel channel;
 
-        ConsoleLogFilterImpl(String id) {
+        ConsoleLogFilterImpl(String id, long timeout) {
             this.id = id;
+            this.timeout = timeout;
         }
 
         private Object readResolve() {
@@ -279,16 +284,15 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         @Override
         public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
                 throws IOException, InterruptedException {
-            return new LineTransformationOutputStream() {
+            if (id == null) {
+                return logger; // TODO restore compatibility
+            }
+            AtomicBoolean active = new AtomicBoolean();
+            OutputStream decorated = new LineTransformationOutputStream() {
                 @Override
                 protected void eol(byte[] b, int len) throws IOException {
                     logger.write(b, 0, len);
-                    Callable<Void, RuntimeException> resetTimer = new ResetTimer(id);
-                    if (channel != null) {
-                        channel.callAsync(resetTimer);
-                    } else {
-                        resetTimer.call();
-                    }
+                    active.set(true);
                 }
 
                 @Override
@@ -303,6 +307,47 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     logger.close();
                 }
             };
+            long period = timeout / 2; // less than the full timeout, to give some grace period, but in the same ballpark to avoid overhead
+            new Tick(active, new WeakReference<>(decorated), period, channel, id).schedule();
+            return decorated;
+        }
+    }
+
+    private static final class Tick implements Runnable {
+        private final AtomicBoolean active;
+        private final Reference<?> stream;
+        private final long period;
+        private final @CheckForNull Channel channel;
+        private final @Nonnull String id;
+        Tick(AtomicBoolean active, Reference<?> stream, long period, Channel channel, String id) {
+            this.active = active;
+            this.stream = stream;
+            this.period = period;
+            this.channel = channel;
+            this.id = id;
+        }
+        @Override
+        public void run() {
+            if (stream.get() == null) {
+                // Not only idle but gone—stop the timer.
+                return;
+            }
+            if (active.getAndSet(false)) {
+                Callable<Void, RuntimeException> resetTimer = new ResetTimer(id);
+                if (channel != null) {
+                    try {
+                        channel.call(resetTimer);
+                    } catch (Exception x) {
+                        LOGGER.log(Level.WARNING, null, x);
+                    }
+                } else {
+                    resetTimer.call();
+                }
+            }
+            schedule();
+        }
+        void schedule() {
+            Timer.get().schedule(this, period, TimeUnit.MILLISECONDS);
         }
     }
 
