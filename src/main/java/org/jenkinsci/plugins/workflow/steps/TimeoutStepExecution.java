@@ -75,7 +75,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
-                            new ConsoleLogFilterImpl(id, timeout)
+                            new ConsoleLogFilterImpl2(id, timeout)
                     )
             );
         }
@@ -264,14 +264,14 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     }
 
-    private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
+    private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
         private static final long serialVersionUID = 1L;
 
-        private final @CheckForNull String id;
+        private final @Nonnull String id;
         private final long timeout;
         private transient @CheckForNull Channel channel;
 
-        ConsoleLogFilterImpl(String id, long timeout) {
+        ConsoleLogFilterImpl2(String id, long timeout) {
             this.id = id;
             this.timeout = timeout;
         }
@@ -284,9 +284,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         @Override
         public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
                 throws IOException, InterruptedException {
-            if (id == null) {
-                return logger; // TODO restore compatibility
-            }
             // TODO if channel == null, we can safely ResetTimer.call synchronously from eol and skip the Tick
             AtomicBoolean active = new AtomicBoolean();
             OutputStream decorated = new LineTransformationOutputStream() {
@@ -355,6 +352,62 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
         private void schedule(long delay) {
             Timer.get().schedule(this, delay, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
+    public interface ResetCallback extends Serializable {
+        void logWritten();
+    }
+
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
+    private class ResetCallbackImpl implements ResetCallback {
+        private static final long serialVersionUID = 1L;
+        @Override public void logWritten() {
+            resetTimer();
+        }
+    }
+
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
+    private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final ResetCallback callback;
+
+        ConsoleLogFilterImpl(ResetCallback callback) {
+            this.callback = callback;
+        }
+
+        private Object writeReplace() {
+            Channel ch = Channel.current();
+            return ch == null ? this : new ConsoleLogFilterImpl(ch.export(ResetCallback.class, callback));
+        }
+
+        @Override
+        public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
+                throws IOException, InterruptedException {
+            return new LineTransformationOutputStream() {
+                @Override
+                protected void eol(byte[] b, int len) throws IOException {
+                    logger.write(b, 0, len);
+                    callback.logWritten();
+                }
+
+                @Override
+                public void flush() throws IOException {
+                    super.flush();
+                    logger.flush();
+                }
+
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    logger.close();
+                }
+            };
         }
     }
 
