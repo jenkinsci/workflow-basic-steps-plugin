@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.19</version>
+        <version>3.25</version>
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -67,10 +67,12 @@
         <jenkins.version>2.121.1</jenkins.version>
         <java.level>8</java.level>
         <workflow-step-api-plugin.version>2.15</workflow-step-api-plugin.version>
-        <workflow-cps-plugin.version>2.32</workflow-cps-plugin.version>
-        <workflow-support-plugin.version>2.14</workflow-support-plugin.version>
-        <workflow-api-plugin.version>2.28</workflow-api-plugin.version>
+        <workflow-cps-plugin.version>2.58</workflow-cps-plugin.version>
+        <workflow-support-plugin.version>2.21</workflow-support-plugin.version>
+        <workflow-api-plugin.version>2.30</workflow-api-plugin.version>
         <useBeta>true</useBeta>
+        <git-plugin.version>4.0.0-beta3</git-plugin.version>
+        <scm-api-plugin.version>2.2.6</scm-api-plugin.version>
     </properties>
     <dependencies>
         <dependency>
@@ -98,7 +100,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>structs</artifactId>
-            <version>1.14</version>
+            <version>1.17</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -121,13 +123,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-job</artifactId>
-            <version>2.10</version>
+            <version>2.26</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
-            <version>2.3</version>
+            <version>2.24</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -182,7 +184,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>script-security</artifactId>
-            <version>1.28</version>
+            <version>1.46</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -204,5 +206,34 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>${git-plugin.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>scm-api</artifactId>
+            <version>${scm-api-plugin.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>${git-plugin.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>scm-api</artifactId>
+                <version>${scm-api-plugin.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

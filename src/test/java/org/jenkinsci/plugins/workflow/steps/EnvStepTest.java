@@ -90,9 +90,9 @@ public class EnvStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "parallel a: {\n" +
-                    "  node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo TOOL=$TOOL') : bat('echo TOOL=%TOOL%')}}\n" +
+                    "  node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo a TOOL=$TOOL') : bat('echo a TOOL=%TOOL%')}}\n" +
                     "}, b: {\n" +
-                    "  node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo TOOL=$TOOL') : bat('echo TOOL=%TOOL%')}}\n" +
+                    "  node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo b TOOL=$TOOL') : bat('echo b TOOL=%TOOL%')}}\n" +
                     "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("a/1", b);
@@ -100,8 +100,8 @@ public class EnvStepTest {
                 SemaphoreStep.success("a/1", null);
                 SemaphoreStep.success("b/1", null);
                 story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
-                story.j.assertLogContains("[a] TOOL=aloc", b);
-                story.j.assertLogContains("[b] TOOL=bloc", b);
+                story.j.assertLogContains("a TOOL=aloc", b);
+                story.j.assertLogContains("b TOOL=bloc", b);
             }
         });
     }

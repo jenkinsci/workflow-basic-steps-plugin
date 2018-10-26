@@ -10,17 +10,25 @@ import hudson.console.LineTransformationOutputStream;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import jenkins.model.CauseOfInterruption;
+import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.Timer;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -37,7 +45,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
-    private long timeout = 0;
+    private final long timeout;
     private long end = 0;
 
     /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
@@ -46,10 +54,15 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     /** whether we are forcing the body to end */
     private boolean forcible;
 
+    /** Token for {@link #activity} callbacks. */
+    private final String id;
+
     TimeoutStepExecution(TimeoutStep step, StepContext context) {
         super(context);
         this.step = step;
         this.activity = step.isActivity();
+        id = activity ? UUID.randomUUID().toString() : null;
+        timeout = step.getUnit().toMillis(step.getTime());
     }
 
     @Override
@@ -62,13 +75,12 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
-                            new ConsoleLogFilterImpl(new ResetCallbackImpl())
+                            new ConsoleLogFilterImpl2(id, timeout)
                     )
             );
         }
 
         body = bodyInvoker.start();
-        timeout = step.getUnit().toMillis(step.getTime());
         resetTimer();
         return false;   // execution is asynchronous
     }
@@ -230,10 +242,127 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
+    private static final class ResetTimer extends SlaveToMasterCallable<Void, RuntimeException> {
+
+        private static final long serialVersionUID = 1L;
+
+        private final @Nonnull String id;
+
+        ResetTimer(String id) {
+            this.id = id;
+        }
+
+        @Override public Void call() throws RuntimeException {
+            StepExecution.applyAll(TimeoutStepExecution.class, e -> {
+                if (id.equals(e.id)) {
+                    e.resetTimer();
+                }
+                return null;
+            });
+            return null;
+        }
+
+    }
+
+    private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final @Nonnull String id;
+        private final long timeout;
+        private transient @CheckForNull Channel channel;
+
+        ConsoleLogFilterImpl2(String id, long timeout) {
+            this.id = id;
+            this.timeout = timeout;
+        }
+
+        private Object readResolve() {
+            channel = Channel.current();
+            return this;
+        }
+
+        @Override
+        public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
+                throws IOException, InterruptedException {
+            // TODO if channel == null, we can safely ResetTimer.call synchronously from eol and skip the Tick
+            AtomicBoolean active = new AtomicBoolean();
+            OutputStream decorated = new LineTransformationOutputStream() {
+                @Override
+                protected void eol(byte[] b, int len) throws IOException {
+                    logger.write(b, 0, len);
+                    active.set(true);
+                }
+
+                @Override
+                public void flush() throws IOException {
+                    super.flush();
+                    logger.flush();
+                }
+
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    logger.close();
+                }
+            };
+            new Tick(active, new WeakReference<>(decorated), timeout, channel, id).schedule();
+            return decorated;
+        }
+    }
+
+    private static final class Tick implements Runnable {
+        private final AtomicBoolean active;
+        private final Reference<?> stream;
+        private final long timeout;
+        private final @CheckForNull Channel channel;
+        private final @Nonnull String id;
+        Tick(AtomicBoolean active, Reference<?> stream, long timeout, Channel channel, String id) {
+            this.active = active;
+            this.stream = stream;
+            this.timeout = timeout;
+            this.channel = channel;
+            this.id = id;
+        }
+        @Override
+        public void run() {
+            if (stream.get() == null) {
+                // Not only idle but gone—stop the timer.
+                return;
+            }
+            boolean currentlyActive = active.getAndSet(false);
+            if (currentlyActive) {
+                Callable<Void, RuntimeException> resetTimer = new ResetTimer(id);
+                if (channel != null) {
+                    try {
+                        channel.call(resetTimer);
+                    } catch (Exception x) {
+                        LOGGER.log(Level.WARNING, null, x);
+                    }
+                } else {
+                    resetTimer.call();
+                }
+                schedule();
+            } else {
+                // Idle at the moment, but check well before the timeout expires in case new output appears.
+                schedule(timeout / 10);
+            }
+        }
+        void schedule() {
+            schedule(timeout / 2); // less than the full timeout, to give some grace period, but in the same ballpark to avoid overhead
+        }
+        private void schedule(long delay) {
+            Timer.get().schedule(this, delay, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
     public interface ResetCallback extends Serializable {
         void logWritten();
     }
 
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
     private class ResetCallbackImpl implements ResetCallback {
         private static final long serialVersionUID = 1L;
         @Override public void logWritten() {
@@ -241,6 +370,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
     private static class ConsoleLogFilterImpl extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
         private static final long serialVersionUID = 1L;
 

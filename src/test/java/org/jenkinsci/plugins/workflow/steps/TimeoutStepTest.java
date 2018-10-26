@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.Functions;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
+import jenkins.plugins.git.GitSampleRepoRule;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -43,6 +45,7 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.*;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
@@ -56,6 +59,8 @@ public class TimeoutStepTest extends Assert {
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
 
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+
+    @Rule public GitSampleRepoRule git = new GitSampleRepoRule();
 
     @Test public void configRoundTrip() {
         story.addStep(new Statement() {
@@ -236,6 +241,42 @@ public class TimeoutStepTest extends Assert {
                 story.j.assertLogContains("JustHere!", b);
                 story.j.assertLogNotContains("ShouldNot!", b);
             }
+        });
+    }
+
+    @Test
+    public void activityRemote() {
+        assumeFalse(Functions.isWindows()); // TODO create analogue using bat
+        story.then(r -> {
+            r.createSlave();
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("" +
+                     "node('!master') {\n" +
+                     "  timeout(time:5, unit:'SECONDS', activity: true) {\n" +
+                     "    sh 'set +x; echo NotHere; sleep 3; echo NotHereYet; sleep 3; echo JustHere; sleep 10; echo ShouldNot'\n" +
+                     "  }\n" +
+                     "}\n", true));
+            WorkflowRun b = r.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0));
+            story.j.assertLogContains("JustHere", b);
+            story.j.assertLogNotContains("ShouldNot", b);
+        });
+    }
+
+    @Issue("JENKINS-54078")
+    @Test public void activityGit() {
+        story.then(r -> {
+            r.createSlave();
+            git.init();
+            git.write("file", "content");
+            git.git("commit", "--all", "--message=init");
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("" +
+                     "node('!master') {\n" +
+                     "  timeout(time: 5, unit: 'MINUTES', activity: true) {\n" +
+                     "    git($/" + git + "/$)\n" +
+                     "  }\n" +
+                     "}\n", true));
+            r.buildAndAssertSuccess(p);
         });
     }
 
