@@ -42,6 +42,8 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable.Row;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.*;
+
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
@@ -330,7 +332,7 @@ public class TimeoutStepTest extends Assert {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }
-        @TestExtension("unresponsiveBody") public static class DescriptorImpl extends StepDescriptor {
+        @TestExtension({"unresponsiveBody", "gracePeriod"}) public static class DescriptorImpl extends StepDescriptor {
             @Override public String getFunctionName() {
                 return "unkillable";
             }
@@ -363,6 +365,18 @@ public class TimeoutStepTest extends Assert {
                 WorkflowRun b = p.getBuildByNumber(1);
                 RunListener.fireStarted(b, TaskListener.NULL);
                 story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
+            }
+        });
+    }
+
+    @Issue("JENKINS-54607")
+    @Test public void gracePeriod() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition("timeout(time: 15, unit: 'SECONDS') {unkillable()}", true));
+                story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
+                assertThat(p.getLastBuild().getDuration(), lessThan(29_000L)); // 29 seconds
             }
         });
     }

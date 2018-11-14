@@ -177,8 +177,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             listener().getLogger().println("Cancelling nested steps due to timeout");
             body.cancel(new ExceededTimeout());
             forcible = true;
-            long now = System.currentTimeMillis();
-            end = now + GRACE_PERIOD;
+            timeout = GRACE_PERIOD;
             resetTimer();
         }
     }
