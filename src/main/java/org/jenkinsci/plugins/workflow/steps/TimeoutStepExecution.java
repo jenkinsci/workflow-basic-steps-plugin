@@ -45,7 +45,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
-    private final long timeout;
+    private long timeout;
     private long end = 0;
 
     /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
