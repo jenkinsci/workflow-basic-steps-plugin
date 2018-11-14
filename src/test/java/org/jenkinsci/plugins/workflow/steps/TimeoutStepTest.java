@@ -42,6 +42,8 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable.Row;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.*;
+
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
@@ -374,7 +376,7 @@ public class TimeoutStepTest extends Assert {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("timeout(time: 15, unit: 'SECONDS') {unkillable()}", true));
                 story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
-                assert p.getLastBuild().getDuration() < 30_000; // 30s
+                assertThat(p.getLastBuild().getDuration(), lessThan(29_000L)); // 29 seconds
             }
         });
     }
