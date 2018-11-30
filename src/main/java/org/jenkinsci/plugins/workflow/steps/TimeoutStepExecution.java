@@ -45,7 +45,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
-    private final long timeout;
+    private long timeout;
     private long end = 0;
 
     /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
@@ -189,8 +189,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             listener().getLogger().println("Cancelling nested steps due to timeout");
             body.cancel(new ExceededTimeout());
             forcible = true;
-            long now = System.currentTimeMillis();
-            end = now + GRACE_PERIOD;
+            timeout = GRACE_PERIOD;
             resetTimer();
         }
     }
