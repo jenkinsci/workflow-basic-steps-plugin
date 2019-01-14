@@ -60,21 +60,38 @@ public class CoreWrapperStep extends Step {
     }
 
     @Override public StepExecution start(StepContext context) throws Exception {
-        return new Execution(delegate, context);
+        return new Execution2(delegate, context);
     }
 
+    /** @deprecated Only here for serial compatibility. */
+    @Deprecated
     public static final class Execution extends AbstractStepExecutionImpl {
+
+        private static final long serialVersionUID = 1;
+
+        @Override public boolean start() throws Exception {
+            throw new AssertionError();
+        }
+
+    }
+
+    private static final class Execution2 extends GeneralNonBlockingStepExecution {
 
         private static final long serialVersionUID = 1;
 
         private transient final SimpleBuildWrapper delegate;
 
-        Execution(SimpleBuildWrapper delegate, StepContext context) {
+        Execution2(SimpleBuildWrapper delegate, StepContext context) {
             super(context);
             this.delegate = delegate;
         }
 
         @Override public boolean start() throws Exception {
+            run(this::doStart);
+            return false;
+        }
+
+        private void doStart() throws Exception {
             SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
             Run<?, ?> run = getContext().get(Run.class);
             delegate.setUp(c, run, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(TaskListener.class), getContext().get(EnvVars.class));
@@ -88,11 +105,24 @@ public class CoreWrapperStep extends Step {
                 bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(getContext().get(ConsoleLogFilter.class), filter));
             }
             SimpleBuildWrapper.Disposer disposer = c.getDisposer();
-            bodyInvoker.withCallback(disposer != null ? new Callback(disposer) : BodyExecutionCallback.wrap(getContext())).start();
-            return false;
+            bodyInvoker.withCallback(disposer != null ? new Callback2(disposer) : BodyExecutionCallback.wrap(getContext())).start();
         }
 
-        @Override public void onResume() {}
+        private final class Callback2 extends TailCall {
+
+            private static final long serialVersionUID = 1;
+
+            private final @Nonnull SimpleBuildWrapper.Disposer disposer;
+
+            Callback2(SimpleBuildWrapper.Disposer disposer) {
+                this.disposer = disposer;
+            }
+
+            @Override protected void finished(StepContext context) throws Exception {
+                new Callback(disposer).finished(context);
+            }
+
+        }
 
     }
 
