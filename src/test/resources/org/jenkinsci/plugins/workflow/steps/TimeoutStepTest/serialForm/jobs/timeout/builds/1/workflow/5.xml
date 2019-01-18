@@ -1,6 +1,6 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<org.jenkinsci.plugins.workflow.support.storage.SimpleXStreamFlowNodeStorage_-Tag plugin="workflow-support@1.4.3">
-  <node class="org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode" plugin="workflow-cps@1.4.3">
+<?xml version='1.1' encoding='UTF-8'?>
+<Tag plugin="workflow-support@3.1">
+  <node class="cps.n.StepAtomNode" plugin="workflow-cps@2.62">
     <parentIds>
       <string>4</string>
     </parentIds>
@@ -8,11 +8,22 @@
     <descriptorId>org.jenkinsci.plugins.workflow.steps.SleepStep</descriptorId>
   </node>
   <actions>
-    <org.jenkinsci.plugins.workflow.support.actions.LogActionImpl>
-      <charset>UTF-8</charset>
-    </org.jenkinsci.plugins.workflow.support.actions.LogActionImpl>
-    <org.jenkinsci.plugins.workflow.actions.TimingAction plugin="workflow-api@2.8">
-      <startTime>1484006054830</startTime>
-    </org.jenkinsci.plugins.workflow.actions.TimingAction>
+    <cps.a.ArgumentsActionImpl plugin="workflow-cps@2.62">
+      <arguments>
+        <entry>
+          <string>unit</string>
+          <string>MINUTES</string>
+        </entry>
+        <entry>
+          <string>time</string>
+          <int>2</int>
+        </entry>
+      </arguments>
+      <isUnmodifiedBySanitization>true</isUnmodifiedBySanitization>
+    </cps.a.ArgumentsActionImpl>
+    <wf.a.TimingAction plugin="workflow-api@2.33">
+      <startTime>1547839656427</startTime>
+    </wf.a.TimingAction>
+    <s.a.LogStorageAction/>
   </actions>
-</org.jenkinsci.plugins.workflow.support.storage.SimpleXStreamFlowNodeStorage_-Tag>
+</Tag>
