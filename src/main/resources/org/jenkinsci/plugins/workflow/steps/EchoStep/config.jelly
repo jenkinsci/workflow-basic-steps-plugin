@@ -28,4 +28,7 @@ THE SOFTWARE.
     <f:entry field="message" title="${%Message}">
         <f:textbox/>
     </f:entry>
+    <f:entry field="label" title="${%Label}">
+        <f:textbox/>
+    </f:entry>
 </j:jelly>

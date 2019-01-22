@@ -27,7 +27,11 @@ package org.jenkinsci.plugins.workflow.steps;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.TaskListener;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import java.util.Collections;
 import java.util.Set;
 
@@ -36,10 +40,18 @@ import java.util.Set;
  */
 public class EchoStep extends Step {
 
-    private final String message;
+    private static final int MAX_LABEL_LENGTH = 100;
+
+    private String message;
+    private String label;
 
     @DataBoundConstructor
     public EchoStep(String message) {
+        this.message = message;
+    }
+
+    @DataBoundSetter
+    public void setMessage(String message) {
         this.message = message;
     }
 
@@ -47,8 +59,24 @@ public class EchoStep extends Step {
         return message;
     }
 
+    @DataBoundSetter
+    public void setLabel(String label) {
+        if (label == null)
+            throw new IllegalArgumentException();
+
+        this.label = label.trim();
+    }
+
+     public String getLabel() {
+        return label;
+    }
+
     @Override
     public StepExecution start(StepContext context) throws Exception {
+        if (this.label != null && !this.label.isEmpty()) {
+            context.get(FlowNode.class).addAction(new LabelAction(StringUtils.left(label, MAX_LABEL_LENGTH)));
+        }
+
         return new Execution(message, context);
     }
 
@@ -72,7 +100,7 @@ public class EchoStep extends Step {
     }
 
     public static class Execution extends SynchronousStepExecution<Void> {
-        
+
         @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
         private transient final String message;
 
