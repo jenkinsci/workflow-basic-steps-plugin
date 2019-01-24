@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.LogAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -70,13 +72,31 @@ public class EchoStepTest {
         assertFalse("message not printed twice", m.find());
     }
 
+    @Test public void smokeMultiline() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("echo '''hello to \n you there \n '''", true));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        List<String> logActions = new ArrayList<String>();
+        for (FlowNode n : new FlowGraphWalker(b.getExecution())) {
+            ArgumentsAction la = n.getAction(ArgumentsAction.class);
+            if (la != null) {
+                logActions.add(ArgumentsAction.getStepArgumentsAsString(n));
+            }
+        }
+        assertEquals(1, logActions.size());
+        assertEquals("hello to", logActions.get(0));
+        Matcher m = Pattern.compile("hello to").matcher(JenkinsRule.getLog(b));
+        assertTrue("message printed once", m.find());
+        assertFalse("message not printed twice", m.find());
+    }
+
     @Test public void label() throws Exception {
-        int found = 0;
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("echo message: 'hello there', label: 'hello test label'", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         FlowGraphTable t = new FlowGraphTable(b.getExecution());
         t.build();
+        int found = 0;
         for (Row r : t.getRows()) {
             if (r.getDisplayName().equals("hello test label")) {
                 found += 1;

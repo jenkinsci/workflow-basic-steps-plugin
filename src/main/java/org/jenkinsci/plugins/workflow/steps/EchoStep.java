@@ -33,7 +33,12 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
+
+import com.ctc.wstx.util.StringUtil;
 
 /**
  * A simple echo back statement.
@@ -60,10 +65,7 @@ public class EchoStep extends Step {
     }
 
     @DataBoundSetter
-    public void setLabel(String label) {
-        if (label == null)
-            throw new IllegalArgumentException();
-
+    public void setLabel(@Nonnull String label) {
         this.label = label.trim();
     }
 
@@ -73,8 +75,11 @@ public class EchoStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        if (this.label != null && !this.label.isEmpty()) {
-            context.get(FlowNode.class).addAction(new LabelAction(StringUtils.left(label, MAX_LABEL_LENGTH)));
+        String label = StringUtils.trimToNull(this.label);
+
+        // If the label isn't empty when we get here
+        if (label != null) {
+            context.get(FlowNode.class).addAction(new LabelAction(StringUtils.abbreviate(label, MAX_LABEL_LENGTH)));
         }
 
         return new Execution(message, context);
@@ -96,6 +101,16 @@ public class EchoStep extends Step {
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object message = namedArgs.get("message");
+            String messageString = message instanceof String ? (String) message : null;
+            // When reporting echo as string limit it to the first line
+            if (StringUtils.contains(messageString, "\n")) {
+                messageString = StringUtils.trimToNull(StringUtils.substringBefore(messageString, "\n"));
+            }
+            return messageString;
         }
     }
 
