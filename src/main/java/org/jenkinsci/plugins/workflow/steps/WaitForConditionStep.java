@@ -71,13 +71,21 @@ public final class WaitForConditionStep extends Step {
          */
         private final String id = UUID.randomUUID().toString();
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
-        private final long initialRecurrencePeriod;
+        private long initialRecurrencePeriod;
         long recurrencePeriod;
 
         Execution(StepContext context, long initialRecurrencePeriod) {
             super(context);
             this.initialRecurrencePeriod = initialRecurrencePeriod;
             recurrencePeriod = initialRecurrencePeriod;
+        }
+
+        private Object readResolve() {
+            // in case we are deserializing an older version of this object prior to this field being added
+            if (initialRecurrencePeriod == 0) {
+                initialRecurrencePeriod = MIN_RECURRENCE_PERIOD;
+            }
+            return this;
         }
 
         @Override public boolean start() throws Exception {
