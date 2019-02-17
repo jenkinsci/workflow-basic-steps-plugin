@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -373,7 +374,7 @@ public class TimeoutStepTest extends Assert {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }
-        @TestExtension({"unresponsiveBody", "gracePeriod"}) public static class DescriptorImpl extends StepDescriptor {
+        @TestExtension({"unresponsiveBody", "gracePeriod", "nestingDetection"}) public static class DescriptorImpl extends StepDescriptor {
             @Override public String getFunctionName() {
                 return "unkillable";
             }
@@ -418,6 +419,97 @@ public class TimeoutStepTest extends Assert {
                 p.setDefinition(new CpsFlowDefinition("timeout(time: 15, unit: 'SECONDS') {unkillable()}", true));
                 story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
                 assertThat(p.getLastBuild().getDuration(), lessThan(29_000L)); // 29 seconds
+            }
+        });
+    }
+
+    @Test public void nestingDetection() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                ScriptApproval.get().approveSignature("method org.jenkinsci.plugins.workflow.steps.FlowInterruptedException getCauses");
+                ScriptApproval.get().approveSignature("method org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution$ExceededTimeout isInsideTimeoutBlock");
+                WorkflowRun b;
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+
+                //inside
+                p.setDefinition(new CpsFlowDefinition(""
+                    + "timeout(time: 2, unit: 'SECONDS') {\n"
+                    + "  try { sleep 10 }\n"
+                    + "  catch(e) {\n"
+                    + "    echo e.causes[0].isInsideTimeoutBlock() ? 'GOOD' : 'BAD'\n"
+                    + "  }\n"
+                    + "}", true));
+                b = p.scheduleBuild2(0).get();
+                story.j.assertLogContains("GOOD", b);
+                story.j.assertLogNotContains("BAD", b);
+
+                //outside
+                p.setDefinition(new CpsFlowDefinition(""
+                    + "try {\n"
+                    + "  timeout(time: 2, unit: 'SECONDS') {\n"
+                    + "    sleep 10\n"
+                    + "  }\n"
+                    + "} catch(e) {\n"
+                    + "  echo e.causes[0].isInsideTimeoutBlock() ? 'BAD' : 'GOOD'\n"
+                    + "}", true));
+                b = p.scheduleBuild2(0).get();
+                story.j.assertLogContains("GOOD", b);
+                story.j.assertLogNotContains("BAD", b);
+
+                //between
+                p.setDefinition(new CpsFlowDefinition(""
+                    + "timeout(time: 2, unit: 'SECONDS') {\n"
+                    + "  try {\n"
+                    + "    timeout(time: 20, unit: 'SECONDS') {\n"
+                    + "      sleep 10\n"
+                    + "    }\n"
+                    + "  } catch(e) {\n"
+                    + "    echo e.causes[0].isInsideTimeoutBlock() ? 'GOOD' : 'BAD'\n"
+                    + "  }\n"
+                    + "}", true));
+                b = p.scheduleBuild2(0).get();
+                story.j.assertLogContains("GOOD", b);
+                story.j.assertLogNotContains("BAD", b);
+
+                //inside (unkillable)
+                p.setDefinition(new CpsFlowDefinition(""
+                    + "timeout(time: 2, unit: 'SECONDS') {\n"
+                    + "  try { unkillable() }\n"
+                    + "  catch(e) {\n"
+                    + "    echo e.causes[0].isInsideTimeoutBlock() ? 'GOOD' : 'BAD'\n"
+                    + "  }\n"
+                    + "}", true));
+                b = p.scheduleBuild2(0).get();
+                story.j.assertLogContains("GOOD", b);
+                story.j.assertLogNotContains("BAD", b);
+
+                //outside (unkillable)
+                p.setDefinition(new CpsFlowDefinition(""
+                    + "try {\n"
+                    + "  timeout(time: 2, unit: 'SECONDS') {\n"
+                    + "    unkillable()\n"
+                    + "  }\n"
+                    + "} catch(e) {\n"
+                    + "  echo e.causes[0].isInsideTimeoutBlock() ? 'BAD' : 'GOOD'"
+                    + "}", true));
+                b = p.scheduleBuild2(0).get();
+                story.j.assertLogContains("GOOD", b);
+                story.j.assertLogNotContains("BAD", b);
+
+                //between (unkillable)
+                p.setDefinition(new CpsFlowDefinition(""
+                    + "timeout(time: 2, unit: 'SECONDS') {\n"
+                    + "  try {\n"
+                    + "    timeout(time: 20, unit: 'SECONDS') {\n"
+                    + "      unkillable()\n"
+                    + "    }\n"
+                    + "  } catch(e) {\n"
+                    + "    echo e.causes[0].isInsideTimeoutBlock() ? 'GOOD' : 'BAD'\n"
+                    + "  }\n"
+                    + "}", true));
+                b = p.scheduleBuild2(0).get();
+                story.j.assertLogContains("GOOD", b);
+                story.j.assertLogNotContains("BAD", b);
             }
         });
     }
