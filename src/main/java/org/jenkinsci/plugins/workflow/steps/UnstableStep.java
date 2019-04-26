@@ -24,12 +24,13 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -41,10 +42,7 @@ public class UnstableStep extends Step {
 
     @DataBoundConstructor
     public UnstableStep(String message) {
-        message = Util.fixEmptyAndTrim(message);
-        if (message == null) {
-            message = "Setting build result to unstable";
-        }
+        Objects.requireNonNull(Util.fixEmptyAndTrim(message), "A non-empty message is required");
         this.message = message;
     }
 
@@ -68,7 +66,7 @@ public class UnstableStep extends Step {
 
         @Override
         protected Void run() throws Exception {
-            getContext().get(FlowNode.class).addAction(new WarningAction(step.message));
+            getContext().get(FlowNode.class).addOrReplaceAction(new WarningAction(Result.UNSTABLE).withMessage(step.message));
             getContext().get(Run.class).setResult(Result.UNSTABLE);
             getContext().get(TaskListener.class).getLogger().append("WARNING: ").println(step.message);
             return null;
@@ -84,8 +82,7 @@ public class UnstableStep extends Step {
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            // Run, FlowNode, and TaskListener are always available.
-            return Collections.emptySet();
+            return ImmutableSet.of(FlowNode.class, Run.class, TaskListener.class);
         }
     }
 }

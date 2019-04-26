@@ -43,12 +43,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
+@Issue("JENKINS-45579")
 public class UnstableStepTest {
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test
-    @Issue("JENKINS-45579")
     public void basic() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(new CpsFlowDefinition("unstable('oops')", true));
@@ -57,12 +57,10 @@ public class UnstableStepTest {
     }
 
     @Test
-    @Issue("JENKINS-45579")
-    public void defaultMessage() throws Exception {
+    public void messageRequired() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(new CpsFlowDefinition("unstable()", true));
-        WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0));
-        assertWarning(b, "Setting build result to unstable");
+        WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
     }
 
     private void assertWarning(WorkflowRun run, String expectedMessage) throws Exception {
