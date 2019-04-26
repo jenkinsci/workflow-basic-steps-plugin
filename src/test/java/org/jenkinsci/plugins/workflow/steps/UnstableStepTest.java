@@ -49,7 +49,7 @@ public class UnstableStepTest {
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test
-    public void basic() throws Exception {
+    public void smokes() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(new CpsFlowDefinition("unstable('oops')", true));
         WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0));
@@ -61,6 +61,7 @@ public class UnstableStepTest {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(new CpsFlowDefinition("unstable()", true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+        r.assertLogContains("A non-empty message is required", b);
     }
 
     private void assertWarning(WorkflowRun run, String expectedMessage) throws Exception {

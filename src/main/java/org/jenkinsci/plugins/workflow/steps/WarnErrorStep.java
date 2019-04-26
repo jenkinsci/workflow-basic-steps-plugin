@@ -34,58 +34,73 @@ import hudson.util.FormValidation;
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
-import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-public class UnstableStep extends Step {
+/**
+ * Runs a block, and if that block fails, prints a message, marks the build as {@link Result#UNSTABLE}, adds a
+ * {@link WarningAction} to the step, and then continues execution normally.
+ *
+ * @see CatchErrorStep
+ */
+public class WarnErrorStep extends Step implements CatchExecutionOptions {
+    private static final long serialVersionUID = 1L;
 
     private final String message;
+    private boolean catchInterruptions = true;
 
     @DataBoundConstructor
-    public UnstableStep(@Nonnull String message) {
+    public WarnErrorStep(@Nonnull String message) {
         Objects.requireNonNull(Util.fixEmptyAndTrim(message), "A non-empty message is required");
         this.message = message;
     }
 
+    @Override
     public String getMessage() {
         return message;
     }
 
     @Override
-    public StepExecution start(StepContext context) throws Exception {
-        return new UnstableStepExecution(this, context);
+    public Result getBuildResultOnError() {
+        return Result.UNSTABLE;
     }
 
-    private static class UnstableStepExecution extends SynchronousStepExecution<Void> {
-        private static final long serialVersionUID = 1L;
-        private transient final UnstableStep step;
+    @Override
+    public Result getStepResultOnError() {
+        return Result.UNSTABLE;
+    }
 
-        private UnstableStepExecution(UnstableStep step, StepContext context) {
-            super(context);
-            this.step = step;
-        }
+    @Override
+    public boolean isCatchInterruptions() {
+        return catchInterruptions;
+    }
 
-        @Override
-        protected Void run() throws Exception {
-            getContext().get(FlowNode.class).addOrReplaceAction(new WarningAction(Result.UNSTABLE).withMessage(step.message));
-            getContext().get(Run.class).setResult(Result.UNSTABLE);
-            getContext().get(TaskListener.class).getLogger().append("WARNING: ").println(step.message);
-            return null;
-        }
+    @DataBoundSetter
+    public void setCatchInterruptions(boolean catchInterruptions) {
+        this.catchInterruptions = catchInterruptions;
+    }
+
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
+        return new CatchErrorStep.Execution(context, this);
     }
 
     @Extension
     public static class DescriptorImpl extends StepDescriptor {
         @Override
         public String getFunctionName() {
-            return "unstable";
+            return "warnError";
         }
 
         @Override
         public String getDisplayName() {
-            return "Set stage result to unstable";
+            return "Catch error and set build and stage result to unstable";
+        }
+
+        @Override public boolean takesImplicitBlockArgument() {
+            return true;
         }
 
         @Override
