@@ -52,8 +52,11 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
     private boolean catchInterruptions = true;
 
     @DataBoundConstructor
-    public WarnErrorStep(@Nonnull String message) {
-        Objects.requireNonNull(Util.fixEmptyAndTrim(message), "A non-empty message is required");
+    public WarnErrorStep(String message) {
+        message = Util.fixEmptyAndTrim(message);
+        if (message == null) {
+            throw new IllegalArgumentException("A non-empty message is required");
+        }
         this.message = message;
     }
 

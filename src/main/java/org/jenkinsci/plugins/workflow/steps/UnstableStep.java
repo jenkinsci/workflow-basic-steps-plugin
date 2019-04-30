@@ -44,8 +44,11 @@ public class UnstableStep extends Step {
     private final String message;
 
     @DataBoundConstructor
-    public UnstableStep(@Nonnull String message) {
-        Objects.requireNonNull(Util.fixEmptyAndTrim(message), "A non-empty message is required");
+    public UnstableStep(String message) {
+        message = Util.fixEmptyAndTrim(message);
+        if (message == null) {
+            throw new IllegalArgumentException("A non-empty message is required");
+        }
         this.message = message;
     }
 

@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Functions;
@@ -150,6 +151,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     }
 
     public static final class Execution extends AbstractStepExecutionImpl {
+        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used at startup, serialized in Callback")
         private transient final CatchExecutionOptions options;
 
         Execution(StepContext context, CatchExecutionOptions options) {
