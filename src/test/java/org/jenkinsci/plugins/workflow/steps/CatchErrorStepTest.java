@@ -40,6 +40,7 @@ import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.recipes.LocalData;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -65,6 +66,27 @@ public class CatchErrorStepTest {
         assertEquals(1, heads.size());
         assertEquals(Result.UNSTABLE, ((FlowEndNode) heads.get(0)).getResult());
         */
+    }
+
+    @LocalData
+    @Test public void serialForm() throws Exception {
+        // Local data created using workflow-basic-steps 2.15 with the following Pipeline:
+        /*
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError {\n" +
+                "  sleep 30\n" +
+                "  error 'oops'\n" +
+                "}\n" +
+                "echo 'execution continued'\n", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        */
+        WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
+        WorkflowRun b = p.getBuildByNumber(1);
+        r.waitForCompletion(b);
+        r.assertBuildStatus(Result.FAILURE, b);
+        r.assertLogContains("oops", b);
+        r.assertLogContains("execution continued", b);
     }
 
     @Test public void optionalMessage() throws Exception {
