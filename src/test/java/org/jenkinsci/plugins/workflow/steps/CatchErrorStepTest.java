@@ -27,16 +27,28 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.model.Result;
 import hudson.model.User;
 import jenkins.model.CauseOfInterruption;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
+import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.recipes.LocalData;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class CatchErrorStepTest {
-
+    @ClassRule public static BuildWatcher w = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test public void specialStatus() throws Exception {
@@ -54,6 +66,138 @@ public class CatchErrorStepTest {
         assertEquals(1, heads.size());
         assertEquals(Result.UNSTABLE, ((FlowEndNode) heads.get(0)).getResult());
         */
+    }
+
+    @LocalData
+    @Test public void serialForm() throws Exception {
+        // Local data created using workflow-basic-steps 2.15 with the following Pipeline:
+        /*
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError {\n" +
+                "  sleep 30\n" +
+                "  error 'oops'\n" +
+                "}\n" +
+                "echo 'execution continued'\n", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        */
+        WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
+        WorkflowRun b = p.getBuildByNumber(1);
+        r.waitForCompletion(b);
+        r.assertBuildStatus(Result.FAILURE, b);
+        r.assertLogContains("oops", b);
+        r.assertLogContains("execution continued", b);
+    }
+
+    @Test public void optionalMessage() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError('caught error') {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.FAILURE, null, true);
+    }
+
+    @Test public void customBuildResult() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(message: 'caught error', buildResult: 'unstable') {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.UNSTABLE, null, true);
+    }
+
+    @Issue("JENKINS-45579")
+    @Test public void customStepResult() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(message: 'caught error', stageResult: 'failure') {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
+    }
+
+    @Issue("JENKINS-45579")
+    @Test public void stepResultOnly() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(message: 'caught error', buildResult: 'success', stageResult: 'unstable') {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.SUCCESS, Result.UNSTABLE, true);
+    }
+
+    @Test public void catchesTimeoutsByDefault() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "timeout(time: 250, unit: 'MILLISECONDS') {\n" +
+                "  catchError(message: 'caught error') {\n" +
+                "    sleep 1\n" +
+                "  }\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
+    }
+
+    @Test public void canAvoidCatchingTimeoutsWithOption() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "timeout(time: 250, unit: 'MILLISECONDS') {\n" +
+                "  catchError(message: 'caught error', catchInterruptions: false) {\n" +
+                "    sleep 1\n" +
+                "  }\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.ABORTED, null, false);
+    }
+
+    @Test public void catchesAttemptsToStopBuildByDefault() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(message: 'caught error') {\n" +
+                "  semaphore 'ready'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ready/1", b);
+        b.doStop();
+        assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
+    }
+
+    @Test public void canAvoidCatchingAttemptsToStopBuildWithOption() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(message: 'caught error', catchInterruptions: false) {\n" +
+                "  semaphore 'ready'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ready/1", b);
+        b.doStop();
+        assertCatchError(r, b, Result.ABORTED, null, false);
+    }
+
+    public static void assertCatchError(JenkinsRule r, WorkflowRun run, Result buildResult, Result warningActionResult, boolean expectingCatch) throws Exception {
+        r.waitForCompletion(run);
+        r.assertBuildStatus(buildResult, run);
+        if (expectingCatch) {
+            r.assertLogContains("caught error", run);
+        } else {
+            r.assertLogNotContains("caught error", run);
+        }
+        FlowNode warningNode = new DepthFirstScanner().findFirstMatch(run.getExecution(),
+                node -> node.getPersistentAction(WarningAction.class) != null);
+        if (warningActionResult != null) {
+            assertThat(warningNode, notNullValue());
+            WarningAction warning = warningNode.getPersistentAction(WarningAction.class);
+            assertThat(warning, notNullValue());
+            assertThat(warning.getResult(), equalTo(warningActionResult));
+            assertThat(warning.getMessage(), equalTo("caught error"));
+        } else {
+            assertThat(warningNode, nullValue());
+        }
     }
 
 }
