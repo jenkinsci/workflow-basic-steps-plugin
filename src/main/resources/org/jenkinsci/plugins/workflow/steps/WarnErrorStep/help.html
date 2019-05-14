@@ -1,7 +1,7 @@
 <div>
-    Catches any exceptions thrown in its body, sets the overall build result to
-    <code>UNSTABLE</code>, sets the stage result to <code>UNSTABLE</code>,
-    print a message to the logs and associates the stage result with the message
-    so that it can be displayed by visualizations.
-    <p>Equivalent to <code>catchError(message: message, buildResult: 'UNSTABLE', stepResult: 'UNSTABLE')</code>.
+    Executes it body, and if an exception is thrown, sets the overall build result
+    and the stage result to <code>UNSTABLE</code>, prints a specified message and
+    the thrown exception to the build log, and associates the stage result with the
+    message so that it can be displayed by visualizations.
+    <p>Equivalent to <code>catchError(message: message, buildResult: 'UNSTABLE', stageResult: 'UNSTABLE')</code>.
 </div>
