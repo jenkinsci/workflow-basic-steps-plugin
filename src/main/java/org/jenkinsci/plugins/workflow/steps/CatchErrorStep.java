@@ -86,6 +86,9 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         if (buildResult == null) {
             buildResult = Result.SUCCESS.toString();
         }
+        if (!buildResult.equalsIgnoreCase(Result.fromString(buildResult).toString())) {
+            throw new IllegalArgumentException("buildResult is invalid: " + buildResult + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
+        }
         this.buildResult = buildResult;
     }
 
@@ -102,6 +105,9 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     public void setStageResult(String stageResult) {
         if (stageResult == null) {
             stageResult = Result.SUCCESS.toString();
+        }
+        if (!stageResult.equalsIgnoreCase(Result.fromString(stageResult).toString())) {
+            throw new IllegalArgumentException("stageResult is invalid: " + stageResult + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
         }
         this.stageResult = stageResult;
     }
