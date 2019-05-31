@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
@@ -39,7 +40,7 @@ public class WithContextStepTest {
 
     @Test public void pushd() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {withContext(getContext(hudson.FilePath).child('subdir')) {echo(/simulating dir step in ${pwd()}/)}}", false));
+        p.setDefinition(new CpsFlowDefinition("node {withContext(" + FilePathDynamicContext.class.getName() + ".createContextualObject(getContext(hudson.FilePath).child('subdir'))) {echo(/simulating dir step in ${pwd()}/)}}", false));
         r.assertLogContains("simulating dir step in " + r.jenkins.getWorkspaceFor(p).child("subdir").getRemote(), r.buildAndAssertSuccess(p));
     }
 
