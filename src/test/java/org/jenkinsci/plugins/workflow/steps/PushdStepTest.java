@@ -24,21 +24,24 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import java.io.File;
+import java.util.logging.Level;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class PushdStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public RestartableJenkinsRule rr = new RestartableJenkinsRule();
+    @Rule public LoggerRule logging = new LoggerRule().record(FilePathDynamicContext.class, Level.FINE);
 
     @Test public void basics() {
         rr.then(r -> {
