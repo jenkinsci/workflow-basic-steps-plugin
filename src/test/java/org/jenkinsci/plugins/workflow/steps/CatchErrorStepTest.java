@@ -69,7 +69,7 @@ public class CatchErrorStepTest {
     }
 
     @LocalData
-    @Test public void serialForm() throws Exception {
+    @Test public void serialFormWhenBuildResultOptionDidNotExist() throws Exception {
         // Local data created using workflow-basic-steps 2.15 with the following Pipeline:
         /*
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
@@ -85,6 +85,27 @@ public class CatchErrorStepTest {
         WorkflowRun b = p.getBuildByNumber(1);
         r.waitForCompletion(b);
         r.assertBuildStatus(Result.FAILURE, b);
+        r.assertLogContains("oops", b);
+        r.assertLogContains("execution continued", b);
+    }
+
+    @LocalData
+    @Test public void serialFormWhenTypeOfBuildResultFieldWasResult() throws Exception {
+        // Local data created using workflow-basic-steps 2.16 with the following Pipeline:
+        /*
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {\n" +
+                "  sleep 30\n" +
+                "  error 'oops'\n" +
+                "}\n" +
+                "echo 'execution continued'\n", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        */
+        WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
+        WorkflowRun b = p.getBuildByNumber(1);
+        r.waitForCompletion(b);
+        r.assertBuildStatus(Result.UNSTABLE, b);
         r.assertLogContains("oops", b);
         r.assertLogContains("execution continued", b);
     }
@@ -109,8 +130,18 @@ public class CatchErrorStepTest {
         assertCatchError(r, b, Result.UNSTABLE, null, true);
     }
 
+    @Test public void invalidBuildResult() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(buildResult: 'typo') {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+        r.assertLogContains("buildResult is invalid: typo", b);
+    }
+
     @Issue("JENKINS-45579")
-    @Test public void customStepResult() throws Exception {
+    @Test public void customStageResult() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
                 "catchError(message: 'caught error', stageResult: 'failure') {\n" +
@@ -118,6 +149,16 @@ public class CatchErrorStepTest {
                 "}", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
+    }
+
+    @Test public void invalidStageResult() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "catchError(stageResult: 'typo') {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+        r.assertLogContains("stageResult is invalid: typo", b);
     }
 
     @Issue("JENKINS-45579")

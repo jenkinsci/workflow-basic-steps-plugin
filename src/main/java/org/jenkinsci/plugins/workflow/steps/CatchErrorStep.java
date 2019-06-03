@@ -34,6 +34,8 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Arrays;
 import java.util.Set;
 import javax.annotation.CheckForNull;
@@ -53,9 +55,9 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     private static final long serialVersionUID = 1L;
 
     private @CheckForNull String message;
-    private @Nonnull Result buildResult = Result.FAILURE;
+    private @Nonnull String buildResult = Result.FAILURE.toString();
     // This result is actually associated with the step, but this name makes more sense to users.
-    private @Nonnull Result stageResult = Result.SUCCESS;
+    private @Nonnull String stageResult = Result.SUCCESS.toString();
     private boolean catchInterruptions = true;
 
     @DataBoundConstructor public CatchErrorStep() {}
@@ -72,34 +74,40 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
 
     @Override
     public Result getBuildResultOnError() {
-        return buildResult;
+        return Result.fromString(buildResult);
     }
 
-    public Result getBuildResult() {
+    public String getBuildResult() {
         return buildResult;
     }
 
     @DataBoundSetter
-    public void setBuildResult(Result buildResult) {
+    public void setBuildResult(String buildResult) {
         if (buildResult == null) {
-            buildResult = Result.SUCCESS;
+            buildResult = Result.SUCCESS.toString();
+        }
+        if (!buildResult.equalsIgnoreCase(Result.fromString(buildResult).toString())) {
+            throw new IllegalArgumentException("buildResult is invalid: " + buildResult + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
         }
         this.buildResult = buildResult;
     }
 
     @Override
     public Result getStepResultOnError() {
-        return stageResult;
+        return Result.fromString(stageResult);
     }
 
-    public Result getStageResult() {
+    public String getStageResult() {
         return stageResult;
     }
 
     @DataBoundSetter
-    public void setStageResult(Result stageResult) {
+    public void setStageResult(String stageResult) {
         if (stageResult == null) {
-            stageResult = Result.SUCCESS;
+            stageResult = Result.SUCCESS.toString();
+        }
+        if (!stageResult.equalsIgnoreCase(Result.fromString(stageResult).toString())) {
+            throw new IllegalArgumentException("stageResult is invalid: " + stageResult + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
         }
         this.stageResult = stageResult;
     }
@@ -112,6 +120,25 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     @DataBoundSetter
     public void setCatchInterruptions(boolean catchInterruptions) {
         this.catchInterruptions = catchInterruptions;
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        ObjectInputStream.GetField fields = ois.readFields();
+        message = (String) fields.get("message", null);
+        catchInterruptions = fields.get("catchInterruptions", true);
+        // Previously, the types of buildResult and stageResult were Result rather than String, so we handle either type.
+        Object serializedBuildResult = fields.get("buildResult", "FAILURE");
+        if (serializedBuildResult instanceof Result) {
+            buildResult = ((Result) serializedBuildResult).toString();
+        } else {
+            buildResult = (String) serializedBuildResult;
+        }
+        Object serializedStageResult = fields.get("stageResult", "SUCCESS");
+        if (serializedStageResult instanceof Result) {
+            stageResult = ((Result) serializedStageResult).toString();
+        } else {
+            stageResult = (String) serializedStageResult;
+        }
     }
 
     @Override public StepExecution start(StepContext context) throws Exception {
