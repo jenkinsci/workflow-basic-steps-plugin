@@ -1,7 +1,10 @@
 <div>
     Saves a set of files for use later in the same build, generally on another node/workspace.
     Stashed files are not otherwise available and are generally discarded at the end of the build.
-    Stashes are not available to be used cross jobs. For this you need to use <code>archiveArtifacts</code>/<code>copyArtifacts</code>.
+    Stashes from one Pipeline run are not available in other runs, other Pipelines, or other jobs.
+    If you want to persist artifacts for use outside of a single run, consider using 
+    <a href="https://jenkins.io/doc/pipeline/steps/core/#archiveartifacts-archive-the-artifacts">
+    <code>archiveArtifacts</code></a> instead.
     <strong>Note</strong> that the <code>stash</code> and <code>unstash</code> steps are designed for use with small files.
     For large data transfers, use the External Workspace Manager plugin,
     or use an external repository manager such as Nexus or Artifactory.
