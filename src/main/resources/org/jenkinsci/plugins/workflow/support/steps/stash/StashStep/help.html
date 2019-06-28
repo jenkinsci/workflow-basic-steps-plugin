@@ -1,6 +1,10 @@
 <div>
     Saves a set of files for later use on any node/workspace in the same Pipeline run.
-    Stashed files are not otherwise available and are generally discarded at the end of the build.
+    By default, stashed files are discarded at the end of a pipeline run.
+    Other plugins may change this behavior to preserve stashes for longer.
+    For example, Declarative Pipeline includes a <code>preserveStashes()</code> option
+    to allow stashes from a run to be retained and used if that run is restarted. 
+    <br>
     Stashes from one Pipeline run are not available in other runs, other Pipelines, or other jobs.
     If you want to persist artifacts for use outside of a single run, consider using 
     <a href="https://jenkins.io/doc/pipeline/steps/core/#archiveartifacts-archive-the-artifacts">
