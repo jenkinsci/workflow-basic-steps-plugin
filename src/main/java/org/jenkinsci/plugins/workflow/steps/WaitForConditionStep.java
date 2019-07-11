@@ -49,7 +49,7 @@ public final class WaitForConditionStep extends Step {
 
     @DataBoundSetter
     public void setInitialRecurrencePeriod(long initialRecurrencePeriod) {
-        this.initialRecurrencePeriod = Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD);
+        this.initialRecurrencePeriod = Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD));
     }
 
     long getInitialRecurrencePeriod() {
