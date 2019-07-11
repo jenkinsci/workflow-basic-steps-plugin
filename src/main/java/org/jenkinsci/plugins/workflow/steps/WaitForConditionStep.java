@@ -36,13 +36,28 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import jenkins.util.Timer;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public final class WaitForConditionStep extends Step {
 
+    static final long MIN_RECURRENCE_PERIOD = 250; // ¼s
+    static final long MAX_RECURRENCE_PERIOD = 15000; // ¼min
+
+    private long initialRecurrencePeriod = MIN_RECURRENCE_PERIOD;
+
     @DataBoundConstructor public WaitForConditionStep() {}
 
+    @DataBoundSetter
+    public void setInitialRecurrencePeriod(long initialRecurrencePeriod) {
+        this.initialRecurrencePeriod = Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD));
+    }
+
+    long getInitialRecurrencePeriod() {
+        return initialRecurrencePeriod;
+    }
+
     @Override public StepExecution start(StepContext context) throws Exception {
-        return new Execution(context);
+        return new Execution(context, initialRecurrencePeriod);
     }
 
     public static final class Execution extends AbstractStepExecutionImpl {
@@ -56,12 +71,21 @@ public final class WaitForConditionStep extends Step {
          */
         private final String id = UUID.randomUUID().toString();
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
-        static final long MIN_RECURRENCE_PERIOD = 250; // ¼s
-        static final long MAX_RECURRENCE_PERIOD = 15000; // ¼min
-        long recurrencePeriod = MIN_RECURRENCE_PERIOD;
+        private long initialRecurrencePeriod;
+        long recurrencePeriod;
 
-        Execution(StepContext context) {
+        Execution(StepContext context, long initialRecurrencePeriod) {
             super(context);
+            this.initialRecurrencePeriod = initialRecurrencePeriod;
+            recurrencePeriod = initialRecurrencePeriod;
+        }
+
+        private Object readResolve() {
+            // in case we are deserializing an older version of this object prior to this field being added
+            if (initialRecurrencePeriod == 0) {
+                initialRecurrencePeriod = MIN_RECURRENCE_PERIOD;
+            }
+            return this;
         }
 
         @Override public boolean start() throws Exception {
@@ -77,7 +101,7 @@ public final class WaitForConditionStep extends Step {
         }
 
         @Override public void onResume() {
-            recurrencePeriod = MIN_RECURRENCE_PERIOD;
+            recurrencePeriod = initialRecurrencePeriod;
             if (body == null) {
                 // Restarted while waiting for the timer to go off. Rerun now.
                 body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();

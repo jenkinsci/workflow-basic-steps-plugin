@@ -61,7 +61,26 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.success("wait/3", true);
                 SemaphoreStep.waitForStart("waited/1", b);
                 SemaphoreStep.success("waited/1", null);
-                story.j.assertLogContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.Execution.MIN_RECURRENCE_PERIOD), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+                story.j.assertLogContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.MIN_RECURRENCE_PERIOD), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+            }
+        });
+    }
+
+    @Test public void initialRecurrence() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition("waitUntil(initialRecurrencePeriod: 999) {semaphore 'wait'}; semaphore 'waited'", true));
+                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                SemaphoreStep.waitForStart("wait/1", b);
+                SemaphoreStep.success("wait/1", false);
+                SemaphoreStep.waitForStart("wait/2", b);
+                SemaphoreStep.success("wait/2", false);
+                SemaphoreStep.waitForStart("wait/3", b);
+                SemaphoreStep.success("wait/3", true);
+                SemaphoreStep.waitForStart("waited/1", b);
+                SemaphoreStep.success("waited/1", null);
+                story.j.assertLogContains("Will try again after " + Util.getTimeSpanString(999), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
             }
         });
     }
