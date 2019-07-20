@@ -100,7 +100,7 @@ public class DeleteDirStepTest {
     private String runAndGetWorkspaceDir(String flow) throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
 
-        p.setDefinition(new CpsFlowDefinition(flow));
+        p.setDefinition(new CpsFlowDefinition(flow, true));
         r.assertBuildStatusSuccess(p.scheduleBuild2(0));
 
         FilePath ws = r.jenkins.getWorkspaceFor(p);

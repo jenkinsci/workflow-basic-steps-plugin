@@ -36,7 +36,7 @@ public class ArtifactArchiverStepTest {
                 "  archive 'm*'",
                 "  unarchive(mapping:['msg':'msg.out'])",
                 "  archive 'msg.out'",
-                "}"), "\n")));
+                "}"), "\n"), true));
 
 
         // get the build going, and wait until workflow pauses
@@ -70,7 +70,7 @@ public class ArtifactArchiverStepTest {
                 "    unarchive mapping: ['a/' : '.']",
                 "    echo \"${readFile 'a/1'}/${readFile 'a/b/2'}\"",
                 "  }",
-                "}"), "\n")));
+                "}"), "\n"), true));
         WorkflowRun b = j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
         VirtualFile archivedFile = b.getArtifactManager().root().child("a/b/2");
         assertTrue(archivedFile.exists());

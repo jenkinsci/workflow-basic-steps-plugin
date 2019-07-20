@@ -97,7 +97,7 @@ public class CoreWrapperStepTest {
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}"));
+                p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
             }
@@ -159,7 +159,7 @@ public class CoreWrapperStepTest {
                     "    show 'after'\n" +
                     "  }\n" +
                     "  show 'outside'\n" +
-                    "}"));
+                    "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 story.j.assertLogContains("received initial", b);
                 story.j.assertLogContains("groovy before wrapped", b);
@@ -194,7 +194,7 @@ public class CoreWrapperStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node {echo 'outside #1'; wrap([$class: 'WrapperWithLogger']) {echo 'inside the block'}; echo 'outside #2'}"));
+                p.setDefinition(new CpsFlowDefinition("node {echo 'outside #1'; wrap([$class: 'WrapperWithLogger']) {echo 'inside the block'}; echo 'outside #2'}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
                 story.j.assertLogContains("outside #1", b);
                 story.j.assertLogContains("outside #2", b);
