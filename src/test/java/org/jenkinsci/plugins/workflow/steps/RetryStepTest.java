@@ -138,4 +138,28 @@ public class RetryStepTest {
         r.assertLogNotContains("trying 2", run);
     }
 
+    @Test
+    public void stackTraceOnError() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(
+                new CpsFlowDefinition(
+                        "def count = 0\n"
+                                + "retry(2) {\n"
+                                + "  count += 1\n"
+                                + "  echo 'Try #' + count\n"
+                                + "  if (count == 1) {\n"
+                                + "    throw new Exception('foo')\n"
+                                + "  }\n"
+                                + "  echo 'Done!'\n"
+                                + "}\n",
+                        true));
+
+        WorkflowRun run = r.buildAndAssertSuccess(p);
+        r.assertLogContains("Try #1", run);
+        r.assertLogContains("ERROR: Execution failed", run);
+        r.assertLogContains("java.lang.Exception: foo", run);
+        r.assertLogContains("\tat ", run);
+        r.assertLogContains("Try #2", run);
+        r.assertLogContains("Done!", run);
+    }
 }
