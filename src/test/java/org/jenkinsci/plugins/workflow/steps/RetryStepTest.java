@@ -91,7 +91,7 @@ public class RetryStepTest {
                 "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; echo 'NotHere' } echo 'NotHere'", true));
         final WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("start/1", b);
-        ACL.impersonate(User.get("dev").impersonate(), new Runnable() {
+        ACL.impersonate(User.getById("dev", true).impersonate(), new Runnable() {
             @Override public void run() {
                 b.getExecutor().doStop();
             }
