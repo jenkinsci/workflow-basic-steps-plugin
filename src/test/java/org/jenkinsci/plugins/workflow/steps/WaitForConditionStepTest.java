@@ -159,7 +159,7 @@ public class WaitForConditionStepTest {
             @SuppressWarnings("SleepWhileInLoop")
             @Override public void evaluate() throws Throwable {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; echo 'finished waiting'", /* TODO sandbox fails on `staticMethod org.jenkinsci.plugins.workflow.cps.Safepoint safepoint`; why? */false));
+                p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; echo 'finished waiting'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
                 final List<WaitForConditionStep.Execution> executions = new ArrayList<>();
