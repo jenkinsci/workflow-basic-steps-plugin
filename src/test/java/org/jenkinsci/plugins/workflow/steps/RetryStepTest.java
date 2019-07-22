@@ -5,6 +5,7 @@ import hudson.model.Result;
 import hudson.model.User;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.security.ACL;
+import hudson.security.ACLContext;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -91,11 +92,9 @@ public class RetryStepTest {
                 "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; echo 'NotHere' } echo 'NotHere'", true));
         final WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("start/1", b);
-        ACL.impersonate(User.getById("dev", true).impersonate(), new Runnable() {
-            @Override public void run() {
-                b.getExecutor().doStop();
-            }
-        });
+        try (ACLContext context = ACL.as(User.getById("dev", true))) {
+            b.getExecutor().doStop();
+        }
         r.assertBuildStatus(Result.ABORTED, r.waitForCompletion(b));
         r.assertLogContains("trying 0", b);
         r.assertLogContains("Aborted by dev", b);
