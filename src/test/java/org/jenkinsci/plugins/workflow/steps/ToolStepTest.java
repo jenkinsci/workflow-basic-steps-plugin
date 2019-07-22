@@ -33,7 +33,6 @@ import hudson.tools.ToolProperty;
 import java.io.File;
 import java.util.List;
 import java.util.Set;
-import jenkins.model.Jenkins;
 import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
@@ -63,7 +62,7 @@ public class ToolStepTest {
     @Test public void build() throws Exception {
         Maven.MavenInstallation tool = ToolInstallations.configureMaven3();
         String name = tool.getName();
-        Maven.MavenInstallation.DescriptorImpl desc = Jenkins.getInstance().getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
+        Maven.MavenInstallation.DescriptorImpl desc = r.jenkins.getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
 
         // Defensive - Maven doesn't have a symbol before 2.x, and other tools may still not have symbols after that.
         String type = desc.getId();
@@ -88,7 +87,7 @@ public class ToolStepTest {
     @Test public void toolWithSymbol() throws Exception {
         File toolHome = folder.newFolder("mockTools");
         MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
-        Jenkins.getInstance().getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(tool);
+        r.jenkins.getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(tool);
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithSymbol'\n"
@@ -102,7 +101,7 @@ public class ToolStepTest {
     @Test public void toolWithoutSymbol() throws Exception {
         File toolHome = folder.newFolder("mockTools");
         MockToolWithoutSymbol tool = new MockToolWithoutSymbol("mock-tool-without-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
-        Jenkins.getInstance().getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class).setInstallations(tool);
+        r.jenkins.getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class).setInstallations(tool);
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithoutSymbol'}",
