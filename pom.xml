@@ -74,7 +74,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom</artifactId>
-                <version>2.150.1-rc82.bd101ca058b9</version> <!-- TODO -->
+                <version>2.150.1-rc89.946de4daedb3</version> <!-- TODO -->
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -187,7 +187,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>2.35</version> <!-- TODO https://github.com/jenkinsci/bom/pull/32 -->
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -200,7 +199,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>scm-api</artifactId>
-            <version>2.6.3</version> <!-- TODO https://github.com/jenkinsci/bom/pull/32 -->
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
