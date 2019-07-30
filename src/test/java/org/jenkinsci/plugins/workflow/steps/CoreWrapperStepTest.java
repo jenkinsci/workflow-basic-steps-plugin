@@ -91,7 +91,7 @@ public class CoreWrapperStepTest {
             @Override public void evaluate() throws Throwable {
                 new SnippetizerTester(story.j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Assume.assumeFalse(Functions.isWindows()); // TODO create Windows equivalent
-                Map<String,String> slaveEnv = new HashMap<String,String>();
+                Map<String,String> slaveEnv = new HashMap<>();
                 slaveEnv.put("PATH", "/usr/bin:/bin");
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);

@@ -51,7 +51,7 @@ public class EchoStepTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("echo 'hello there'", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
-        List<LogAction> logActions = new ArrayList<LogAction>();
+        List<LogAction> logActions = new ArrayList<>();
         for (FlowNode n : new FlowGraphWalker(b.getExecution())) {
             LogAction la = n.getAction(LogAction.class);
             if (la != null) {
