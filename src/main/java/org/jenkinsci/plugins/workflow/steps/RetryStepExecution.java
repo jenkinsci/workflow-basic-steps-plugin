@@ -4,7 +4,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Functions;
 import hudson.model.TaskListener;
-import jenkins.model.CauseOfInterruption;
 
 /**
  * @author Kohsuke Kawaguchi
