@@ -40,7 +40,6 @@ import hudson.model.Run;
 import hudson.model.Slave;
 import hudson.model.TaskListener;
 import hudson.slaves.ComputerLauncher;
-import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -267,7 +266,7 @@ public class CoreWrapperStepTest {
     private static class SpecialEnvSlave extends Slave {
         private final Map<String,String> env;
         SpecialEnvSlave(File remoteFS, ComputerLauncher launcher, String nodeName, @Nonnull String labels, Map<String,String> env) throws Descriptor.FormException, IOException {
-            super(nodeName, nodeName, remoteFS.getAbsolutePath(), 1, Node.Mode.NORMAL, labels, launcher, RetentionStrategy.NOOP, Collections.<NodeProperty<?>>emptyList());
+            super(nodeName, nodeName, remoteFS.getAbsolutePath(), 1, Node.Mode.NORMAL, labels, launcher, RetentionStrategy.NOOP, Collections.emptyList());
             this.env = env;
         }
         @Override public Computer createComputer() {

@@ -161,7 +161,7 @@ public class EnvStepTest {
     @Test public void configRoundTrip() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                configRoundTrip(Collections.<String>emptyList());
+                configRoundTrip(Collections.emptyList());
                 configRoundTrip(Collections.singletonList("VAR1=val1"));
                 configRoundTrip(Arrays.asList("VAR1=val1", "VAR2=val2"));
             }
