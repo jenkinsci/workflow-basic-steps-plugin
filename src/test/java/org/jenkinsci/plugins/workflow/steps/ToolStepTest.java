@@ -146,7 +146,7 @@ public class ToolStepTest {
         r.jenkins.getJDKs().add(new JDK(name, "/wherever"));
         ToolStep s = new StepConfigTester(r).configRoundTrip(new ToolStep(name));
         assertEquals(name, s.getName());
-        assertEquals(null, s.getType());
+        assertNull(s.getType());
         s.setType(type);
         s = new StepConfigTester(r).configRoundTrip(s);
         assertEquals(name, s.getName());
