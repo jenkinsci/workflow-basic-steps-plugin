@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -239,11 +238,11 @@ public class CoreWrapperStepTest {
                      "    wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {}\n" +
                      "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), Predicates.and(new NodeStepTypePredicate("wrap"), new Predicate<FlowNode>() {
-                    @Override public boolean apply(FlowNode n) {
-                        return n instanceof StepStartNode && !((StepStartNode) n).isBody();
-                    }
-                }));
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
+                        b.getExecution(),
+                        Predicates.and(
+                                new NodeStepTypePredicate("wrap"),
+                                n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
                 assertThat(coreStepNodes, Matchers.hasSize(1));
                 assertEquals("xterm", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
             }

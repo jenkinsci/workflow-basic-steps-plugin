@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.base.Function;
 import hudson.AbortException;
 import hudson.Util;
 import hudson.model.Result;
@@ -163,11 +162,9 @@ public class WaitForConditionStepTest {
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
                 final List<WaitForConditionStep.Execution> executions = new ArrayList<>();
-                StepExecution.applyAll(WaitForConditionStep.Execution.class, new Function<WaitForConditionStep.Execution, Void>() {
-                    @Override public Void apply(WaitForConditionStep.Execution execution) {
-                        executions.add(execution);
-                        return null;
-                    }
+                StepExecution.applyAll(WaitForConditionStep.Execution.class, execution -> {
+                    executions.add(execution);
+                    return null;
                 }).get();
                 assertEquals(1, executions.size());
                 SemaphoreStep.success("wait/1", false);
