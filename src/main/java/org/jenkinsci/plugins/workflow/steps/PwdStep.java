@@ -83,11 +83,6 @@ public class PwdStep extends Step {
 
     }
 
-    // TODO use 1.652 use WorkspaceList.tempDir
-    private static FilePath tempDir(FilePath ws) {
-        return ws.sibling(ws.getName() + System.getProperty(WorkspaceList.class.getName(), "@") + "tmp");
-    }
-
     public static class Execution extends SynchronousStepExecution<String> {
         
         @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
@@ -100,7 +95,7 @@ public class PwdStep extends Step {
 
         @Override protected String run() throws Exception {
             FilePath cwd = getContext().get(FilePath.class);
-            return (tmp ? tempDir(cwd) : cwd).getRemote();
+            return (tmp ? WorkspaceList.tempDir(cwd) : cwd).getRemote();
         }
 
         private static final long serialVersionUID = 1L;
