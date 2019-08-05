@@ -36,7 +36,7 @@ public interface CatchExecutionOptions extends Serializable {
      *
      * If {@link #getStepResultOnError} (by adding a {@link WarningAction})
      */
-    public @CheckForNull String getMessage();
+    @CheckForNull String getMessage();
 
     /**
      * The result that will be used for setting the build result if an error is caught.
@@ -45,7 +45,7 @@ public interface CatchExecutionOptions extends Serializable {
      * returns {@code true}, then if a {@link FlowInterruptedException} is caught, its result will be used
      * instead of this value.
      */
-    public @Nonnull Result getBuildResultOnError();
+    @Nonnull Result getBuildResultOnError();
 
     /**
      * The result that will be used for annotating the with {@link WarningAction}) if an error is caught.
@@ -54,7 +54,7 @@ public interface CatchExecutionOptions extends Serializable {
      * returns {@code true}, then if a {@link FlowInterruptedException} is caught, its result will be used
      * instead of this value.
      */
-    public @Nonnull Result getStepResultOnError();
+    @Nonnull Result getStepResultOnError();
 
     /**
      * Whether {@link FlowInterruptedException} should be caught and handled by the step or rethrown.
@@ -64,5 +64,5 @@ public interface CatchExecutionOptions extends Serializable {
      * sometimes desirable to rethrow these kinds of exceptions rather than catching them so as to
      * not interfere with their intended behavior.
      */
-    public boolean isCatchInterruptions();
+    boolean isCatchInterruptions();
 }

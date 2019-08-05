@@ -47,6 +47,7 @@ import org.junit.*;
 
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.*;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
@@ -138,7 +139,7 @@ public class TimeoutStepTest extends Assert {
                     if (r.getNode() instanceof StepAtomNode) {
                         StepAtomNode a = (StepAtomNode) r.getNode();
                         if (a.getDescriptor().getClass() == SleepStep.DescriptorImpl.class) {
-                            assertTrue(a.getAction(ErrorAction.class) != null);
+                            assertNotNull(a.getAction(ErrorAction.class));
                         }
                     }
                 }

@@ -35,7 +35,7 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import org.junit.Test;
 import org.junit.Rule;
@@ -58,7 +58,7 @@ public class PwdStepTest {
         r.assertLogContains("tmp='" + WorkspaceList.tempDir(r.jenkins.getWorkspaceFor(p)) + "'", b);
         List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("pwd"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
-        assertEquals(null, ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
+        assertNull(ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
 }

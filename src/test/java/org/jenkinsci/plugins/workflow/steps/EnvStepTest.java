@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import hudson.Functions;
 import java.util.Arrays;
@@ -73,11 +72,11 @@ public class EnvStepTest {
                 story.j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
                 story.j.assertLogContains("groovy NULLED=null", b);
                 story.j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside", b);
-                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), Predicates.and(new NodeStepTypePredicate("withEnv"), new Predicate<FlowNode>() {
-                    @Override public boolean apply(FlowNode n) {
-                        return n instanceof StepStartNode && !((StepStartNode) n).isBody();
-                    }
-                }));
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
+                        b.getExecution(),
+                        Predicates.and(
+                                new NodeStepTypePredicate("withEnv"),
+                                n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
                 assertThat(coreStepNodes, Matchers.hasSize(1));
                 assertEquals("CUSTOM, NOVEL, BUILD_TAG, NULLED, FOOPATH+BALL", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
             }
@@ -162,7 +161,7 @@ public class EnvStepTest {
     @Test public void configRoundTrip() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                configRoundTrip(Collections.<String>emptyList());
+                configRoundTrip(Collections.emptyList());
                 configRoundTrip(Collections.singletonList("VAR1=val1"));
                 configRoundTrip(Arrays.asList("VAR1=val1", "VAR2=val2"));
             }
