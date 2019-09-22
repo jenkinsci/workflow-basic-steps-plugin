@@ -28,4 +28,13 @@ THE SOFTWARE.
     <f:entry field="count" title="${%Retry Count}">
         <f:number clazz="positive-number"/>
     </f:entry>
+
+    <f:optionalBlock field="useTimeDelay" inline="true" title="${%Use a time delay between retries.}">
+        <f:entry field="timeDelay" title="${%Sleep between retry}">
+            <f:number clazz="positive-number"/>
+        </f:entry>
+        <f:entry field="unit" title="${%Unit}">
+            <f:select/>
+        </f:entry>
+    </f:optionalBlock>
 </j:jelly>
