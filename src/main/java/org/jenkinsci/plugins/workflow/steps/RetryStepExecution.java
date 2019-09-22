@@ -25,8 +25,9 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
     private transient final int count;
     private transient volatile ScheduledFuture<?> task;
 
+    /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
     private boolean executing = false;
-    /** Token for {@link #activity} callbacks. */
+    /** Token for {@link #executing} callbacks. */
     private final String id = UUID.randomUUID().toString();
 
 
