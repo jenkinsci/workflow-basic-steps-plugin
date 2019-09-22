@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+
+import com.google.common.base.Function;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Functions;
@@ -13,8 +15,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
-import com.google.common.base.Function;
-
 import jenkins.util.Timer;
 
 /**
@@ -24,6 +24,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
 
     @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
     private transient final RetryStep step;
+    @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
     private transient final int count;
     private transient volatile ScheduledFuture<?> task;
 
@@ -163,9 +164,15 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                     context.onFailure(t);
                     return;
                 }
-                left--;
-                step.left--;
-                if ((left>0) || (step != null && step.left>0)) {
+                int remaining = 0;
+                if(step != null) {
+                    step.left--;
+                    remaining = step.left;
+                } else { 
+                    left--;
+                    remaining = left;
+                }
+                if (remaining>0) {
                     TaskListener l = context.get(TaskListener.class);
                     if (t instanceof AbortException) {
                         l.error(t.getMessage());
@@ -175,7 +182,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                     } else {
                         Functions.printStackTrace(t, l.error("Execution failed"));
                     }
-                    if(step == null || !step.isUseTimeDelay()) {
+                    if(step != null && !step.isUseTimeDelay()) {
                         l.getLogger().println("Retrying");
                         context.newBodyInvoker().withCallback(this).start();
                     } else {
