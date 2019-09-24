@@ -26,26 +26,62 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Extension;
 import hudson.model.TaskListener;
+import hudson.util.ListBoxModel;
+
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 /**
  * Executes the body up to N times.
  *
  * @author Kohsuke Kawaguchi
  */
-public class RetryStep extends Step {
+public class RetryStep extends Step implements Serializable {
     
     private final int count;
+    private int timeDelay;
+    private TimeUnit unit = TimeUnit.SECONDS;
+    private boolean useTimeDelay = false;
+    
+    public int left;
 
     @DataBoundConstructor
     public RetryStep(int count) {
         this.count = count;
+        this.left = count;
     }
 
     public int getCount() {
         return count;
+    }
+
+    @DataBoundSetter public void setUseTimeDelay(boolean useTimeDelay) {
+        this.useTimeDelay = useTimeDelay;
+    }
+
+    public boolean isUseTimeDelay() {
+        return useTimeDelay;
+    }
+
+    @DataBoundSetter public void setTimeDelay(int timeDelay) {
+        this.timeDelay = timeDelay;
+    }
+
+    public int getTimeDelay() {
+        return timeDelay;
+    }
+
+    @DataBoundSetter public void setUnit(TimeUnit unit) {
+        this.unit = unit;
+    }
+
+    public TimeUnit getUnit() {
+        return unit;
     }
 
     @Override
@@ -55,7 +91,7 @@ public class RetryStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new RetryStepExecution(count, context);
+        return new RetryStepExecution(this, context);
     }
 
     @Extension
@@ -76,6 +112,14 @@ public class RetryStep extends Step {
             return "Retry the body up to N times";
         }
 
+        public ListBoxModel doFillUnitItems() {
+            ListBoxModel r = new ListBoxModel();
+            for (TimeUnit unit : TimeUnit.values()) {
+                r.add(unit.name());
+            }
+            return r;
+        }
+        
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
@@ -83,4 +127,5 @@ public class RetryStep extends Step {
 
     }
 
+    private static final long serialVersionUID = 1L;
 }
