@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-
 import com.google.common.base.Function;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
