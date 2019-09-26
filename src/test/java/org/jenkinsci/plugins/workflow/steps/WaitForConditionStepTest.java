@@ -40,6 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class WaitForConditionStepTest {
@@ -191,6 +192,32 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.success("wait/4", true);
                 story.j.assertLogContains("finished waiting", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
             }
+        });
+    }
+
+    @Issue("JENKINS-27127")
+    @Test public void semaphore() {
+        story.then(r -> {
+            WorkflowJob p = r.createProject(WorkflowJob.class);
+            p.setDefinition(new CpsFlowDefinition(
+                "def semaphore = 10\n" +
+                "def rand = new Random()\n" +
+                "def branches = [:]\n" +
+                "for (int i = 0; i < 50; i++) {\n" +
+                "  def branch = /b$i/\n" +
+                "  branches[branch] = {\n" +
+                "    waitUntil {if (semaphore > 0) {semaphore--; true} else {false}}\n" +
+                "    assert semaphore >= 0\n" +
+                "    try {\n" +
+                "      echo(/really starting $branch/)\n" +
+                "      sleep rand.nextInt(10)\n" +
+                "    } finally {\n" +
+                "      semaphore++\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n" +
+                "parallel branches", true));
+            r.buildAndAssertSuccess(p);
         });
     }
 
