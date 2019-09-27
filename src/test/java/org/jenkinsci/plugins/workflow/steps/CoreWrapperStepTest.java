@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -41,7 +40,6 @@ import hudson.model.Run;
 import hudson.model.Slave;
 import hudson.model.TaskListener;
 import hudson.slaves.ComputerLauncher;
-import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -92,7 +90,7 @@ public class CoreWrapperStepTest {
             @Override public void evaluate() throws Throwable {
                 new SnippetizerTester(story.j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Assume.assumeFalse(Functions.isWindows()); // TODO create Windows equivalent
-                Map<String,String> slaveEnv = new HashMap<String,String>();
+                Map<String,String> slaveEnv = new HashMap<>();
                 slaveEnv.put("PATH", "/usr/bin:/bin");
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
@@ -239,11 +237,11 @@ public class CoreWrapperStepTest {
                      "    wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {}\n" +
                      "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), Predicates.and(new NodeStepTypePredicate("wrap"), new Predicate<FlowNode>() {
-                    @Override public boolean apply(FlowNode n) {
-                        return n instanceof StepStartNode && !((StepStartNode) n).isBody();
-                    }
-                }));
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
+                        b.getExecution(),
+                        Predicates.and(
+                                new NodeStepTypePredicate("wrap"),
+                                n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
                 assertThat(coreStepNodes, Matchers.hasSize(1));
                 assertEquals("xterm", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
             }
@@ -268,7 +266,7 @@ public class CoreWrapperStepTest {
     private static class SpecialEnvSlave extends Slave {
         private final Map<String,String> env;
         SpecialEnvSlave(File remoteFS, ComputerLauncher launcher, String nodeName, @Nonnull String labels, Map<String,String> env) throws Descriptor.FormException, IOException {
-            super(nodeName, nodeName, remoteFS.getAbsolutePath(), 1, Node.Mode.NORMAL, labels, launcher, RetentionStrategy.NOOP, Collections.<NodeProperty<?>>emptyList());
+            super(nodeName, nodeName, remoteFS.getAbsolutePath(), 1, Node.Mode.NORMAL, labels, launcher, RetentionStrategy.NOOP, Collections.emptyList());
             this.env = env;
         }
         @Override public Computer createComputer() {

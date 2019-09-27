@@ -52,7 +52,7 @@ public class CatchErrorStepTest {
     @Rule public JenkinsRule r = new JenkinsRule();
 
     @Test public void specialStatus() throws Exception {
-        User.get("smrt");
+        User.getById("smrt", true);
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
                 "catchError {\n" +

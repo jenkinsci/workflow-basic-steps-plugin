@@ -5,6 +5,7 @@ import hudson.model.Result;
 import hudson.model.User;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.security.ACL;
+import hudson.security.ACLContext;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -91,11 +92,9 @@ public class RetryStepTest {
                 "int count = 0; retry(3) { echo 'trying '+(count++); semaphore 'start'; echo 'NotHere' } echo 'NotHere'", true));
         final WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("start/1", b);
-        ACL.impersonate(User.get("dev").impersonate(), new Runnable() {
-            @Override public void run() {
-                b.getExecutor().doStop();
-            }
-        });
+        try (ACLContext context = ACL.as(User.getById("dev", true))) {
+            b.getExecutor().doStop();
+        }
         r.assertBuildStatus(Result.ABORTED, r.waitForCompletion(b));
         r.assertLogContains("trying 0", b);
         r.assertLogContains("Aborted by dev", b);
@@ -138,4 +137,28 @@ public class RetryStepTest {
         r.assertLogNotContains("trying 2", run);
     }
 
+    @Test
+    public void stackTraceOnError() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(
+                new CpsFlowDefinition(
+                        "def count = 0\n"
+                                + "retry(2) {\n"
+                                + "  count += 1\n"
+                                + "  echo 'Try #' + count\n"
+                                + "  if (count == 1) {\n"
+                                + "    throw new Exception('foo')\n"
+                                + "  }\n"
+                                + "  echo 'Done!'\n"
+                                + "}\n",
+                        true));
+
+        WorkflowRun run = r.buildAndAssertSuccess(p);
+        r.assertLogContains("Try #1", run);
+        r.assertLogContains("ERROR: Execution failed", run);
+        r.assertLogContains("java.lang.Exception: foo", run);
+        r.assertLogContains("\tat ", run);
+        r.assertLogContains("Try #2", run);
+        r.assertLogContains("Done!", run);
+    }
 }
