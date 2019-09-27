@@ -1,0 +1,15 @@
+<div>
+    Incremental Delay allows the delay to be increased by a specific amount
+    of time <code>TimeUnit</code> between reach recurring retry. The delay 
+    starts out at the min and then increases by the increment each round 
+    after until it reaches the max, then the max for the remaining rounds.
+    An example of the <code>incremental(increment, min, max, unit)</code> 
+    usage in a pipeline retry step looks like:
+
+    <code>retry(count: 4, 
+        delay: incremental(increment: 60, max: 10, min: 50000, unit: 'SECONDS'), 
+        useRetryDelay: true) {
+            error("oops")
+        }
+    </code>
+</div>

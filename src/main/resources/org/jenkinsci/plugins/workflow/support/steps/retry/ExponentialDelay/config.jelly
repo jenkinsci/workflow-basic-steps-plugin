@@ -2,7 +2,7 @@
 <!--
 The MIT License
 
-Copyright 2014 Jesse Glick.
+Copyright 2015 CloudBees, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,16 @@ THE SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry field="count" title="${%Retry Count}">
+    <f:entry field="multiplier" title="${%Exponent}">
         <f:number clazz="positive-number"/>
     </f:entry>
-
-    <f:optionalBlock field="useRetryDelay" inline="true" title="${%Use a time delay between retries.}">
-        <f:dropdownDescriptorSelector field="delay" title="Retry Delay" descriptors="${descriptor.applicableDescriptors}"/>
-    </f:optionalBlock>
+    <f:entry field="min" title="${%Minimum delay}">
+        <f:number clazz="positive-number"/>
+    </f:entry>
+    <f:entry field="max" title="${%Maximum delay}">
+            <f:number clazz="positive-number"/>
+    </f:entry>       
+    <f:entry field="unit" title="${%Unit}">
+        <f:select default="SECONDS"/>
+    </f:entry>
 </j:jelly>

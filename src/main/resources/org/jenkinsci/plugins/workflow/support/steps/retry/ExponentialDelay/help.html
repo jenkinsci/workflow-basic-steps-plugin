@@ -1,0 +1,15 @@
+<div>
+    Exponential Delay allows the delay between retries to exponentially grow
+    larger for issues that cannot be immediately fixed. The delay starts out 
+    at the min and then increases 2^x * 1 <code>TimeUnit</code> each round 
+    after until it reaches the max, then the max for the remaining rounds.
+    An example of the <code>exponential(multiplier, min, max, unit)</code> 
+    usage in a pipeline retry step looks like:
+
+    <code>retry(count: 4, 
+        delay: exponential(max: 50000, min: 10, multiplier: 2, unit: 'SECONDS'), 
+        useRetryDelay: true) {
+            error("oops")
+        }
+    </code>
+</div>

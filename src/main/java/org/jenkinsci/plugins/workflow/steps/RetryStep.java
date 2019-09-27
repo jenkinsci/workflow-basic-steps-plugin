@@ -24,17 +24,18 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.Extension;
-import hudson.model.TaskListener;
-import hudson.util.ListBoxModel;
-
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
+import org.jenkinsci.plugins.workflow.support.steps.retry.RetryDelay;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.model.TaskListener;
 
 /**
  * Executes the body up to N times.
@@ -44,9 +45,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 public class RetryStep extends Step implements Serializable {
     
     private final int count;
-    private int timeDelay;
-    private TimeUnit unit = TimeUnit.SECONDS;
-    private boolean useTimeDelay = false;
+    private RetryDelay delay;
+    private boolean useRetryDelay = false;
     
     public int left;
 
@@ -60,28 +60,20 @@ public class RetryStep extends Step implements Serializable {
         return count;
     }
 
-    @DataBoundSetter public void setUseTimeDelay(boolean useTimeDelay) {
-        this.useTimeDelay = useTimeDelay;
+    @DataBoundSetter public void setUseRetryDelay(boolean useRetryDelay) {
+        this.useRetryDelay = useRetryDelay;
     }
 
-    public boolean isUseTimeDelay() {
-        return useTimeDelay;
+    public boolean isUseRetryDelay() {
+        return useRetryDelay;
     }
 
-    @DataBoundSetter public void setTimeDelay(int timeDelay) {
-        this.timeDelay = timeDelay;
+    @DataBoundSetter public void setDelay(RetryDelay delay) {
+        this.delay = delay;
     }
 
-    public int getTimeDelay() {
-        return timeDelay;
-    }
-
-    @DataBoundSetter public void setUnit(TimeUnit unit) {
-        this.unit = unit;
-    }
-
-    public TimeUnit getUnit() {
-        return unit;
+    public RetryDelay getDelay() {
+        return delay;
     }
 
     @Override
@@ -112,19 +104,14 @@ public class RetryStep extends Step implements Serializable {
             return "Retry the body up to N times";
         }
 
-        public ListBoxModel doFillUnitItems() {
-            ListBoxModel r = new ListBoxModel();
-            for (TimeUnit unit : TimeUnit.values()) {
-                r.add(unit.name());
-            }
-            return r;
-        }
-        
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
 
+        public Collection<? extends Descriptor<?>> getApplicableDescriptors() {
+            return RetryDelay.RetryDelayDescriptor.all();
+        }
     }
 
     private static final long serialVersionUID = 1L;

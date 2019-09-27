@@ -1,0 +1,16 @@
+<div>
+    Random Delay allows for jitter between retries to help in cases where there 
+    might be contention with external forces. A random number will be chosen
+    between the min and max values and will be used as the time in 
+    <code>TimeUnit</code> delay. An example of the usage of 
+    <code>random(min, max, unit) </code>in a 
+    pipeline retry step looks like:
+
+    
+    <code>retry(count: 4, delay: 
+        random(max: 60, min: 4, unit: 'SECONDS'), 
+        useRetryDelay: true) {
+            error("oops")
+        }
+    </code>
+</div>
