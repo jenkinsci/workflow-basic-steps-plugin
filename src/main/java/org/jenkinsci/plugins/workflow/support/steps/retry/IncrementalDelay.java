@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.workflow.support.steps.retry;
 
+import java.io.Serializable;
+
 import javax.annotation.Nonnull;
 
 import org.jenkinsci.Symbol;
@@ -15,7 +17,7 @@ import hudson.Extension;
  * the max for the remaining rounds.
  */
 @Extension
-public class IncrementalDelay extends RetryDelay {
+public class IncrementalDelay extends RetryDelay implements Serializable {
 
     private final long min;
     private final long max;
@@ -32,8 +34,8 @@ public class IncrementalDelay extends RetryDelay {
     @DataBoundConstructor
     public IncrementalDelay(long increment, long min, long max) {
         this.increment = increment;
-        this.max = min;
-        this.min = max;
+        this.max = max;
+        this.min = min;
     }
 
     public long getIncrement() {
@@ -51,10 +53,12 @@ public class IncrementalDelay extends RetryDelay {
     @Override
     public long computeRetryDelay() {
         long delay = min;
-        if(lastDelay > 0) {
+        if(lastDelay == 0) {
+            lastDelay = min;
+        } else {
             delay = lastDelay;
-        }
-        lastDelay = delay + increment;
+            lastDelay = delay + increment;
+        } 
 
         // Check to see if greater than max
         if(lastDelay > max) {
@@ -70,5 +74,7 @@ public class IncrementalDelay extends RetryDelay {
         public String getDisplayName() {
             return "Incremental";
         }
+        private static final long serialVersionUID = 1L;
     }
+    private static final long serialVersionUID = 1L;
 }

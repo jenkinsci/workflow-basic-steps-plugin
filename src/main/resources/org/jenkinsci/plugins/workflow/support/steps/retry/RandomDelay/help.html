@@ -8,7 +8,7 @@
 
     
     <code>retry(count: 4, delay: 
-        random(max: 60, min: 4, unit: 'SECONDS'), 
+        random(min: 4, max: 60, unit: 'SECONDS'), 
         useRetryDelay: true) {
             error("oops")
         }

@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.support.steps.retry;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -19,13 +20,13 @@ import hudson.util.ListBoxModel;
 
 public abstract class RetryDelay extends AbstractDescribableImpl<RetryDelay> implements ExtensionPoint {
 
-    protected TimeUnit unit = TimeUnit.SECONDS;
+    @Nonnull protected TimeUnit unit = TimeUnit.SECONDS;
 
-    @DataBoundSetter public void setUnit(TimeUnit unit) {
+    @DataBoundSetter public void setUnit(@Nonnull TimeUnit unit) {
         this.unit = unit;
     }
 
-    public TimeUnit getUnit() {
+    @Nonnull public TimeUnit getUnit() {
         return unit;
     }
     
@@ -35,7 +36,7 @@ public abstract class RetryDelay extends AbstractDescribableImpl<RetryDelay> imp
      */
     public abstract long computeRetryDelay();
 
-    public static abstract class RetryDelayDescriptor extends Descriptor<RetryDelay> {
+    public static abstract class RetryDelayDescriptor extends Descriptor<RetryDelay> implements Serializable {
 
         public @Nonnull String getName() {
             Set<String> symbolValues = SymbolLookup.getSymbolValue(this);
@@ -63,6 +64,6 @@ public abstract class RetryDelay extends AbstractDescribableImpl<RetryDelay> imp
             }
             return r;
         }
+        private static final long serialVersionUID = 1L;
     }
-
 }

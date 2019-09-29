@@ -31,7 +31,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
             "int i = 0;\n" +
-            "retry(count: 3, delay: fixed(10, unit: 'SECONDS'), useTimeDelay: true) {\n" +
+            "retry(count: 3, delay: fixed(time: 10, unit: 'SECONDS'), useRetryDelay: true) {\n" +
             "    println 'Trying!'\n" +
             "    if (i++ < 2) error('oops');\n" +
             "    println 'Done!'\n" +
@@ -43,8 +43,8 @@ public class RetryStepDelayTest {
         QueueTaskFuture<WorkflowRun> f = p.scheduleBuild2(0);
         long after = System.currentTimeMillis();
         long difference = after - before;
-        long timeInSeconds = TimeUnit.MILLISECONDS.convert(difference, TimeUnit.SECONDS);
-        assertTrue(timeInSeconds > 20);
+        long minimumTimeMilliseconds = TimeUnit.SECONDS.convert(20, TimeUnit.MILLISECONDS);
+        assertTrue(difference > minimumTimeMilliseconds);
         WorkflowRun b = r.assertBuildStatusSuccess(f);
     
         String log = JenkinsRule.getLog(b);
@@ -54,11 +54,11 @@ public class RetryStepDelayTest {
         for (String msg : new String[] {
             "Trying!",
             "oops",
-            "Will try again",
+            "Will try again after 10 sec",
             "Retrying",
             "Trying!",
             "oops",
-            "Will try again",
+            "Will try again after 10 sec",
             "Retrying",
             "Trying!",
             "Done!",
@@ -70,12 +70,19 @@ public class RetryStepDelayTest {
     
         idx = 0;
         for (String msg : new String[] {
+            "[Pipeline] Start of Pipeline",
             "[Pipeline] retry",
             "[Pipeline] {",
+            "[Pipeline] echo",
+            "[Pipeline] error",
             "[Pipeline] }",
             "[Pipeline] {",
+            "[Pipeline] echo",
+            "[Pipeline] error",
             "[Pipeline] }",
             "[Pipeline] {",
+            "[Pipeline] echo",
+            "[Pipeline] echo",
             "[Pipeline] }",
             "[Pipeline] // retry",
         }) {
@@ -85,14 +92,14 @@ public class RetryStepDelayTest {
     }
 
     @Test
-    public void stackTraceOnErrorWithTimeout() throws Exception {
+    public void stackTraceOnErrorWithRetry() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
-            "def count = 0\n"
-                + "retry(count: 2, delay: fixed(10, unit: 'SECONDS'), useTimeDelay: true) {\n"
-                + "  count += 1\n"
-                + "  echo 'Try #' + count\n"
-                + "  if (count == 1) {\n"
+            "int i = 0\n"
+                + "retry(count: 2, delay: fixed(time: 5, unit: 'SECONDS'), useRetryDelay: true) {\n"
+                + "  i += 1\n"
+                + "  echo 'Try #' + i\n"
+                + "  if (i == 1) {\n"
                 + "    throw new Exception('foo')\n"
                 + "  }\n"
                 + "  echo 'Done!'\n"
@@ -112,23 +119,23 @@ public class RetryStepDelayTest {
     public void retryRandomDelay() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
-            "def count = 0\n"
+            "int i = 0\n"
                 + "retry(count: 4, delay: random(max: 15, min: 5, unit: 'SECONDS'), useRetryDelay: true) {\n"
-                + "  count += 1\n"
-                + "  echo 'Try #' + count\n"
-                + "  if (count == 1) {\n"
-                + "    throw new Exception('foo')\n"
+                + "  if (i++ < 3) {\n"
+                + "   echo 'Try #' + i\n"
+                + "   error('oops');\n"
                 + "  }\n"
-                + "  echo 'Done!'\n"
+                + "  println 'Done!'\n"
                 + "}\n",
             true));
 
         WorkflowRun run = r.buildAndAssertSuccess(p);
         r.assertLogContains("Try #1", run);
-        r.assertLogContains("ERROR: Execution failed", run);
-        r.assertLogContains("java.lang.Exception: foo", run);
-        r.assertLogContains("\tat ", run);
+        r.assertLogContains("ERROR: oops", run);
+        r.assertLogContains("Will try again after", run);
+        r.assertLogContains("Retrying", run);
         r.assertLogContains("Try #2", run);
+        r.assertLogContains("Try #3", run);
         r.assertLogContains("Done!", run);
     }
 
@@ -136,23 +143,25 @@ public class RetryStepDelayTest {
     public void retryExponentialDelay() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
-            "def count = 0\n"
+            "int i = 0\n"
                 + "retry(count: 4, delay: exponential(max: 20, min: 1, multiplier: 2, unit: 'SECONDS'), useRetryDelay: true) {\n"
-                + "  count += 1\n"
-                + "  echo 'Try #' + count\n"
-                + "  if (count == 1) {\n"
-                + "    throw new Exception('foo')\n"
+                + "  if (i++ < 3) {\n"
+                + "   echo 'Try #' + i\n"
+                + "   error('oops');\n"
                 + "  }\n"
-                + "  echo 'Done!'\n"
+                + "  println 'Done!'\n"
                 + "}\n",
             true));
 
         WorkflowRun run = r.buildAndAssertSuccess(p);
         r.assertLogContains("Try #1", run);
-        r.assertLogContains("ERROR: Execution failed", run);
-        r.assertLogContains("java.lang.Exception: foo", run);
-        r.assertLogContains("\tat ", run);
+        r.assertLogContains("ERROR: oops", run);
+        r.assertLogContains("Will try again after 5 sec", run);
+        r.assertLogContains("Retrying", run);
         r.assertLogContains("Try #2", run);
+        r.assertLogContains("Will try again after 9 sec", run);
+        r.assertLogContains("Try #3", run);
+        r.assertLogContains("Will try again after 17 sec", run);
         r.assertLogContains("Done!", run);
     }
 
@@ -160,23 +169,25 @@ public class RetryStepDelayTest {
     public void retryIncrementalDelay() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
-            "def count = 0\n"
+            "int i = 0\n"
                 + "retry(count: 4, delay: incremental(increment: 2, max: 10, min: 1, unit: 'SECONDS'), useRetryDelay: true) {\n"
-                + "  count += 1\n"
-                + "  echo 'Try #' + count\n"
-                + "  if (count == 1) {\n"
-                + "    throw new Exception('foo')\n"
+                + "  if (i++ < 3) {\n"
+                + "   echo 'Try #' + i\n"
+                + "   error('oops');\n"
                 + "  }\n"
-                + "  echo 'Done!'\n"
+                + "  println 'Done!'\n"
                 + "}\n",
             true));
 
         WorkflowRun run = r.buildAndAssertSuccess(p);
         r.assertLogContains("Try #1", run);
-        r.assertLogContains("ERROR: Execution failed", run);
-        r.assertLogContains("java.lang.Exception: foo", run);
-        r.assertLogContains("\tat ", run);
+        r.assertLogContains("ERROR: oops", run);
+        r.assertLogContains("Will try again after 1 sec", run);
+        r.assertLogContains("Retrying", run);
         r.assertLogContains("Try #2", run);
+        r.assertLogContains("Will try again after 3 sec", run);
+        r.assertLogContains("Try #3", run);
+        r.assertLogContains("Will try again after 5 sec", run);
         r.assertLogContains("Done!", run);
     }
 
@@ -184,23 +195,28 @@ public class RetryStepDelayTest {
     public void retryRandomExponentialDelay() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
-            "def count = 0\n"
+            "int i = 0\n"
                 + "retry(count: 6, delay: randomExponential(max: 10, multiplier: 2), useRetryDelay: true, unit: 'SECONDS') {\n"
-                + "  count += 1\n"
-                + "  echo 'Try #' + count\n"
-                + "  if (count == 1) {\n"
-                + "    throw new Exception('foo')\n"
+                + "  if (i++ < 5) {\n"
+                + "   echo 'Try #' + i\n"
+                + "   error('oops');\n"
                 + "  }\n"
-                + "  echo 'Done!'\n"
+                + "  println 'Done!'\n"
                 + "}\n",
             true));
 
         WorkflowRun run = r.buildAndAssertSuccess(p);
+
         r.assertLogContains("Try #1", run);
-        r.assertLogContains("ERROR: Execution failed", run);
-        r.assertLogContains("java.lang.Exception: foo", run);
-        r.assertLogContains("\tat ", run);
+        r.assertLogContains("ERROR: oops", run);
+        r.assertLogContains("Will try again after 4 sec", run);
+        r.assertLogContains("Retrying", run);
         r.assertLogContains("Try #2", run);
+        r.assertLogContains("Will try again after 8 sec", run);
+        r.assertLogContains("Try #3", run);
+        r.assertLogContains("Will try again after 10 sec", run);
+        r.assertLogContains("Try #4", run);
+        r.assertLogContains("Try #5", run);
         r.assertLogContains("Done!", run);
     }
 }

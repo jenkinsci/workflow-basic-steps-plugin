@@ -5,7 +5,7 @@
     execution. An example of the usage of <code>fixed(delay,unit) </code>in a 
     pipeline retry step looks like:
     
-    <code>retry(count: 4, delay: fixed(2, unit: 'SECONDS'), useRetryDelay: true) {
+    <code>retry(count: 4, delay: fixed(time: 2, unit: 'SECONDS'), useRetryDelay: true) {
             error("oops")
         }
     </code>

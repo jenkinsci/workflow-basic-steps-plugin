@@ -2,14 +2,14 @@
     Random Exponential Delay starts out at the 2^0 {@TimeUnit} and then 
     increases 2^x * 1 {@TimeUnit} each recurring failure. The x is 
     incremented after each round giving you larger delay until it reaches
-    the max delay. At that point a random number between zero and max in
+    the max delay. At that point a random number between one and max in
     <code>TimeUnit</code> is generated for the delay foreach remaining retry.
     An example of the <code>randomExponential(multiplier, max, unit)</code> 
     usage in a pipeline retry step looks like:
 
-    <code>retry(count: 4, delay: 
-        randomExponential(max: 50000, multiplier: 2), 
-        useRetryDelay: true, unit: 'SECONDS') {
+    <code>retry(count: 4,  
+        delay: randomExponential(max: 50000, multiplier: 2, unit: 'SECONDS'), 
+        useRetryDelay: true) {
             error("oops")
         }
     </code>

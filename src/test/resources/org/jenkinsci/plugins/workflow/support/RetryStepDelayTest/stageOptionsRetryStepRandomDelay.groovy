@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('x') {
             options {
-                retry(count: 3, timeDelay: 10, unit: 'SECONDS', useTimeDelay: true)
+                retry(count: 4, delay: random(max: 15, min: 5, unit: 'SECONDS'), useRetryDelay: true)
             }
             steps {
                 echo 'Trying!'

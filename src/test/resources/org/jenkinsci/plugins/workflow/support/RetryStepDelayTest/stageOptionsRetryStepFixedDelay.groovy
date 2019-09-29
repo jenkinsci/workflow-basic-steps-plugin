@@ -1,10 +1,10 @@
 pipeline {
     agent any
-    options {
-        retry(count: 3, timeDelay: 10, unit: 'SECONDS', useTimeDelay: true)
-    }
     stages {
         stage('x') {
+            options {
+                retry(count: 3, delay: fixed(time: 10, unit: 'SECONDS'), useRetryDelay: true)
+            }
             steps {
                 echo 'Trying!'
                 error('oops')

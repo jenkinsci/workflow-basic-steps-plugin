@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.support.steps.retry;
 
+import java.io.Serializable;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
@@ -13,10 +14,10 @@ import hudson.Extension;
  * {@link RandomExponentialDelay} The delay starts out at the 
  * 2^0 {@TimeUnit} and then increases 2^x * 1 {@TimeUnit} 
  * each round after until it reaches the max, then each round after
- * it reaches the max, the delay is a random number between 0 and max.
+ * it reaches the max, the delay is a random number between 1 and max.
  */
 @Extension
-public class RandomExponentialDelay extends RetryDelay {
+public class RandomExponentialDelay extends RetryDelay implements Serializable {
 
     private final int multiplier;
     private final int max;
@@ -49,7 +50,7 @@ public class RandomExponentialDelay extends RetryDelay {
     public long computeRetryDelay() {
         long delay = 0;
         if(largerThanMax) {
-            delay = random.nextInt(max);
+            delay = 1 + random.nextInt(max);
         } else {
             if(lastMultiplier > 0) {
                 lastMultiplier += 1;
@@ -75,5 +76,7 @@ public class RandomExponentialDelay extends RetryDelay {
         public String getDisplayName() {
             return "Random Exponential";
         }
+        private static final long serialVersionUID = 1L;
     }
+    private static final long serialVersionUID = 1L;
 }

@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.support.steps.retry;
 
+import java.io.Serializable;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
@@ -10,11 +11,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.Extension;
 
 /**
- * {@link RandomDelay} allows the delay to vary between the
- * min and max range. 
+ * {@link RandomDelay} allows the delay to vary between the min and max range.
  */
 @Extension
-public class RandomDelay extends RetryDelay {
+public class RandomDelay extends RetryDelay implements Serializable {
 
     private final int min;
     private final int max;
@@ -59,5 +59,7 @@ public class RandomDelay extends RetryDelay {
         public String getDisplayName() {
             return "Random";
         }
+        private static final long serialVersionUID = 1L;
     }
+    private static final long serialVersionUID = 1L;
 }

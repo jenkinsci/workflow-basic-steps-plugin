@@ -7,7 +7,7 @@
     usage in a pipeline retry step looks like:
 
     <code>retry(count: 4, 
-        delay: exponential(max: 50000, min: 10, multiplier: 2, unit: 'SECONDS'), 
+        delay: exponential(multiplier: 2, min: 10, max: 50000, unit: 'SECONDS'), 
         useRetryDelay: true) {
             error("oops")
         }

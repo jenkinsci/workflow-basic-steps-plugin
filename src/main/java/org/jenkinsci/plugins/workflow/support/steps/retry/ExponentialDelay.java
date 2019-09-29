@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.workflow.support.steps.retry;
 
+import java.io.Serializable;
+
 import javax.annotation.Nonnull;
 
 import org.jenkinsci.Symbol;
@@ -15,7 +17,7 @@ import hudson.Extension;
  * remaining rounds.
  */
 @Extension
-public class ExponentialDelay extends RetryDelay {
+public class ExponentialDelay extends RetryDelay implements Serializable {
 
     private final long min;
     private final long max;
@@ -33,8 +35,8 @@ public class ExponentialDelay extends RetryDelay {
     @DataBoundConstructor
     public ExponentialDelay(int multiplier, long min, long max) {
         this.multiplier = multiplier;
-        this.max = min;
-        this.min = max;
+        this.max = max;
+        this.min = min;
     }
 
     public int getMultiplier() {
@@ -85,5 +87,7 @@ public class ExponentialDelay extends RetryDelay {
         public String getDisplayName() {
             return "Exponential";
         }
+        private static final long serialVersionUID = 1L;
     }
+    private static final long serialVersionUID = 1L;
 }
