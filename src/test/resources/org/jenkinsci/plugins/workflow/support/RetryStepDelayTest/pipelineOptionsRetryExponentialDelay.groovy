@@ -1,7 +1,7 @@
 pipeline {
     agent any
     options {
-        retry(count: 6, delay: randomExponential(max: 10, multiplier: 2), useRetryDelay: true, unit: 'SECONDS')
+        retry(count: 4, delay: exponential(max: 20, min: 1, multiplier: 2, unit: 'SECONDS'), useRetryDelay: true)
     }
     stages {
         stage('x') {
