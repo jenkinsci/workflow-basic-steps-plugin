@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
+import hudson.model.TaskListener;
 import java.util.Collections;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -60,6 +61,7 @@ public final class ErrorStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
+            getContext().get(TaskListener.class).getLogger().println(message);
             throw new AbortException(message);
         }
 
