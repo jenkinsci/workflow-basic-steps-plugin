@@ -161,4 +161,22 @@ public class RetryStepTest {
         r.assertLogContains("Try #2", run);
         r.assertLogContains("Done!", run);
     }
+
+    @Issue("JENKINS-60354")
+    @Test
+    public void downstreamBuildFailureShouldRetry() throws Exception {
+        WorkflowJob ds = r.createProject(WorkflowJob.class);
+        ds.setDefinition(new CpsFlowDefinition("error 'oops!'", true));
+        WorkflowJob us = r.createProject(WorkflowJob.class);
+        us.setDefinition(new CpsFlowDefinition(
+                "int count = 1\n" +
+                "retry(3) {\n" +
+                "  echo(/trying ${count++}/)\n" +
+                "  build(job: '"+ds.getName()+"')\n" +
+                "}\n", true));
+        WorkflowRun b = r.assertBuildStatus(Result.FAILURE, us.scheduleBuild2(0));
+        r.assertLogContains("trying 1", b);
+        r.assertLogContains("trying 2", b);
+        r.assertLogContains("trying 3", b);
+    }
 }

@@ -217,7 +217,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
 
             @Override public void onFailure(StepContext context, Throwable t) {
                 try {
-                    if (!options.isCatchInterruptions() && t instanceof FlowInterruptedException) {
+                    if (!options.isCatchInterruptions() && t instanceof FlowInterruptedException && ((FlowInterruptedException)t).isActualInterruption()) {
                         context.onFailure(t);
                         return;
                     }
