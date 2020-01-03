@@ -26,6 +26,9 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Functions;
 import hudson.model.TopLevelItem;
+
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.Matchers;
@@ -134,7 +137,9 @@ public class ReadWriteFileStepTest {
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("file-created/1", b);
         byte[] bytes = {0x48, 0x45, 0x4c, 0x4c, 0x4f, (byte) 0x80, (byte) 0xec, (byte) 0xf4, 0x00, 0x0d, 0x1b};
-        r.jenkins.getWorkspaceFor(p).child("binary-file").write().write(bytes);
+        try (OutputStream stream = r.jenkins.getWorkspaceFor(p).child("binary-file").write()) {
+            stream.write(bytes);
+        }
         SemaphoreStep.success("file-created/1", null);
         SemaphoreStep.waitForStart("bytes-checked/1", b);
         assertThat("The data should not round-trip correctly using UTF-8 encoding",
@@ -145,6 +150,8 @@ public class ReadWriteFileStepTest {
     }
 
     private byte[] getBytes(TopLevelItem item, String fileName) throws Exception {
-        return IOUtils.toByteArray(r.jenkins.getWorkspaceFor(item).child(fileName).read());
+        try (InputStream stream = r.jenkins.getWorkspaceFor(item).child(fileName).read()) {
+            return IOUtils.toByteArray(stream);
+        }
     }
 }
