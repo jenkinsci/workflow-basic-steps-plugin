@@ -11,3 +11,8 @@
 <p>
     For use from trusted code, such as global libraries, which can manipulate internal Jenkins APIs.
 </p>
+<p>
+    <strong>Do not</strong> attempt to pass objects defined in Groovy;
+    only Java-defined objects are supported.
+    Really you should avoid using this and <code>getContext</code> and just define a <code>Step</code> in a plugin instead.
+</p>
