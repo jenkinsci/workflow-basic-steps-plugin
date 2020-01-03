@@ -55,7 +55,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
         @Override
         public void onFailure(StepContext context, Throwable t) {
             try {
-                if (t instanceof FlowInterruptedException) {
+                if (t instanceof FlowInterruptedException && ((FlowInterruptedException)t).isActualInterruption()) {
                     context.onFailure(t);
                     return;
                 }

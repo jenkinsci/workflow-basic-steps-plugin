@@ -220,6 +220,20 @@ public class CatchErrorStepTest {
         assertCatchError(r, b, Result.ABORTED, null, false);
     }
 
+    @Issue("JENKINS-60354")
+    @Test public void catchesDownstreamBuildFailureEvenWhenNotCatchingInterruptions() throws Exception {
+        WorkflowJob ds = r.createProject(WorkflowJob.class);
+        ds.setDefinition(new CpsFlowDefinition("error 'oops!'", true));
+        WorkflowJob us = r.createProject(WorkflowJob.class);
+        us.setDefinition(new CpsFlowDefinition(
+                "int count = 1\n" +
+                "catchError(message: 'caught error', catchInterruptions: false) {\n" +
+                "  build(job: '"+ds.getName()+"')\n" +
+                "}\n", true));
+        WorkflowRun b = r.assertBuildStatus(Result.FAILURE, us.scheduleBuild2(0));
+        assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
+    }
+
     public static void assertCatchError(JenkinsRule r, WorkflowRun run, Result buildResult, Result warningActionResult, boolean expectingCatch) throws Exception {
         r.waitForCompletion(run);
         r.assertBuildStatus(buildResult, run);
