@@ -83,6 +83,36 @@ public class EnvStepTest {
         });
     }
 
+    @Test public void mapOverriding() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "env.CUSTOM = 'initial'\n" +
+                        "env.FOOPATH = node {isUnix() ? '/opt/foos' : 'C:\\\\foos'}\n" +
+                        "env.NULLED = 'outside'\n" +
+                        "node {\n" +
+                        "  withEnv([CUSTOM: 'override', NOVEL: 'val', BUILD_TAG: 'custom', NULLED: null, 'FOOPATH+BALL': isUnix() ? '/opt/ball' : 'C:\\\\ball']) {\n" +
+                        "    isUnix() ? sh('echo inside CUSTOM=$CUSTOM NOVEL=$NOVEL BUILD_TAG=$BUILD_TAG NULLED=$NULLED FOOPATH=$FOOPATH:') : bat('echo inside CUSTOM=%CUSTOM% NOVEL=%NOVEL% BUILD_TAG=%BUILD_TAG% NULLED=%NULLED% FOOPATH=%FOOPATH%;')\n" +
+                        "    echo \"groovy NULLED=${env.NULLED}\"\n" +
+                        "  }\n" +
+                        "  isUnix() ? sh('echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside') : bat('echo outside CUSTOM=%CUSTOM% NOVEL=%NOVEL% NULLED=outside')\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
+                story.j.assertLogContains("groovy NULLED=null", b);
+                story.j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside", b);
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
+                    b.getExecution(),
+                    Predicates.and(
+                        new NodeStepTypePredicate("withEnv"),
+                        n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("CUSTOM, NOVEL, BUILD_TAG, NULLED, FOOPATH+BALL", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
+            }
+        });
+    }
+
     @Test public void parallel() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
@@ -93,6 +123,28 @@ public class EnvStepTest {
                     "}, b: {\n" +
                     "  node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo b TOOL=$TOOL') : bat('echo b TOOL=%TOOL%')}}\n" +
                     "}", true));
+                WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
+                SemaphoreStep.waitForStart("a/1", b);
+                SemaphoreStep.waitForStart("b/1", b);
+                SemaphoreStep.success("a/1", null);
+                SemaphoreStep.success("b/1", null);
+                story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
+                story.j.assertLogContains("a TOOL=aloc", b);
+                story.j.assertLogContains("b TOOL=bloc", b);
+            }
+        });
+    }
+
+    @Test public void mapParallel() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "parallel a: {\n" +
+                        "  node {withEnv([TOOL: 'aloc']) {semaphore 'a'; isUnix() ? sh('echo a TOOL=$TOOL') : bat('echo a TOOL=%TOOL%')}}\n" +
+                        "}, b: {\n" +
+                        "  node {withEnv([TOOL: 'bloc']) {semaphore 'b'; isUnix() ? sh('echo b TOOL=$TOOL') : bat('echo b TOOL=%TOOL%')}}\n" +
+                        "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("a/1", b);
                 SemaphoreStep.waitForStart("b/1", b);
@@ -140,6 +192,41 @@ public class EnvStepTest {
         });
     }
 
+    @Test public void mapRestarting() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "def show(which) {\n" +
+                        "  echo \"groovy ${which} ${env.TESTVAR}:\"\n" +
+                        "  isUnix() ? sh(\"echo shell ${which} \\$TESTVAR:\") : bat(\"echo shell ${which} %TESTVAR%:\")\n" +
+                        "}\n" +
+                        "node {\n" +
+                        "  withEnv([TESTVAR: 'val']) {\n" +
+                        "    show 'before'\n" +
+                        "    semaphore 'restarting'\n" +
+                        "    show 'after'\n" +
+                        "  }\n" +
+                        "  show 'outside'\n" +
+                        "}", true));
+                WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
+                SemaphoreStep.waitForStart("restarting/1", b);
+            }
+        });
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                SemaphoreStep.success("restarting/1", null);
+                WorkflowRun b = story.j.assertBuildStatusSuccess(story.j.waitForCompletion(story.j.jenkins.getItemByFullName("p", WorkflowJob.class).getLastBuild()));
+                story.j.assertLogContains("groovy before val:", b);
+                story.j.assertLogContains("shell before val:", b);
+                story.j.assertLogContains("groovy after val:", b);
+                story.j.assertLogContains("shell after val:", b);
+                story.j.assertLogContains("groovy outside null:", b);
+                story.j.assertLogContains("shell outside :", b);
+            }
+        });
+    }
+
     @Test public void nested() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
@@ -152,6 +239,24 @@ public class EnvStepTest {
                     "    }\n" +
                     "  }\n" +
                     "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("A=one B=two", b);
+            }
+        });
+    }
+
+    @Test public void mapNested() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  withEnv([A: 'one']) {\n" +
+                        "    withEnv([B: 'two']) {\n" +
+                        "      isUnix() ? sh('echo A=$A B=$B') : bat('echo A=%A% B=%B%')\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 story.j.assertLogContains("A=one B=two", b);
             }

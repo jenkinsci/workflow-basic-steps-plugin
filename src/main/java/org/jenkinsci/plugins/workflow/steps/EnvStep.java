@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -34,7 +35,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import net.sf.json.JSONObject;
+import org.jenkinsci.plugins.structs.describable.CustomDescribableModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -103,7 +106,7 @@ public class EnvStep extends Step {
         }
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension public static class DescriptorImpl extends StepDescriptor implements CustomDescribableModel {
 
         @Override public String getFunctionName() {
             return "withEnv";
@@ -155,6 +158,25 @@ public class EnvStep extends Step {
             }
         }
 
+        @NonNull
+        @Override
+        public Map<String, Object> customInstantiate(@NonNull Map<String, Object> arguments) {
+            Map<String, Object> r = new HashMap<>(arguments);
+            Object overrides = r.get("overrides");
+            if (overrides instanceof Map) {
+                r.put("overrides", toKeyValueList((Map<?, ?>) overrides));
+            }
+            return r;
+        }
+
+        private static List<String> toKeyValueList(Map<?, ?> map) {
+            return map.entrySet().stream()
+                .filter(e -> e.getKey() instanceof String)
+                .collect(Collectors.toMap(e -> (String)e.getKey(), e -> e.getValue() == null ? "" : (String) e.getValue()))
+                .entrySet().stream()
+                .map(m -> m.getKey() + "=" + m.getValue())
+                .collect(Collectors.toList());
+        }
     }
 
 }
