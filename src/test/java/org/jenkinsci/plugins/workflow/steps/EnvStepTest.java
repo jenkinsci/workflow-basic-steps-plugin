@@ -245,6 +245,26 @@ public class EnvStepTest {
         });
     }
 
+    @Test public void mapNumbersNested() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  withEnv([A: 1]) {\n" +
+                        "    withEnv([B: 2]) {\n" +
+                        "      withEnv([C: true]) {\n" +
+                        "        isUnix() ? sh('echo A=$A B=$B C=$C') : bat('echo A=%A% B=%B% C=%C%')\n" +
+                        "      }\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("A=1 B=2 C=true", b);
+            }
+        });
+    }
+
     @Test public void mapNested() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
