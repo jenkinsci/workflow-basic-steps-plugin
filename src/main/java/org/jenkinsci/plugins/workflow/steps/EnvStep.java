@@ -153,6 +153,12 @@ public class EnvStep extends Step {
                     }
                 }
                 return b.toString();
+            } else if (overrides instanceof Map) {
+                return ((Map<?, ?>) overrides).keySet()
+                    .stream()
+                    .filter(e -> e instanceof String)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
             } else {
                 return null;
             }
