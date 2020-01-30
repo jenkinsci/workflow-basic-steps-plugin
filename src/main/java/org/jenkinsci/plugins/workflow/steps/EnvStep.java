@@ -168,9 +168,10 @@ public class EnvStep extends Step {
         @Override
         public Map<String, Object> customInstantiate(@NonNull Map<String, Object> arguments) {
             Map<String, Object> r = new HashMap<>(arguments);
-            Object overrides = r.get("overrides");
+            final String key = "overrides";
+            Object overrides = r.get(key);
             if (overrides instanceof Map) {
-                r.put("overrides", toKeyValueList((Map<?, ?>) overrides));
+                r.put(key, toKeyValueList((Map<?, ?>) overrides));
             }
             return r;
         }
