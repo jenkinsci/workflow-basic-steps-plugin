@@ -169,7 +169,7 @@ public class EnvStepTest {
                         "  }\n" +
                         "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("a=1 b=2 c=hello world", b);
+                story.j.assertLogContains("a=1 b=2 c=hello world d=true", b);
                 List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
                     b.getExecution(),
                     Predicates.and(
