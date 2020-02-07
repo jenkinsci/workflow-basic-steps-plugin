@@ -136,7 +136,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             }, delay, TimeUnit.MILLISECONDS);
         } else {
             listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(- delay) + " ago");
-            cancel();
+            if (killer != null) {
+                cancel();
+            }
         }
     }
 
