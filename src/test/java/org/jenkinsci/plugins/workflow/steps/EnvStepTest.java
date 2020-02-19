@@ -165,7 +165,7 @@ public class EnvStepTest {
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                         "  withEnv(a: 1, b: 2, c: 'hello world', d: true, e: null) {\n" +
-                        "    echo(/a=$a b=$b c=$c d=$d, e=${env.e}/)" +
+                        "    echo(/a=$a b=$b c=$c d=$d e=${env.e}/)" +
                         "  }\n" +
                         "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
