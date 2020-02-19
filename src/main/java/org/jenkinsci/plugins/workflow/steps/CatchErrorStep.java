@@ -41,6 +41,7 @@ import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -230,7 +231,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                     Result stepResult = options.getStepResultOnError();
                     if (t instanceof AbortException) {
                         listener.error(t.getMessage());
-                    } else if (t instanceof FlowInterruptedException) {
+                    } else if (t instanceof FlowInterruptedException && !isCausedByFailFastException((FlowInterruptedException) t)) {
                         FlowInterruptedException fie = (FlowInterruptedException) t;
                         fie.handle(context.get(Run.class), listener);
                         buildResult = fie.getResult();
@@ -250,6 +251,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                 }
             }
 
+            private boolean isCausedByFailFastException(FlowInterruptedException fie) {
+                return fie.getCauses().stream()
+                        .filter(coi -> coi instanceof ExceptionCause)
+                        .map(coi -> (ExceptionCause) coi)
+                        .map(ExceptionCause::getException)
+                        .anyMatch(ec -> ec instanceof ParallelStep.FailFastException);
+            }
         }
 
         private static final long serialVersionUID = 1L;

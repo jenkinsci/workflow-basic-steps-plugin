@@ -234,6 +234,22 @@ public class CatchErrorStepTest {
         assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
     }
 
+    @Issue("JENKINS-60239")
+    @Test public void parallelStageFails() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(""
+                + "node {\n"
+                + "    parallel(\n"
+                + "        stage1: { error 'fail' },\n"
+                + "        stage2: { catchError(stageResult: 'FAILURE', catchInterruptions: true) { sleep 10 } },\n"
+                + "        failFast: true"
+                + "    )"
+                + "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        r.waitForCompletion(b);
+        r.assertBuildStatus(Result.FAILURE, b);
+    }
+
     public static void assertCatchError(JenkinsRule r, WorkflowRun run, Result buildResult, Result warningActionResult, boolean expectingCatch) throws Exception {
         r.waitForCompletion(run);
         r.assertBuildStatus(buildResult, run);
