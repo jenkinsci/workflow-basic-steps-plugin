@@ -178,7 +178,7 @@ public class EnvStep extends Step {
 
         private static List<String> toKeyValueList(Map<?, ?> map) {
             return map.entrySet().stream()
-                .map(m -> m.getKey() + "=" + (m.getValue() == null ? "" : m.getValue().toString()))
+                .map(m -> (String) m.getKey() + "=" + (m.getValue() == null ? "" : m.getValue().toString()))
                 .collect(Collectors.toList());
         }
     }
