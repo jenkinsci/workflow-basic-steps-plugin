@@ -29,4 +29,16 @@ public class FileExistsStepTest {
             }
         });
     }
+
+    @Test
+    public void nullStringWarning() {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition("node { fileExists(null) }", true));
+                story.j.assertLogContains(Messages.FileExistsStep_NullString(), story.j.buildAndAssertSuccess(p));
+            }
+        });
+    }
 }
