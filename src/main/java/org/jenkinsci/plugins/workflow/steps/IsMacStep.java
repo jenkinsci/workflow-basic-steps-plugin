@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.Platform;
+import hudson.remoting.VirtualChannel;
 import jenkins.security.MasterToSlaveCallable;
 
 import java.util.Collections;
@@ -20,14 +21,18 @@ public class IsMacStep extends Step {
         return new Execution(context);
     }
 
-    public static class Execution extends SynchronousStepExecution<Boolean> {
+    public static class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
 
         Execution(StepContext context) {
             super(context);
         }
 
         @Override protected Boolean run() throws Exception {
-            return getContext().get(Launcher.class).getChannel().call(new IsMacOS());
+            VirtualChannel c = getContext().get(Launcher.class).getChannel();
+            if (c != null)
+                return c.call(new IsMacOS());
+            else
+                return false;
         }
 
         private static final long serialVersionUID = 1L;
