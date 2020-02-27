@@ -36,6 +36,8 @@ public class IsMacStepTest {
 
     @Test public void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // Test passes on all platforms, on mac it will call "sw_vers", on other platforms it will not
+        // "sw_vers" does not exist on unix or windows, so test would fail if "isMac()" were not working on those platforms. 
         p.setDefinition(new CpsFlowDefinition("node {if (isMac()) sh 'sw_vers'}", true));
         r.assertBuildStatusSuccess(p.scheduleBuild2(0));
     }
