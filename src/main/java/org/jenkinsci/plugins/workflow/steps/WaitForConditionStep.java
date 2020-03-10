@@ -53,7 +53,7 @@ public final class WaitForConditionStep extends Step {
         this.initialRecurrencePeriod = Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD));
     }
 
-    long getInitialRecurrencePeriod() {
+    public long getInitialRecurrencePeriod() {
         return initialRecurrencePeriod;
     }
 
@@ -62,7 +62,7 @@ public final class WaitForConditionStep extends Step {
         this.quiet = quiet;
     }
 
-    boolean getQuiet() { return quiet; }
+    public boolean getQuiet() { return quiet; }
 
     @Override public StepExecution start(StepContext context) throws Exception {
         return new Execution(context, initialRecurrencePeriod, this.quiet);
