@@ -191,6 +191,21 @@ public class WaitForConditionStepTest {
         });
     }
 
+    @Test public void quiet() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition("waitUntil(quiet: true) {semaphore 'wait'}; semaphore 'waited'", true));
+                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                SemaphoreStep.waitForStart("wait/1", b);
+                SemaphoreStep.success("wait/1", true);
+                SemaphoreStep.waitForStart("waited/1", b);
+                SemaphoreStep.success("waited/1", null);
+                story.j.assertLogNotContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.MIN_RECURRENCE_PERIOD), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+            }
+        });
+    }
+
     // TODO add @LocalData serialForm test proving compatibility with executions dating back to workflow 1.4.3 on 1.580.1
     // (same for RetryStep)
 
