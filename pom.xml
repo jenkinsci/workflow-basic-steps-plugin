@@ -64,7 +64,7 @@
     <properties>
         <revision>2.20</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.150.3</jenkins.version>
+        <jenkins.version>2.164.3</jenkins.version>
         <java.level>8</java.level>
         <useBeta>true</useBeta>
     </properties>
@@ -72,8 +72,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.150.x</artifactId>
-                <version>5</version>
+                <artifactId>bom-2.164.x</artifactId>
+                <version>9</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -179,7 +179,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>pipeline-build-step</artifactId>
-            <version>2.11</version>
             <scope>test</scope>
         </dependency>
         <dependency>
