@@ -98,7 +98,7 @@ public class WaitForConditionStepTest {
                 // TODO the following fails (missing message) when run as part of whole suite, but not standalone: story.j.assertLogContains(message, story.j.assertBuildStatus(Result.FAILURE, story.j.waitForCompletion(b)));
                 story.j.waitForCompletion(b);
                 story.j.assertBuildStatus(Result.FAILURE, b);
-                story.j.assertLogContains(message, b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a “Will try again after 0.25 sec” but no such message
+                story.j.waitForMessage(message, b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a “Will try again after 0.25 sec” but no such message
             }
         });
     }
