@@ -1,5 +1,17 @@
 ## Changelog
 
+### 2.20
+
+Release date: 2020-04-20
+
+-   Improvement: Add new `quiet` option to the `waitUntil` step. Use `quiet: true` to stop the `waitUntil` step from logging a message every time the condition is checked. `quiet` defaults to false. ([JENKINS-59776](ihttps://issues.jenkins-ci.org/browse/JENKINS-59776)).
+-   Fix: Prevent the `fileExists` step from throwing an error if the `file` parameter is `null`. If the file parameter is `null`, the current directory will be checked, which is the same as the behavior for an empty string. ([PR 108](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/108))
+-   Fix: Prevent the `timeout` step from hanging indefinitely after a Jenkins restart in rare cases where the step already attempted to cancel the body before the restart and needs to force-cancel it after the restart because the body was unresponsive. ([JENKINS-42940](https://issues.jenkins-ci.org/browse/JENKINS-42940))
+-   Internal: Update minimum supported Jenkins core version to 2.164.3. ([PR 111](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/111))
+-   Internal: Use `waitForMessage` instead of `assertLogContains` in tests to avoid nondeterministic failures. ([PR 110](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/110))
+-   Internal: Update pom.xml to use jenkinsci/bom to specify dependency versions. ([PR 95](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/95))
+
+
 ### 2.19
 
 Release date: 2020-01-03
