@@ -374,7 +374,7 @@ public class TimeoutStepTest extends Assert {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }
-        @TestExtension({"unresponsiveBody", "gracePeriod"}) public static class DescriptorImpl extends StepDescriptor {
+        @TestExtension({"unresponsiveBody", "gracePeriod", "noImmediateForcibleTerminationOnResume"}) public static class DescriptorImpl extends StepDescriptor {
             @Override public String getFunctionName() {
                 return "unkillable";
             }
@@ -420,6 +420,29 @@ public class TimeoutStepTest extends Assert {
                 story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
                 assertThat(p.getLastBuild().getDuration(), lessThan(29_000L)); // 29 seconds
             }
+        });
+    }
+
+    @Issue("JENKINS-42940")
+    @LocalData
+    @Test public void noImmediateForcibleTerminationOnResume() throws Exception {
+        /* Source of the @LocalData for reference:
+        story.then(r -> {
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition(
+                    "timeout(time: 1, unit: 'SECONDS') {\n" +
+                    "  unkillable()\n" +
+                    "}\n", true));
+            WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+            r.waitForMessage("ignoring " + FlowInterruptedException.class.getName(), b);
+            // Saved while TimeoutStepExecution.forcible was true, between the first cancel and the force cancel.
+            // Required some poking around in internals to save TimeoutStepExecution in the right state, which is why
+            // this test uses @LocalData instead of just running the build directly.
+        });*/
+        story.then(r -> {
+            WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
+            WorkflowRun b = p.getBuildByNumber(1);
+            r.assertBuildStatus(Result.ABORTED, r.waitForCompletion(b));
         });
     }
 }

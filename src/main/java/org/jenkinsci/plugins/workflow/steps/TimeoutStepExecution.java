@@ -51,8 +51,13 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
     private boolean activity = false;
 
-    /** whether we are forcing the body to end */
-    private boolean forcible;
+    /**
+     * Whether we are forcing the body to end.
+     *
+     * Transient so that after a restart, we always try to stop the body normally before forcibly
+     * terminating it so that this step's state is set up correctly for the forced termination.
+     */
+    private transient boolean forcible;
 
     /** Token for {@link #activity} callbacks. */
     private final String id;
