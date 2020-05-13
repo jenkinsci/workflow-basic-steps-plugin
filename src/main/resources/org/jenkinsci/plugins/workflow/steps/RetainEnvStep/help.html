@@ -1,0 +1,16 @@
+<div>
+Filters out for the scope of the block, the environment variables proposed by Jenkins except the ones listed.
+These are available to any external processes spawned within that scope.
+For example:
+<p><pre>
+node {
+  env.CUSTOM=test
+  env.INFO=useful
+  retainEnv(['INFO']) {
+    // at this point the CUSTOM will not be available
+    bat 'echo %INFO%'
+  }
+}
+</pre>
+<p>See the documentation for the <code>env</code> singleton for more information on environment variables.
+</div>
