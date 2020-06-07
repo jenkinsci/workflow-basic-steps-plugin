@@ -24,13 +24,25 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
 import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.ArtifactArchiver;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
 import hudson.tasks.Fingerprinter;
+import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
+import jenkins.tasks.SimpleBuildStep;
 import org.hamcrest.Matchers;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
@@ -46,7 +58,9 @@ import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.mock_javamail.Mailbox;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class CoreStepTest {
 
@@ -152,6 +166,38 @@ public class CoreStepTest {
     @Test public void coreStepWithSymbolWithSoleArg() throws Exception {
         ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
         st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts 'some-artifacts'");
+    }
+
+    public static class BuilderWithEnvironment extends Builder implements SimpleBuildStep {
+
+        @DataBoundConstructor
+        public BuilderWithEnvironment() {
+        }
+
+        @Override
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            assertNull(env.get("BUILD_ID"));
+            assertEquals("JENKINS-29144", env.get("TICKET"));
+        }
+
+        @Symbol("buildWithEnvironment")
+        @TestExtension("builderWithEnvironment")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+
+        }
+
+    }
+
+    @Test
+    public void builderWithEnvironment() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
     }
 
 }
