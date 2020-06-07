@@ -95,7 +95,11 @@ public class PwdStep extends Step {
 
         @Override protected String run() throws Exception {
             FilePath cwd = getContext().get(FilePath.class);
-            return (tmp ? WorkspaceList.tempDir(cwd) : cwd).getRemote();
+            if (tmp && cwd != null)
+                cwd = WorkspaceList.tempDir(cwd);
+            if (cwd == null)
+                return null; // FIXME: Or throw an exception?
+            return cwd.getRemote();
         }
 
         private static final long serialVersionUID = 1L;
