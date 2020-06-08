@@ -35,7 +35,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
@@ -111,7 +110,6 @@ public class CatchErrorStepTest {
         r.assertLogContains("execution continued", b);
     }
 
-    @Ignore("This fails with recent Jenkins versions; not sure if it should still be expected to work.")
     @Test public void optionalMessage() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
