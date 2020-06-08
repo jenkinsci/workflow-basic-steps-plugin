@@ -193,11 +193,12 @@ public class CoreStepTest {
 
     }
 
+    @Issue("JENKINS-29144")
     @Test
     public void builderWithEnvironment() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
-        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.buildAndAssertSuccess(p);
     }
 
 }
