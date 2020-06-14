@@ -28,8 +28,10 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.slaves.WorkspaceList;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -95,7 +97,13 @@ public class PwdStep extends Step {
 
         @Override protected String run() throws Exception {
             FilePath cwd = getContext().get(FilePath.class);
-            return (tmp ? WorkspaceList.tempDir(cwd) : cwd).getRemote();
+            Objects.requireNonNull(cwd);
+            if (tmp) {
+                cwd = WorkspaceList.tempDir(cwd);
+                if (cwd == null)
+                    throw new IOException("Failed to set up a temporary directory.");
+            }
+            return cwd.getRemote();
         }
 
         private static final long serialVersionUID = 1L;

@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.base.Predicates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
@@ -42,7 +43,9 @@ import hudson.model.TaskListener;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.tasks.Builder;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +57,7 @@ import java.util.Locale;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import jenkins.tasks.SimpleBuildStep;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
@@ -284,6 +288,76 @@ public class CoreWrapperStepTest {
             env2.overrideAll(env);
             return env2;
         }
+    }
+
+    public static final class WrapperWithoutWorkspaceRequirement extends SimpleBuildWrapper {
+
+        @DataBoundConstructor
+        public WrapperWithoutWorkspaceRequirement() {
+        }
+
+        @Override
+        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, FilePath workspace, Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+            listener.getLogger().println("stepping up");
+            context.setDisposer(new DisposerWithoutWorkspaceRequirement());
+        }
+
+        @Override
+        public boolean requiresLauncher() {
+            return false;
+        }
+
+        @Override
+        public boolean requiresWorkspace() {
+            return false;
+        }
+
+        public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
+
+            @Override
+            public boolean requiresLauncher() {
+                return false;
+            }
+
+            @Override
+            public boolean requiresWorkspace() {
+                return false;
+            }
+
+            @Override
+            public void tearDown(@NonNull Run<?, ?> build, FilePath workspace, Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
+                listener.getLogger().println("stepping down");
+            }
+
+        }
+
+        @Symbol("wrapperWithoutWorkspaceRequirement")
+        @TestExtension("wrapperWithoutWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildWrapperDescriptor {
+
+            @Override
+            public boolean isApplicable(AbstractProject<?, ?> project) {
+                return true;
+            }
+
+        }
+
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void wrapperWithoutWorkspaceRequirement() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                // make sure it works outside of a node
+                p.setDefinition(new CpsFlowDefinition("wrapperWithoutWorkspaceRequirement { echo 'wrapped' }", true));
+                story.j.buildAndAssertSuccess(p);
+                // but also inside of one
+                p.setDefinition(new CpsFlowDefinition("node { wrapperWithoutWorkspaceRequirement { echo 'wrapped' } }", true));
+                story.j.buildAndAssertSuccess(p);
+            }
+        });
     }
 
 }

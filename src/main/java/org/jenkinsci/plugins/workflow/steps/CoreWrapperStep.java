@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -92,9 +93,26 @@ public class CoreWrapperStep extends Step {
         }
 
         private void doStart() throws Exception {
-            SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
-            Run<?, ?> run = getContext().get(Run.class);
-            delegate.setUp(c, run, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(TaskListener.class), getContext().get(EnvVars.class));
+            // Get the context objects that may be required
+            final StepContext context = this.getContext();
+            final Run<?,?> run = context.get(Run.class);
+            final FilePath workspace = context.get(FilePath.class);
+            final Launcher launcher = context.get(Launcher.class);
+            final TaskListener listener = context.get(TaskListener.class);
+            final EnvVars env = context.get(EnvVars.class);
+            // Ensure those that are required are provided
+            Objects.requireNonNull(run);
+            if (this.delegate.requiresWorkspace() && workspace == null) {
+                throw new MissingContextVariableException(FilePath.class);
+            }
+            if (this.delegate.requiresLauncher() && launcher == null) {
+                throw new MissingContextVariableException(Launcher.class);
+            }
+            Objects.requireNonNull(listener);
+            Objects.requireNonNull(env);
+            // Set it up
+            final SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
+            delegate.setUp(c, run, workspace, launcher, listener, env);
             BodyInvoker bodyInvoker = getContext().newBodyInvoker();
             Map<String,String> overrides = c.getEnv();
             if (!overrides.isEmpty()) {
@@ -148,8 +166,23 @@ public class CoreWrapperStep extends Step {
             this.disposer = disposer;
         }
 
-        @Override protected void finished(StepContext context) throws Exception {
-            disposer.tearDown(context.get(Run.class), context.get(FilePath.class), context.get(Launcher.class), context.get(TaskListener.class));
+        @Override protected void finished(@Nonnull StepContext context) throws Exception {
+            // Get the context objects that may be required
+            final Run<?,?> run = context.get(Run.class);
+            final FilePath workspace = context.get(FilePath.class);
+            final Launcher launcher = context.get(Launcher.class);
+            final TaskListener listener = context.get(TaskListener.class);
+            // Ensure those that are required are provided
+            Objects.requireNonNull(run);
+            if (this.disposer.requiresWorkspace() && workspace == null) {
+                throw new MissingContextVariableException(FilePath.class);
+            }
+            if (this.disposer.requiresLauncher() && launcher == null) {
+                throw new MissingContextVariableException(Launcher.class);
+            }
+            Objects.requireNonNull(listener);
+            // Tear it down
+            disposer.tearDown(run, workspace, launcher, listener);
         }
 
     }
@@ -184,7 +217,7 @@ public class CoreWrapperStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class, EnvVars.class);
+            return ImmutableSet.of(Run.class, TaskListener.class, EnvVars.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

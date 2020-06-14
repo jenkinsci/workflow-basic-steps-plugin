@@ -24,13 +24,26 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
 import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.ArtifactArchiver;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
 import hudson.tasks.Fingerprinter;
+import java.io.IOException;
 import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import javax.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
+import jenkins.tasks.SimpleBuildStep;
 import org.hamcrest.Matchers;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
@@ -46,7 +59,9 @@ import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.mock_javamail.Mailbox;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class CoreStepTest {
 
@@ -152,6 +167,54 @@ public class CoreStepTest {
     @Test public void coreStepWithSymbolWithSoleArg() throws Exception {
         ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
         st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts 'some-artifacts'");
+    }
+
+    public static class BuilderWithoutWorkspaceRequirement extends Builder implements SimpleBuildStep {
+
+        @DataBoundConstructor
+        public BuilderWithoutWorkspaceRequirement() {
+        }
+
+        @Override
+        public void perform(@Nonnull Run<?, ?> run, @CheckForNull FilePath workspace, @Nonnull EnvVars env, @CheckForNull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("this step needs neither a workspace nor a launcher");
+        }
+
+        @Override
+        public boolean requiresLauncher() {
+            return false;
+        }
+
+        @Override
+        public boolean requiresWorkspace() {
+            return false;
+        }
+
+        // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
+        // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @Symbol("builderWithoutWorkspaceRequirement")
+        @TestExtension("builderWithoutWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+
+        }
+
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void builderWithoutWorkspaceRequirement() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // make sure it runs outside of node
+        p.setDefinition(new CpsFlowDefinition("builderWithoutWorkspaceRequirement()", true));
+        r.buildAndAssertSuccess(p);
+        // but also inside it
+        p.setDefinition(new CpsFlowDefinition("node { builderWithoutWorkspaceRequirement() }", true));
+        r.buildAndAssertSuccess(p);
     }
 
 }
