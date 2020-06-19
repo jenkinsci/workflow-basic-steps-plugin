@@ -37,6 +37,8 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
+import hudson.util.VersionNumber;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -81,10 +83,20 @@ public final class CoreStep extends Step {
             final FilePath workspace = Objects.requireNonNull(ctx.get(FilePath.class));
             workspace.mkdirs();
             final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
-            final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
             final Launcher launcher = Objects.requireNonNull(ctx.get(Launcher.class));
             final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
-            delegate.perform(run, workspace, env, launcher, listener);
+            if (Objects.requireNonNull(Jenkins.getVersion()).isNewerThanOrEqualTo(new VersionNumber("2.241"))) {
+                final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
+                // Use the new API that takes EnvVars:
+                //   this.delegate.perform(run, workspace, env, launcher, listener);
+                // but do so via reflection so that the plugin does not actually need to reference 2.241.
+                final Method perform = this.delegate.getClass().getMethod("perform", Run.class, FilePath.class,
+                        EnvVars.class, Launcher.class, TaskListener.class);
+                perform.invoke(this.delegate, run, workspace, env, launcher, listener);
+            }
+            else {
+                this.delegate.perform(run, workspace, launcher, listener);
+            }
             return null;
         }
 
