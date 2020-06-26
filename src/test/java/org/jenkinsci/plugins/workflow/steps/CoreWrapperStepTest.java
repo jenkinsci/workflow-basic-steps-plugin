@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.base.Predicates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
@@ -297,7 +298,7 @@ public class CoreWrapperStepTest {
         }
 
         @Override
-        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, FilePath workspace, Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @Nullable FilePath workspace, @Nullable Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println("stepping up");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
@@ -315,17 +316,7 @@ public class CoreWrapperStepTest {
         public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
 
             @Override
-            public boolean requiresLauncher() {
-                return false;
-            }
-
-            @Override
-            public boolean requiresWorkspace() {
-                return false;
-            }
-
-            @Override
-            public void tearDown(@NonNull Run<?, ?> build, FilePath workspace, Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
+            public void tearDown(@NonNull Run<?, ?> build, @Nullable FilePath workspace, @Nullable Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("stepping down");
             }
 

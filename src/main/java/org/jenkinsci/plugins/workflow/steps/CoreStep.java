@@ -27,7 +27,6 @@ package org.jenkinsci.plugins.workflow.steps;
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -42,7 +41,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
@@ -83,15 +81,16 @@ public final class CoreStep extends Step {
             final FilePath workspace = context.get(FilePath.class);
             final Launcher launcher = context.get(Launcher.class);
             final TaskListener listener = context.get(TaskListener.class);
-            // Ensure those that are required are provided
-            Objects.requireNonNull(run);
+            // context.get() guarantees these, but let code inspections know it
+            assert run != null;
+            assert listener != null;
+            // Check the ones that are optionally required
             if (this.delegate.requiresWorkspace() && workspace == null) {
                 throw new MissingContextVariableException(FilePath.class);
             }
             if (this.delegate.requiresLauncher() && launcher == null) {
                 throw new MissingContextVariableException(Launcher.class);
             }
-            Objects.requireNonNull(listener);
             // Perform the step
             if (workspace != null) {
                 workspace.mkdirs();

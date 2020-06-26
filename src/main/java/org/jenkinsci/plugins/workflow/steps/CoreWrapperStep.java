@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -100,16 +99,17 @@ public class CoreWrapperStep extends Step {
             final Launcher launcher = context.get(Launcher.class);
             final TaskListener listener = context.get(TaskListener.class);
             final EnvVars env = context.get(EnvVars.class);
-            // Ensure those that are required are provided
-            Objects.requireNonNull(run);
+            // context.get() guarantees these, but let code inspections know it
+            assert run != null;
+            assert listener != null;
+            assert env != null;
+            // Check the ones that are optionally required
             if (this.delegate.requiresWorkspace() && workspace == null) {
                 throw new MissingContextVariableException(FilePath.class);
             }
             if (this.delegate.requiresLauncher() && launcher == null) {
                 throw new MissingContextVariableException(Launcher.class);
             }
-            Objects.requireNonNull(listener);
-            Objects.requireNonNull(env);
             // Set it up
             final SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
             delegate.setUp(c, run, workspace, launcher, listener, env);
@@ -172,15 +172,9 @@ public class CoreWrapperStep extends Step {
             final FilePath workspace = context.get(FilePath.class);
             final Launcher launcher = context.get(Launcher.class);
             final TaskListener listener = context.get(TaskListener.class);
-            // Ensure those that are required are provided
-            Objects.requireNonNull(run);
-            if (this.disposer.requiresWorkspace() && workspace == null) {
-                throw new MissingContextVariableException(FilePath.class);
-            }
-            if (this.disposer.requiresLauncher() && launcher == null) {
-                throw new MissingContextVariableException(Launcher.class);
-            }
-            Objects.requireNonNull(listener);
+            // context.get() guarantees these, but let code inspections know it
+            assert run != null;
+            assert listener != null;
             // Tear it down
             disposer.tearDown(run, workspace, launcher, listener);
         }
