@@ -35,16 +35,12 @@ import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tasks.Fingerprinter;
-import hudson.util.VersionNumber;
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.mail.internet.InternetAddress;
-import jenkins.model.Jenkins;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
 import jenkins.tasks.SimpleBuildStep;
-import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -55,9 +51,7 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Assert;
 import static org.junit.Assert.*;
-import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -180,7 +174,7 @@ public class CoreStepTest {
         public BuilderWithEnvironment() {
         }
 
-        // Once the plugin depends on Jenkins 2.241 or later, this can be a real @Override
+        // TODO: Once the plugin depends on Jenkins 2.241 or later, this can be a real @Override
         //@Override
         public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             assertNull(env.get("BUILD_ID"));
@@ -189,7 +183,7 @@ public class CoreStepTest {
 
         @Override
         public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
-            Assert.fail("This method should not get called.");
+            fail("This method should not get called.");
         }
 
         @Symbol("buildWithEnvironment")
@@ -205,8 +199,6 @@ public class CoreStepTest {
     @Issue("JENKINS-29144")
     @Test
     public void builderWithEnvironment() throws Exception {
-        Assume.assumeTrue("Requires API added in Jenkins 2.241.",
-                Objects.requireNonNull(Jenkins.getVersion()).isNewerThanOrEqualTo(new VersionNumber("2.241")));
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
         r.buildAndAssertSuccess(p);

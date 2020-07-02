@@ -37,7 +37,6 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
-import hudson.util.VersionNumber;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -85,16 +84,13 @@ public final class CoreStep extends Step {
             final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
             final Launcher launcher = Objects.requireNonNull(ctx.get(Launcher.class));
             final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
-            if (Objects.requireNonNull(Jenkins.getVersion()).isNewerThanOrEqualTo(new VersionNumber("2.241"))) {
-                final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
-                // Use the new API that takes EnvVars:
-                //   this.delegate.perform(run, workspace, env, launcher, listener);
-                // but do so via reflection so that the plugin does not actually need to reference 2.241.
+            // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, FilePath, EnvVars, Launcher, TaskListener) once the minimum core version for this plugin is 2.241 or newer.
+            try {
                 final Method perform = this.delegate.getClass().getMethod("perform", Run.class, FilePath.class,
                         EnvVars.class, Launcher.class, TaskListener.class);
+                final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
                 perform.invoke(this.delegate, run, workspace, env, launcher, listener);
-            }
-            else {
+            } catch(NoSuchMethodException e) {
                 this.delegate.perform(run, workspace, launcher, listener);
             }
             return null;
