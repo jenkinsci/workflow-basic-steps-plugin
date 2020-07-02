@@ -195,14 +195,11 @@ public class CoreStepTest {
         @Symbol("buildWithEnvironment")
         @TestExtension("builderWithEnvironment")
         public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
-
             @Override
             public boolean isApplicable(Class<? extends AbstractProject> jobType) {
                 return true;
             }
-
         }
-
     }
 
     @Issue("JENKINS-29144")

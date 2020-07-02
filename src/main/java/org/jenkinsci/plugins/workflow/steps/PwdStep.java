@@ -100,8 +100,9 @@ public class PwdStep extends Step {
             Objects.requireNonNull(cwd);
             if (tmp) {
                 cwd = WorkspaceList.tempDir(cwd);
-                if (cwd == null)
+                if (cwd == null) {
                     throw new IOException("Failed to set up a temporary directory.");
+                }
             }
             return cwd.getRemote();
         }
