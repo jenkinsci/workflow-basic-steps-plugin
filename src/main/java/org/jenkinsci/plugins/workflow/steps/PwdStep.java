@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.slaves.WorkspaceList;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -95,7 +96,14 @@ public class PwdStep extends Step {
 
         @Override protected String run() throws Exception {
             FilePath cwd = getContext().get(FilePath.class);
-            return (tmp ? WorkspaceList.tempDir(cwd) : cwd).getRemote();
+            assert cwd != null;
+            if (tmp) {
+                cwd = WorkspaceList.tempDir(cwd);
+                if (cwd == null) {
+                    throw new IOException("No temporary directory available.");
+                }
+            }
+            return cwd.getRemote();
         }
 
         private static final long serialVersionUID = 1L;
