@@ -24,13 +24,27 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
 import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.ArtifactArchiver;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
 import hudson.tasks.Fingerprinter;
+import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
+import jenkins.tasks.SimpleBuildStep;
+import org.apache.regexp.RE;
 import org.hamcrest.Matchers;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
@@ -39,14 +53,18 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.mock_javamail.Mailbox;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class CoreStepTest {
 
@@ -152,6 +170,82 @@ public class CoreStepTest {
     @Test public void coreStepWithSymbolWithSoleArg() throws Exception {
         ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
         st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts 'some-artifacts'");
+    }
+
+    public static class BuilderWithWorkspaceRequirement extends Builder implements SimpleBuildStep {
+        @DataBoundConstructor
+        public BuilderWithWorkspaceRequirement() {
+        }
+        @Override
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context required, but not provided!");
+        }
+        @Override
+        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context required and provided.");
+        }
+        // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
+        // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @Symbol("builderWithWorkspaceRequirement")
+        @TestExtension("builderWithWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+        }
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void builderWithWorkspaceRequirement() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // make sure it runs inside node
+        p.setDefinition(new CpsFlowDefinition("node { builderWithWorkspaceRequirement() }", true));
+        r.assertLogContains("workspace context required and provided.", r.buildAndAssertSuccess(p));
+        // and fails outside of one
+        p.setDefinition(new CpsFlowDefinition("builderWithWorkspaceRequirement()", true));
+        r.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r.buildAndAssertStatus(Result.FAILURE, p));
+    }
+
+    public static class BuilderWithoutWorkspaceRequirement extends Builder implements SimpleBuildStep {
+        @DataBoundConstructor
+        public BuilderWithoutWorkspaceRequirement() {
+        }
+        @Override
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context not needed.");
+        }
+        @Override
+        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context not needed, but provided.");
+        }
+        @Override
+        public boolean requiresWorkspace() {
+            return false;
+        }
+        // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
+        // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @Symbol("builderWithoutWorkspaceRequirement")
+        @TestExtension("builderWithoutWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+        }
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void builderWithoutWorkspaceRequirement() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // make sure it runs outside of node
+        p.setDefinition(new CpsFlowDefinition("builderWithoutWorkspaceRequirement()", true));
+        r.assertLogContains("workspace context not needed.", r.buildAndAssertSuccess(p));
+        // but also inside it
+        p.setDefinition(new CpsFlowDefinition("node { builderWithoutWorkspaceRequirement() }", true));
+        r.assertLogContains("workspace context not needed, but provided.", r.buildAndAssertSuccess(p));
     }
 
 }

@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -75,9 +76,32 @@ public final class CoreStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            FilePath workspace = getContext().get(FilePath.class);
-            workspace.mkdirs();
-            delegate.perform(getContext().get(Run.class), workspace, getContext().get(Launcher.class), getContext().get(TaskListener.class));
+            final StepContext context = getContext();
+            final Run<?,?> run = context.get(Run.class);
+            assert run != null;
+            final TaskListener listener = context.get(TaskListener.class);
+            assert listener != null;
+            final EnvVars env = context.get(EnvVars.class);
+            assert env != null;
+            final FilePath workspace = context.get(FilePath.class);
+            final Launcher launcher = context.get(Launcher.class);
+            if (this.delegate.requiresWorkspace()) {
+                if (workspace == null) {
+                    throw new MissingContextVariableException(FilePath.class);
+                }
+                if (launcher == null) {
+                    throw new MissingContextVariableException(Launcher.class);
+                }
+            }
+            if (workspace != null) {
+                workspace.mkdirs();
+            }
+            // always pass the workspace context when available, even when it is not strictly required
+            if (workspace != null && launcher != null) {
+                this.delegate.perform(run, workspace, env, launcher, listener);
+            } else {
+                this.delegate.perform(run, env, listener);
+            }
             return null;
         }
 
@@ -121,7 +145,7 @@ public final class CoreStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, TaskListener.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

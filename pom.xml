@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.56</version>
+        <version>4.2</version>
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -64,7 +64,7 @@
     <properties>
         <revision>2.21</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.164.3</jenkins.version>
+        <jenkins.version>2.245-SNAPSHOT</jenkins.version> <!-- https://github.com/jenkinsci/jenkins/pull/4829 -->
         <java.level>8</java.level>
         <useBeta>true</useBeta>
     </properties>

@@ -93,19 +93,43 @@ public class CoreWrapperStep extends Step {
 
         private void doStart() throws Exception {
             SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
-            Run<?, ?> run = getContext().get(Run.class);
-            delegate.setUp(c, run, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(TaskListener.class), getContext().get(EnvVars.class));
-            BodyInvoker bodyInvoker = getContext().newBodyInvoker();
+            c.setWorkspaceRequirement(this.delegate);
+            final StepContext context = getContext();
+            final Run<?, ?> run = context.get(Run.class);
+            assert run != null;
+            {
+                final TaskListener listener = context.get(TaskListener.class);
+                assert listener != null;
+                final EnvVars env = context.get(EnvVars.class);
+                assert env != null;
+                final FilePath workspace = context.get(FilePath.class);
+                final Launcher launcher = context.get(Launcher.class);
+                if (this.delegate.requiresWorkspace()) {
+                    if (workspace == null) {
+                        throw new MissingContextVariableException(FilePath.class);
+                    }
+                    if (launcher == null) {
+                        throw new MissingContextVariableException(Launcher.class);
+                    }
+                }
+                // always pass the workspace context when available, even when it is not strictly required
+                if (workspace != null && launcher != null) {
+                    this.delegate.setUp(c, run, workspace, launcher, listener, env);
+                } else {
+                    this.delegate.setUp(c, run, listener, env);
+                }
+            }
+            BodyInvoker bodyInvoker = context.newBodyInvoker();
             Map<String,String> overrides = c.getEnv();
             if (!overrides.isEmpty()) {
-                bodyInvoker.withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new ExpanderImpl(overrides)));
+                bodyInvoker.withContext(EnvironmentExpander.merge(context.get(EnvironmentExpander.class), new ExpanderImpl(overrides)));
             }
             ConsoleLogFilter filter = delegate.createLoggerDecorator(run);
             if (filter != null) {
-                bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(getContext().get(ConsoleLogFilter.class), filter));
+                bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), filter));
             }
             SimpleBuildWrapper.Disposer disposer = c.getDisposer();
-            bodyInvoker.withCallback(disposer != null ? new Callback2(disposer) : BodyExecutionCallback.wrap(getContext())).start();
+            bodyInvoker.withCallback(disposer != null ? new Callback2(disposer) : BodyExecutionCallback.wrap(context)).start();
         }
 
         private final class Callback2 extends TailCall {
@@ -149,7 +173,26 @@ public class CoreWrapperStep extends Step {
         }
 
         @Override protected void finished(StepContext context) throws Exception {
-            disposer.tearDown(context.get(Run.class), context.get(FilePath.class), context.get(Launcher.class), context.get(TaskListener.class));
+            final Run<?,?> run = context.get(Run.class);
+            assert run != null;
+            final TaskListener listener = context.get(TaskListener.class);
+            assert listener != null;
+            final FilePath workspace = context.get(FilePath.class);
+            final Launcher launcher = context.get(Launcher.class);
+            if (this.disposer.requiresWorkspace()) {
+                if (workspace == null) {
+                    throw new MissingContextVariableException(FilePath.class);
+                }
+                if (launcher == null) {
+                    throw new MissingContextVariableException(Launcher.class);
+                }
+            }
+            // always pass the workspace context when available, even when it is not strictly required
+            if (workspace != null && launcher != null) {
+                this.disposer.tearDown(run, workspace, launcher, listener);
+            } else {
+                this.disposer.tearDown(run, listener);
+            }
         }
 
     }
@@ -184,7 +227,7 @@ public class CoreWrapperStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class, EnvVars.class);
+            return ImmutableSet.of(Run.class, TaskListener.class, EnvVars.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {
