@@ -64,7 +64,7 @@
     <properties>
         <revision>2.21</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.245-SNAPSHOT</jenkins.version> <!-- https://github.com/jenkinsci/jenkins/pull/4829 -->
+        <jenkins.version>2.245-rc30110.cfe16f60d3ee</jenkins.version> <!-- https://github.com/jenkinsci/jenkins/pull/4829 -->
         <java.level>8</java.level>
         <useBeta>true</useBeta>
     </properties>
