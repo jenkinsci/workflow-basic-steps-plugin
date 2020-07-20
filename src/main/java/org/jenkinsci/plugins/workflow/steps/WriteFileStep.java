@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
@@ -104,6 +105,7 @@ public final class WriteFileStep extends Step {
             this.step = step;
         }
 
+        @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "https://github.com/spotbugs/spotbugs/issues/756")
         @Override protected Void run() throws Exception {
             FilePath file = getContext().get(FilePath.class).child(step.file);
             if (ReadFileStep.BASE64_ENCODING.equals(step.encoding)) {

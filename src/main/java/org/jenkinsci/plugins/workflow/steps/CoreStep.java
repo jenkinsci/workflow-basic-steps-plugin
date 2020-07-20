@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -36,11 +37,13 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
@@ -75,9 +78,21 @@ public final class CoreStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            FilePath workspace = getContext().get(FilePath.class);
+            final StepContext ctx = this.getContext();
+            final FilePath workspace = Objects.requireNonNull(ctx.get(FilePath.class));
             workspace.mkdirs();
-            delegate.perform(getContext().get(Run.class), workspace, getContext().get(Launcher.class), getContext().get(TaskListener.class));
+            final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
+            final Launcher launcher = Objects.requireNonNull(ctx.get(Launcher.class));
+            final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
+            // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, FilePath, EnvVars, Launcher, TaskListener) once the minimum core version for this plugin is 2.241 or newer.
+            try {
+                final Method perform = this.delegate.getClass().getMethod("perform", Run.class, FilePath.class,
+                        EnvVars.class, Launcher.class, TaskListener.class);
+                final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
+                perform.invoke(this.delegate, run, workspace, env, launcher, listener);
+            } catch(NoSuchMethodException e) {
+                this.delegate.perform(run, workspace, launcher, listener);
+            }
             return null;
         }
 
@@ -121,7 +136,7 @@ public final class CoreStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, FilePath.class, EnvVars.class, Launcher.class, TaskListener.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {
