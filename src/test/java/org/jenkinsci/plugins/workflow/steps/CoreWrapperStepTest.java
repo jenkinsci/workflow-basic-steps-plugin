@@ -25,7 +25,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.base.Predicates;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
@@ -290,19 +289,21 @@ public class CoreWrapperStepTest {
 
     public static final class WrapperWithWorkspaceRequirement extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithWorkspaceRequirement() { }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required and provided.");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.25x or newer.
+        public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required but not provided!");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
         public static final class DisposerWithWorkspaceRequirement extends Disposer {
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required and provided.");
             }
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
+            // TODO: Mark as @Override once the minimum core version for this plugin is 2.25x or newer.
+            public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required but not provided!");
             }
         }
@@ -338,20 +339,25 @@ public class CoreWrapperStepTest {
 
     public static final class WrapperWithoutWorkspaceRequirement extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithoutWorkspaceRequirement() { }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.25x or newer.
+        public boolean requiresWorkspace() { return false; }
+        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed, but provided.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.25x or newer.
+        public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
-        @Override public boolean requiresWorkspace() { return false; }
         public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
+            // TODO: Remove once the minimum core version for this plugin is 2.25x or newer.
+            public boolean requiresWorkspace() { return false; }
+            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed, but provided.");
             }
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
+            // TODO: Mark as @Override once the minimum core version for this plugin is 2.25x or newer.
+            public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed.");
             }
         }

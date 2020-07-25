@@ -34,6 +34,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildWrapperDescriptor;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -92,7 +93,15 @@ public class CoreWrapperStep extends Step {
         }
 
         private void doStart() throws Exception {
-            SimpleBuildWrapper.Context c = this.delegate.createContext();
+            SimpleBuildWrapper.Context c = null;
+            // TODO: Replace with a direct call to SimpleBuildWrapper.createContext() once the minimum core version for this plugin is 2.25x or newer.
+            try {
+                final Method createContext = this.delegate.getClass().getMethod("createContext");
+                c = (SimpleBuildWrapper.Context) createContext.invoke(this.delegate);
+            }
+            catch (NoSuchMethodException e) {
+                c = new SimpleBuildWrapper.Context();
+            }
             final StepContext context = getContext();
             final Run<?, ?> run = context.get(Run.class);
             assert run != null;
@@ -103,7 +112,15 @@ public class CoreWrapperStep extends Step {
                 assert env != null;
                 final FilePath workspace = context.get(FilePath.class);
                 final Launcher launcher = context.get(Launcher.class);
-                if (this.delegate.requiresWorkspace()) {
+                boolean workspaceRequired = true;
+                // TODO: Replace with a direct call to SimpleBuildWrapper.requiresWorkspace() once the minimum core version for this plugin is 2.25x or newer.
+                try {
+                    final Method requiresWorkspace = this.delegate.getClass().getMethod("requiresWorkspace");
+                    workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
+                } catch(NoSuchMethodException e) {
+                    // ok, default to true
+                }
+                if (workspaceRequired) {
                     if (workspace == null) {
                         throw new MissingContextVariableException(FilePath.class);
                     }
@@ -115,7 +132,10 @@ public class CoreWrapperStep extends Step {
                 if (workspace != null && launcher != null) {
                     this.delegate.setUp(c, run, workspace, launcher, listener, env);
                 } else {
-                    this.delegate.setUp(c, run, listener, env);
+                    // TODO: Replace with a direct call to SimpleBuildWrapper.setUp(Context, Run, TaskListener, EnvVars) once the minimum core version for this plugin is 2.25x or newer.
+                    // Note: no try here; if we get here, the method MUST exist
+                    final Method perform = this.delegate.getClass().getMethod("setUp", SimpleBuildWrapper.Context.class, Run.class, TaskListener.class, EnvVars.class);
+                    perform.invoke(this.delegate, c, run, listener, env);
                 }
             }
             BodyInvoker bodyInvoker = context.newBodyInvoker();
@@ -178,7 +198,15 @@ public class CoreWrapperStep extends Step {
             assert listener != null;
             final FilePath workspace = context.get(FilePath.class);
             final Launcher launcher = context.get(Launcher.class);
-            if (this.disposer.requiresWorkspace()) {
+            boolean workspaceRequired = true;
+            // TODO: Replace with a direct call to Disposer.requiresWorkspace() once the minimum core version for this plugin is 2.25x or newer.
+            try {
+                final Method requiresWorkspace = this.disposer.getClass().getMethod("requiresWorkspace");
+                workspaceRequired = (boolean) requiresWorkspace.invoke(this.disposer);
+            } catch(NoSuchMethodException e) {
+                // ok, default to true
+            }
+            if (workspaceRequired) {
                 if (workspace == null) {
                     throw new MissingContextVariableException(FilePath.class);
                 }
@@ -190,7 +218,10 @@ public class CoreWrapperStep extends Step {
             if (workspace != null && launcher != null) {
                 this.disposer.tearDown(run, workspace, launcher, listener);
             } else {
-                this.disposer.tearDown(run, listener);
+                // TODO: Replace with a direct call to Disposer.tearDown(Run, TaskListener) once the minimum core version for this plugin is 2.25x or newer.
+                // Note: no try here; if we get here, the method MUST exist
+                final Method perform = this.disposer.getClass().getMethod("tearDown", Run.class, TaskListener.class);
+                perform.invoke(this.disposer, run, listener);
             }
         }
 
