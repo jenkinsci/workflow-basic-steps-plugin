@@ -31,6 +31,7 @@ import hudson.slaves.WorkspaceList;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -96,11 +97,11 @@ public class PwdStep extends Step {
 
         @Override protected String run() throws Exception {
             FilePath cwd = getContext().get(FilePath.class);
-            assert cwd != null;
+            Objects.requireNonNull(cwd);
             if (tmp) {
                 cwd = WorkspaceList.tempDir(cwd);
                 if (cwd == null) {
-                    throw new IOException("No temporary directory available.");
+                    throw new IOException("Failed to set up a temporary directory.");
                 }
             }
             return cwd.getRemote();

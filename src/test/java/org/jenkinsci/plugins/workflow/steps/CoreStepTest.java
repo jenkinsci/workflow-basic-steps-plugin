@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -42,7 +41,6 @@ import javax.annotation.Nonnull;
 import javax.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
 import jenkins.tasks.SimpleBuildStep;
-import org.apache.regexp.RE;
 import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -53,9 +51,7 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -172,6 +168,42 @@ public class CoreStepTest {
         st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts 'some-artifacts'");
     }
 
+    public static class BuilderWithEnvironment extends Builder implements SimpleBuildStep {
+
+        @DataBoundConstructor
+        public BuilderWithEnvironment() {
+        }
+
+        // TODO: Once the plugin depends on Jenkins 2.241 or later, this can be a real @Override
+        //@Override
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            assertNull(env.get("BUILD_ID"));
+            assertEquals("JENKINS-29144", env.get("TICKET"));
+        }
+
+        @Override
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            fail("This method should not get called.");
+        }
+
+        @Symbol("buildWithEnvironment")
+        @TestExtension("builderWithEnvironment")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+        }
+    }
+
+    @Issue("JENKINS-29144")
+    @Test
+    public void builderWithEnvironment() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
+        r.buildAndAssertSuccess(p);
+    }
+
     public static class BuilderWithWorkspaceRequirement extends Builder implements SimpleBuildStep {
         @DataBoundConstructor
         public BuilderWithWorkspaceRequirement() {
@@ -181,7 +213,7 @@ public class CoreStepTest {
             listener.getLogger().println("workspace context required, but not provided!");
         }
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required and provided.");
         }
         // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
@@ -217,7 +249,7 @@ public class CoreStepTest {
             listener.getLogger().println("workspace context not needed.");
         }
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed, but provided.");
         }
         @Override

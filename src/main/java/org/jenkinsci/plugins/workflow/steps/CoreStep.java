@@ -37,11 +37,13 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
@@ -76,16 +78,24 @@ public final class CoreStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            final StepContext context = getContext();
-            final Run<?,?> run = context.get(Run.class);
+            final StepContext ctx = this.getContext();
+            final Run<?,?> run = ctx.get(Run.class);
             assert run != null;
-            final TaskListener listener = context.get(TaskListener.class);
+            final TaskListener listener = ctx.get(TaskListener.class);
             assert listener != null;
-            final EnvVars env = context.get(EnvVars.class);
+            final EnvVars env = ctx.get(EnvVars.class);
             assert env != null;
-            final FilePath workspace = context.get(FilePath.class);
-            final Launcher launcher = context.get(Launcher.class);
-            if (this.delegate.requiresWorkspace()) {
+            final FilePath workspace = ctx.get(FilePath.class);
+            final Launcher launcher = ctx.get(Launcher.class);
+            boolean workspaceRequired = true;
+            // TODO: Replace with a direct call to SimpleBuildStep.requiresWorkspace() once the minimum core version for this plugin is 2.25x or newer.
+            try {
+                final Method requiresWorkspace = this.delegate.getClass().getMethod("requiresWorkspace");
+                workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
+            } catch(NoSuchMethodException e) {
+                // ok, default to true
+            }
+            if (workspaceRequired) {
                 if (workspace == null) {
                     throw new MissingContextVariableException(FilePath.class);
                 }
@@ -98,9 +108,19 @@ public final class CoreStep extends Step {
             }
             // always pass the workspace context when available, even when it is not strictly required
             if (workspace != null && launcher != null) {
-                this.delegate.perform(run, workspace, env, launcher, listener);
+                // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, FilePath, EnvVars, Launcher, TaskListener) once the minimum core version for this plugin is 2.241 or newer.
+                try {
+                    final Method perform = this.delegate.getClass().getMethod("perform", Run.class, FilePath.class,
+                            EnvVars.class, Launcher.class, TaskListener.class);
+                    perform.invoke(this.delegate, run, workspace, env, launcher, listener);
+                } catch (NoSuchMethodException e) {
+                    this.delegate.perform(run, workspace, launcher, listener);
+                }
             } else {
-                this.delegate.perform(run, env, listener);
+                // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, EnvVars, TaskListener) once the minimum core version for this plugin is 2.25x or newer.
+                // Note: no try here; if we get here, the method MUST exist
+                final Method perform = this.delegate.getClass().getMethod("perform", Run.class, EnvVars.class, TaskListener.class);
+                perform.invoke(this.delegate, run, env, listener);
             }
             return null;
         }
@@ -145,7 +165,7 @@ public final class CoreStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, EnvVars.class, TaskListener.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {
