@@ -92,8 +92,7 @@ public class CoreWrapperStep extends Step {
         }
 
         private void doStart() throws Exception {
-            SimpleBuildWrapper.Context c = new SimpleBuildWrapper.Context();
-            c.setWorkspaceRequirement(this.delegate);
+            SimpleBuildWrapper.Context c = this.delegate.createContext();
             final StepContext context = getContext();
             final Run<?, ?> run = context.get(Run.class);
             assert run != null;
