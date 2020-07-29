@@ -94,9 +94,11 @@ public class CoreWrapperStep extends Step {
 
         private void doStart() throws Exception {
             SimpleBuildWrapper.Context c = null;
-            // TODO: Replace with a direct call to SimpleBuildWrapper.createContext() once the minimum core version for this plugin is 2.25x or newer.
+            // In Jenkins 2.25x, a createContext() method on SimpleBuildWrapper is required to ensure that a Disposer
+            // registered on that context inherits the wrapper's workspace requirement. Use it when available.
+            // TODO: Use 'c = this.delegate.createContext()' once this plugin depends on Jenkins 2.25x or later.
             try {
-                final Method createContext = this.delegate.getClass().getMethod("createContext");
+                final Method createContext = SimpleBuildWrapper.class.getMethod("createContext");
                 c = (SimpleBuildWrapper.Context) createContext.invoke(this.delegate);
             }
             catch (NoSuchMethodException e) {
@@ -113,7 +115,11 @@ public class CoreWrapperStep extends Step {
                 final FilePath workspace = context.get(FilePath.class);
                 final Launcher launcher = context.get(Launcher.class);
                 boolean workspaceRequired = true;
-                // TODO: Replace with a direct call to SimpleBuildWrapper.requiresWorkspace() once the minimum core version for this plugin is 2.25x or newer.
+                // In Jenkins 2.25x, a SimpleBuildWrapper can indicate that it does not require a workspace context by
+                // overriding a requiresWorkspace() method to return false. So use that if it's available.
+                // Note: this uses getMethod() on the delegate's type and not SimpleBuildWrapper so that an
+                // implementation can get this behaviour without switching to Jenkins 2.25x itself.
+                // TODO: Use 'workspaceRequired = this.delegate.requiresWorkspace()' once this plugin depends on Jenkins 2.25x or later.
                 try {
                     final Method requiresWorkspace = this.delegate.getClass().getMethod("requiresWorkspace");
                     workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
@@ -132,8 +138,11 @@ public class CoreWrapperStep extends Step {
                 if (workspace != null && launcher != null) {
                     this.delegate.setUp(c, run, workspace, launcher, listener, env);
                 } else {
-                    // TODO: Replace with a direct call to SimpleBuildWrapper.setUp(Context, Run, TaskListener, EnvVars) once the minimum core version for this plugin is 2.25x or newer.
-                    // Note: no try here; if we get here, the method MUST exist
+                    // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
+                    // overload of setUp() introduced in Jenkins 2.25x MUST exist (so no try block here).
+                    // Note: this uses getMethod() on the delegate's type and not SimpleBuildWrapper so that an
+                    // implementation can get this behaviour without switching to Jenkins 2.25x itself.
+                    // TODO: Use 'this.delegate.setUp(c, run, listener, env)' once the minimum core version for this plugin is 2.25x or newer.
                     final Method perform = this.delegate.getClass().getMethod("setUp", SimpleBuildWrapper.Context.class, Run.class, TaskListener.class, EnvVars.class);
                     perform.invoke(this.delegate, c, run, listener, env);
                 }
@@ -199,7 +208,12 @@ public class CoreWrapperStep extends Step {
             final FilePath workspace = context.get(FilePath.class);
             final Launcher launcher = context.get(Launcher.class);
             boolean workspaceRequired = true;
-            // TODO: Replace with a direct call to Disposer.requiresWorkspace() once the minimum core version for this plugin is 2.25x or newer.
+            // In Jenkins 2.25x, a Disposer has a final requiresWorkspace() method that indicates whether or not it (or
+            // more accurately, its associated wrapper) requires a workspace context. This is set up via the Context, as
+            // long as that is created via SimpleBuildWrapper.createContext().
+            // Note: this uses getMethod() on the disposer's type and not SimpleBuildWrapper.Disposer so that an
+            // implementation can get this behaviour without switching to Jenkins 2.25x itself.
+            // TODO: Use 'workspaceRequired = this.disposer.requiresWorkspace()' once this plugin depends on Jenkins 2.25x or later.
             try {
                 final Method requiresWorkspace = this.disposer.getClass().getMethod("requiresWorkspace");
                 workspaceRequired = (boolean) requiresWorkspace.invoke(this.disposer);
@@ -218,8 +232,11 @@ public class CoreWrapperStep extends Step {
             if (workspace != null && launcher != null) {
                 this.disposer.tearDown(run, workspace, launcher, listener);
             } else {
-                // TODO: Replace with a direct call to Disposer.tearDown(Run, TaskListener) once the minimum core version for this plugin is 2.25x or newer.
-                // Note: no try here; if we get here, the method MUST exist
+                // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
+                // overload of tearDown() introduced in Jenkins 2.25x MUST exist (so no try block here).
+                // Note: this uses getMethod() on the disposer's type and not SimpleBuildWrapper.Disposer so that an
+                // implementation can get this behaviour without switching to Jenkins 2.25x itself.
+                // TODO: Use 'this.disposer.tearDown(run, listener)' once the minimum core version for this plugin is 2.25x or newer.
                 final Method perform = this.disposer.getClass().getMethod("tearDown", Run.class, TaskListener.class);
                 perform.invoke(this.disposer, run, listener);
             }

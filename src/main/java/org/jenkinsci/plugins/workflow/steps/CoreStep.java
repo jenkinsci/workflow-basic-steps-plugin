@@ -43,7 +43,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
@@ -88,7 +87,11 @@ public final class CoreStep extends Step {
             final FilePath workspace = ctx.get(FilePath.class);
             final Launcher launcher = ctx.get(Launcher.class);
             boolean workspaceRequired = true;
-            // TODO: Replace with a direct call to SimpleBuildStep.requiresWorkspace() once the minimum core version for this plugin is 2.25x or newer.
+            // In Jenkins 2.25x, a SimpleBuildStep can indicate that it does not require a workspace context by
+            // overriding a requiresWorkspace() method to return false. So use that if it's available.
+            // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation can
+            // get this behaviour without switching to Jenkins 2.25x itself.
+            // TODO: Use 'workspaceRequired = this.delegate.requiresWorkspace()' once this plugin depends on Jenkins 2.25x or later.
             try {
                 final Method requiresWorkspace = this.delegate.getClass().getMethod("requiresWorkspace");
                 workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
@@ -108,7 +111,11 @@ public final class CoreStep extends Step {
             }
             // always pass the workspace context when available, even when it is not strictly required
             if (workspace != null && launcher != null) {
-                // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, FilePath, EnvVars, Launcher, TaskListener) once the minimum core version for this plugin is 2.241 or newer.
+                // In Jenkins 2.241, a SimpleBuildStep has an overload of perform() that also takes an EnvVars. If that
+                // is available, we use it.
+                // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation
+                // can get this behaviour without switching to Jenkins 2.241 itself.
+                // TODO: Use 'this.delegate.perform(run, workspace, env, launcher, listener)' once this plugin depends on Jenkins 2.241 or later.
                 try {
                     final Method perform = this.delegate.getClass().getMethod("perform", Run.class, FilePath.class,
                             EnvVars.class, Launcher.class, TaskListener.class);
@@ -117,8 +124,11 @@ public final class CoreStep extends Step {
                     this.delegate.perform(run, workspace, launcher, listener);
                 }
             } else {
-                // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, EnvVars, TaskListener) once the minimum core version for this plugin is 2.25x or newer.
-                // Note: no try here; if we get here, the method MUST exist
+                // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
+                // overload of perform() introduced in Jenkins 2.25x MUST exist (so no try block here).
+                // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation
+                // can get this behaviour without switching to Jenkins 2.25x itself.
+                // TODO: Use 'this.delegate.perform(run, env, listener)' once the minimum core version for this plugin is 2.25x or newer.
                 final Method perform = this.delegate.getClass().getMethod("perform", Run.class, EnvVars.class, TaskListener.class);
                 perform.invoke(this.delegate, run, env, listener);
             }
