@@ -1,5 +1,14 @@
 ## Changelog
 
+### 2.21
+
+Release date: 2020-09-15
+
+- Developer: Support new `SimpleBuildStep.perform` overload with `EnvVars` parameter ([JENKINS-29144](https://issues.jenkins-ci.org/browse/JENKINS-29144))
+- Improvement: Update the help text for the `sleep` and `timeout` steps to mention the default units for each step ([PR 114](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/114))
+- Improvement: Update the help text for the `waitUntil` step to mention the maximum wait time between attempts ([PR 119](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/119))
+- Internal: Ignore flaky test and remove invalid test ([PR 120](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/120), [PR 126](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/126))
+
 ### 2.20
 
 Release date: 2020-04-20
