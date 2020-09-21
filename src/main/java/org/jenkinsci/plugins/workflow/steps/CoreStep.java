@@ -37,7 +37,6 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -84,15 +83,8 @@ public final class CoreStep extends Step {
             final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
             final Launcher launcher = Objects.requireNonNull(ctx.get(Launcher.class));
             final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
-            // TODO: Replace with a direct call to SimpleBuildStep.perform(Run, FilePath, EnvVars, Launcher, TaskListener) once the minimum core version for this plugin is 2.241 or newer.
-            try {
-                final Method perform = this.delegate.getClass().getMethod("perform", Run.class, FilePath.class,
-                        EnvVars.class, Launcher.class, TaskListener.class);
-                final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
-                perform.invoke(this.delegate, run, workspace, env, launcher, listener);
-            } catch(NoSuchMethodException e) {
-                this.delegate.perform(run, workspace, launcher, listener);
-            }
+            final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
+            delegate.perform(run, workspace, env, launcher, listener);
             return null;
         }
 
