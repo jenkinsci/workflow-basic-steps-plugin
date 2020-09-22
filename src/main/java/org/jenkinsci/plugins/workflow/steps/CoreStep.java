@@ -37,6 +37,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -97,6 +98,9 @@ public final class CoreStep extends Step {
                 workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
             } catch(NoSuchMethodException e) {
                 // ok, default to true
+            } catch (InvocationTargetException ite) {
+                final Throwable realException = ite.getCause();
+                throw realException instanceof Exception ? (Exception) realException : ite;
             }
             if (workspaceRequired) {
                 if (workspace == null) {
@@ -122,15 +126,23 @@ public final class CoreStep extends Step {
                     perform.invoke(this.delegate, run, workspace, env, launcher, listener);
                 } catch (NoSuchMethodException e) {
                     this.delegate.perform(run, workspace, launcher, listener);
+                } catch (InvocationTargetException ite) {
+                    final Throwable realException = ite.getCause();
+                    throw realException instanceof Exception ? (Exception) realException : ite;
                 }
             } else {
                 // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
-                // overload of perform() introduced in Jenkins 2.25x MUST exist (so no try block here).
+                // overload of perform() introduced in Jenkins 2.25x MUST exist.
                 // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation
                 // can get this behaviour without switching to Jenkins 2.25x itself.
                 // TODO: Use 'this.delegate.perform(run, env, listener)' once the minimum core version for this plugin is 2.25x or newer.
                 final Method perform = this.delegate.getClass().getMethod("perform", Run.class, EnvVars.class, TaskListener.class);
-                perform.invoke(this.delegate, run, env, listener);
+                try {
+                    perform.invoke(this.delegate, run, env, listener);
+                } catch (InvocationTargetException ite) {
+                    final Throwable realException = ite.getCause();
+                    throw realException instanceof Exception ? (Exception) realException : ite;
+                }
             }
             return null;
         }

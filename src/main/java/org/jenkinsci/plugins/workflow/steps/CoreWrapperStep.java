@@ -34,6 +34,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildWrapperDescriptor;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,6 +104,9 @@ public class CoreWrapperStep extends Step {
             }
             catch (NoSuchMethodException e) {
                 c = new SimpleBuildWrapper.Context();
+            } catch (InvocationTargetException ite) {
+                final Throwable realException = ite.getCause();
+                throw realException instanceof Exception ? (Exception) realException : ite;
             }
             final StepContext context = getContext();
             final Run<?, ?> run = context.get(Run.class);
@@ -125,6 +129,9 @@ public class CoreWrapperStep extends Step {
                     workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
                 } catch(NoSuchMethodException e) {
                     // ok, default to true
+                } catch (InvocationTargetException ite) {
+                    final Throwable realException = ite.getCause();
+                    throw realException instanceof Exception ? (Exception) realException : ite;
                 }
                 if (workspaceRequired) {
                     if (workspace == null) {
@@ -139,12 +146,17 @@ public class CoreWrapperStep extends Step {
                     this.delegate.setUp(c, run, workspace, launcher, listener, env);
                 } else {
                     // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
-                    // overload of setUp() introduced in Jenkins 2.25x MUST exist (so no try block here).
+                    // overload of setUp() introduced in Jenkins 2.25x MUST exist.
                     // Note: this uses getMethod() on the delegate's type and not SimpleBuildWrapper so that an
                     // implementation can get this behaviour without switching to Jenkins 2.25x itself.
                     // TODO: Use 'this.delegate.setUp(c, run, listener, env)' once the minimum core version for this plugin is 2.25x or newer.
                     final Method perform = this.delegate.getClass().getMethod("setUp", SimpleBuildWrapper.Context.class, Run.class, TaskListener.class, EnvVars.class);
-                    perform.invoke(this.delegate, c, run, listener, env);
+                    try {
+                        perform.invoke(this.delegate, c, run, listener, env);
+                    } catch (InvocationTargetException ite) {
+                        final Throwable realException = ite.getCause();
+                        throw realException instanceof Exception ? (Exception) realException : ite;
+                    }
                 }
             }
             BodyInvoker bodyInvoker = context.newBodyInvoker();
@@ -219,6 +231,9 @@ public class CoreWrapperStep extends Step {
                 workspaceRequired = (boolean) requiresWorkspace.invoke(this.disposer);
             } catch(NoSuchMethodException e) {
                 // ok, default to true
+            } catch (InvocationTargetException ite) {
+                final Throwable realException = ite.getCause();
+                throw realException instanceof Exception ? (Exception) realException : ite;
             }
             if (workspaceRequired) {
                 if (workspace == null) {
@@ -233,12 +248,17 @@ public class CoreWrapperStep extends Step {
                 this.disposer.tearDown(run, workspace, launcher, listener);
             } else {
                 // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
-                // overload of tearDown() introduced in Jenkins 2.25x MUST exist (so no try block here).
+                // overload of tearDown() introduced in Jenkins 2.25x MUST exist.
                 // Note: this uses getMethod() on the disposer's type and not SimpleBuildWrapper.Disposer so that an
                 // implementation can get this behaviour without switching to Jenkins 2.25x itself.
                 // TODO: Use 'this.disposer.tearDown(run, listener)' once the minimum core version for this plugin is 2.25x or newer.
                 final Method perform = this.disposer.getClass().getMethod("tearDown", Run.class, TaskListener.class);
-                perform.invoke(this.disposer, run, listener);
+                try {
+                    perform.invoke(this.disposer, run, listener);
+                } catch (InvocationTargetException ite) {
+                    final Throwable realException = ite.getCause();
+                    throw realException instanceof Exception ? (Exception) realException : ite;
+                }
             }
         }
 
