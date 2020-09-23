@@ -174,8 +174,7 @@ public class CoreStepTest {
         public BuilderWithEnvironment() {
         }
 
-        // TODO: Once the plugin depends on Jenkins 2.241 or later, this can be a real @Override
-        //@Override
+        @Override
         public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             assertNull(env.get("BUILD_ID"));
             assertEquals("JENKINS-29144", env.get("TICKET"));

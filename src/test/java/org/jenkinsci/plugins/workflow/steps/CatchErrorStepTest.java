@@ -110,16 +110,6 @@ public class CatchErrorStepTest {
         r.assertLogContains("execution continued", b);
     }
 
-    @Test public void optionalMessage() throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                "catchError('caught error') {\n" +
-                "  error 'oops'\n" +
-                "}", true));
-        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-        assertCatchError(r, b, Result.FAILURE, null, true);
-    }
-
     @Test public void customBuildResult() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
