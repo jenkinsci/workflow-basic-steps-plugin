@@ -255,14 +255,15 @@ public class TimeoutStepTest {
 
     @Test
     public void activityRemote() {
-        assumeFalse(Functions.isWindows()); // TODO create analogue using bat
         story.then(r -> {
             r.createSlave();
             WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition("" +
                      "node('!master') {\n" +
                      "  timeout(time:5, unit:'SECONDS', activity: true) {\n" +
-                     "    sh 'set +x; echo NotHere; sleep 3; echo NotHereYet; sleep 3; echo JustHere; sleep 10; echo ShouldNot'\n" +
+                    (Functions.isWindows() ?
+                     "   bat '@echo off & echo NotHere && ping -n 3 127.0.0.1 >NUL && echo NotHereYet && ping -n 3 127.0.0.1 >NUL && echo JustHere && ping -n 10 127.0.0.1 >NUL && echo ShouldNot'\n" :
+                     "   sh 'set +x; echo NotHere; sleep 3; echo NotHereYet; sleep 3; echo JustHere; sleep 10; echo ShouldNot'\n" ) +
                      "  }\n" +
                      "}\n", true));
             WorkflowRun b = r.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0));
