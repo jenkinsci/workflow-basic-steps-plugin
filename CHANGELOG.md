@@ -1,5 +1,14 @@
 ## Changelog
 
+### 2.22
+
+Release date: 2020-10-01
+
+- This plugin now requires Jenkins 2.249.1 or newer
+- Fix: The implementation of [JENKINS-29144](https://issues.jenkins-ci.org/browse/JENKINS-29144) added in version 2.21 caused exceptions thrown by some implementations of `SimpleBuildStep` to be wrapped in `InvocationTargetException` incorrectly ([PR #128](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/128))
+- Developer: Support new `SimpleBuildStep.perform` and `SimpleBuildWrapper.perform` overloads that do not require a `FilePath` or `Launcher` ([JENKINS-46175](https://issues.jenkins-ci.org/browse/JENKINS-46175))
+- Internal: Add support for Windows to an existing test case ([PR #130](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/130))
+
 ### 2.21
 
 Release date: 2020-09-15
