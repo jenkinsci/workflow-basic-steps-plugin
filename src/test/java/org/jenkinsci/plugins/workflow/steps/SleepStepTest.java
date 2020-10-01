@@ -25,14 +25,18 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import java.util.List;
+
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +44,9 @@ import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 public class SleepStepTest {
 
@@ -76,7 +83,23 @@ public class SleepStepTest {
             @Override public void evaluate() throws Throwable {
                 WorkflowJob p = r.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("node {sleep 1}", true));
-                r.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                WorkflowRun b = r.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("sleep"));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("1s", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
+            }
+        });
+    }
+
+    @Test public void sleepWithTimeUnit() {
+        r.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = r.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition("sleep time: 1, unit: \"MICROSECONDS\"", true));
+                WorkflowRun b = r.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("sleep"));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("1us", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
             }
         });
     }

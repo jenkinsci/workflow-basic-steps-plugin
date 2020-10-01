@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import com.google.common.base.Predicates;
 import hudson.Functions;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -35,11 +36,19 @@ import java.util.concurrent.TimeUnit;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
+import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable;
@@ -47,7 +56,6 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
@@ -95,6 +103,10 @@ public class TimeoutStepTest {
                         "node { timeout(time:5, unit:'SECONDS') { sleep 10; echo 'NotHere' } }", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0).get());
                 story.j.assertLogNotContains("NotHere", b);
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), Predicates.and(new NodeStepTypePredicate("timeout"),
+                        n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("5s, false", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
             }
         });
     }
@@ -449,6 +461,23 @@ public class TimeoutStepTest {
             WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
             WorkflowRun b = p.getBuildByNumber(1);
             r.assertBuildStatus(Result.ABORTED, r.waitForCompletion(b));
+        });
+    }
+
+    @Test
+    public void argumentsToString() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                        "timeout(time:1, unit:'MINUTES', activity: true) {}", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), Predicates.and(new NodeStepTypePredicate("timeout"),
+                        n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("1m, true", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
+            }
         });
     }
 }
