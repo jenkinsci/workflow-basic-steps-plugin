@@ -37,6 +37,8 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -78,13 +80,54 @@ public final class CoreStep extends Step {
 
         @Override protected Void run() throws Exception {
             final StepContext ctx = this.getContext();
-            final FilePath workspace = Objects.requireNonNull(ctx.get(FilePath.class));
-            workspace.mkdirs();
+            final FilePath workspace = ctx.get(FilePath.class);
             final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
-            final Launcher launcher = Objects.requireNonNull(ctx.get(Launcher.class));
+            final Launcher launcher = ctx.get(Launcher.class);
             final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
             final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
-            delegate.perform(run, workspace, env, launcher, listener);
+            boolean workspaceRequired = true;
+            // In Jenkins 2.258, a SimpleBuildStep can indicate that it does not require a workspace context by
+            // overriding a requiresWorkspace() method to return false. So use that if it's available.
+            // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation can
+            // get this behaviour without switching to Jenkins 2.258 itself.
+            // TODO: Use 'workspaceRequired = this.delegate.requiresWorkspace()' once this plugin depends on Jenkins 2.258 or later.
+            try {
+                final Method requiresWorkspace = this.delegate.getClass().getMethod("requiresWorkspace");
+                workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
+            } catch(NoSuchMethodException e) {
+                // ok, default to true
+            } catch (InvocationTargetException ite) {
+                final Throwable realException = ite.getCause();
+                throw realException instanceof Exception ? (Exception) realException : ite;
+            }
+            if (workspaceRequired) {
+                if (workspace == null) {
+                    throw new MissingContextVariableException(FilePath.class);
+                }
+                if (launcher == null) {
+                    throw new MissingContextVariableException(Launcher.class);
+                }
+            }
+            if (workspace != null) {
+                workspace.mkdirs();
+            }
+            // always pass the workspace context when available, even when it is not strictly required
+            if (workspace != null && launcher != null) {
+                delegate.perform(run, workspace, env, launcher, listener);
+            } else {
+                // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
+                // overload of perform() introduced in Jenkins 2.258 MUST exist.
+                // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation
+                // can get this behaviour without switching to Jenkins 2.258 itself.
+                // TODO: Use 'this.delegate.perform(run, env, listener)' once the minimum core version for this plugin is 2.258 or newer.
+                final Method perform = this.delegate.getClass().getMethod("perform", Run.class, EnvVars.class, TaskListener.class);
+                try {
+                    perform.invoke(this.delegate, run, env, listener);
+                } catch (InvocationTargetException ite) {
+                    final Throwable realException = ite.getCause();
+                    throw realException instanceof Exception ? (Exception) realException : ite;
+                }
+            }
             return null;
         }
 
@@ -128,7 +171,7 @@ public final class CoreStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, EnvVars.class, Launcher.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, EnvVars.class, TaskListener.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

@@ -203,4 +203,88 @@ public class CoreStepTest {
         r.buildAndAssertSuccess(p);
     }
 
+    public static class BuilderWithWorkspaceRequirement extends Builder implements SimpleBuildStep {
+        @DataBoundConstructor
+        public BuilderWithWorkspaceRequirement() {
+        }
+        // TODO: Remove once the minimum core version for this plugin is 2.258 or newer.
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            fail("This method should not get called.");
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context required, but not provided!");
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context required and provided.");
+        }
+        // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
+        // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @Symbol("builderWithWorkspaceRequirement")
+        @TestExtension("builderWithWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+        }
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void builderWithWorkspaceRequirement() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // make sure it runs inside node
+        p.setDefinition(new CpsFlowDefinition("node { builderWithWorkspaceRequirement() }", true));
+        r.assertLogContains("workspace context required and provided.", r.buildAndAssertSuccess(p));
+        // and fails outside of one
+        p.setDefinition(new CpsFlowDefinition("builderWithWorkspaceRequirement()", true));
+        r.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r.buildAndAssertStatus(Result.FAILURE, p));
+    }
+
+    public static class BuilderWithoutWorkspaceRequirement extends Builder implements SimpleBuildStep {
+        @DataBoundConstructor
+        public BuilderWithoutWorkspaceRequirement() {
+        }
+        // TODO: Remove once the minimum core version for this plugin is 2.258 or newer.
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            fail("This method should not get called.");
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context not needed.");
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+            listener.getLogger().println("workspace context not needed, but provided.");
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public boolean requiresWorkspace() {
+            return false;
+        }
+        // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
+        // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @Symbol("builderWithoutWorkspaceRequirement")
+        @TestExtension("builderWithoutWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
+            @Override
+            public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+                return true;
+            }
+        }
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void builderWithoutWorkspaceRequirement() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        // make sure it runs outside of node
+        p.setDefinition(new CpsFlowDefinition("builderWithoutWorkspaceRequirement()", true));
+        r.assertLogContains("workspace context not needed.", r.buildAndAssertSuccess(p));
+        // but also inside it
+        p.setDefinition(new CpsFlowDefinition("node { builderWithoutWorkspaceRequirement() }", true));
+        r.assertLogContains("workspace context not needed, but provided.", r.buildAndAssertSuccess(p));
+    }
+
 }

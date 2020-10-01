@@ -36,6 +36,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.Slave;
 import hudson.model.TaskListener;
@@ -284,6 +285,111 @@ public class CoreWrapperStepTest {
             env2.overrideAll(env);
             return env2;
         }
+    }
+
+    public static final class WrapperWithWorkspaceRequirement extends SimpleBuildWrapper {
+        @DataBoundConstructor public WrapperWithWorkspaceRequirement() { }
+        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+            listener.getLogger().println(">>> workspace context required and provided.");
+            context.setDisposer(new DisposerWithWorkspaceRequirement());
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+            listener.getLogger().println(">>> workspace context required but not provided!");
+            context.setDisposer(new DisposerWithWorkspaceRequirement());
+        }
+        public static final class DisposerWithWorkspaceRequirement extends Disposer {
+            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+                listener.getLogger().println("<<< workspace context required and provided.");
+            }
+            // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+            public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+                listener.getLogger().println("<<< workspace context required but not provided!");
+            }
+        }
+        @Symbol("wrapperWithWorkspaceRequirement")
+        @TestExtension("wrapperWithWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @Override public boolean isApplicable(AbstractProject<?, ?> project) { return true; }
+        }
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void wrapperWithWorkspaceRequirement() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                // make sure it works inside a node
+                p.setDefinition(new CpsFlowDefinition("node { wrapperWithWorkspaceRequirement { echo 'wrapped' } }", true));
+                {
+                    Run<?, ?> r = story.j.buildAndAssertSuccess(p);
+                    story.j.assertLogContains(">>> workspace context required and provided.", r);
+                    story.j.assertLogContains("<<< workspace context required and provided.", r);
+                }
+                // but fails outside of one
+                p.setDefinition(new CpsFlowDefinition("wrapperWithWorkspaceRequirement { echo 'wrapped' }", true));
+                {
+                    Run<?, ?> r = story.j.buildAndAssertStatus(Result.FAILURE, p);
+                    story.j.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r);
+                }
+            }
+        });
+    }
+
+    public static final class WrapperWithoutWorkspaceRequirement extends SimpleBuildWrapper {
+        @DataBoundConstructor public WrapperWithoutWorkspaceRequirement() { }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public boolean requiresWorkspace() { return false; }
+        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+            listener.getLogger().println(">>> workspace context not needed, but provided.");
+            context.setDisposer(new DisposerWithoutWorkspaceRequirement());
+        }
+        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+        public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+            listener.getLogger().println(">>> workspace context not needed.");
+            context.setDisposer(new DisposerWithoutWorkspaceRequirement());
+        }
+        public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
+            // TODO: Remove once the minimum core version for this plugin is 2.258 or newer.
+            public boolean requiresWorkspace() { return false; }
+            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+                listener.getLogger().println("<<< workspace context not needed, but provided.");
+            }
+            // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+            public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+                listener.getLogger().println("<<< workspace context not needed.");
+            }
+        }
+        @Symbol("wrapperWithoutWorkspaceRequirement")
+        @TestExtension("wrapperWithoutWorkspaceRequirement")
+        public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @Override public boolean isApplicable(AbstractProject<?, ?> project) { return true; }
+        }
+    }
+
+    @Issue("JENKINS-46175")
+    @Test
+    public void wrapperWithoutWorkspaceRequirement() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                // make sure it works outside of a node
+                p.setDefinition(new CpsFlowDefinition("wrapperWithoutWorkspaceRequirement { echo 'wrapped' }", true));
+                {
+                    Run<?, ?> r = story.j.buildAndAssertSuccess(p);
+                    story.j.assertLogContains(">>> workspace context not needed.", r);
+                    story.j.assertLogContains("<<< workspace context not needed.", r);
+                }
+                // but also inside of one
+                p.setDefinition(new CpsFlowDefinition("node { wrapperWithoutWorkspaceRequirement { echo 'wrapped' } }", true));
+                {
+                    Run<?, ?> r = story.j.buildAndAssertSuccess(p);
+                    story.j.assertLogContains(">>> workspace context not needed, but provided.", r);
+                    story.j.assertLogContains("<<< workspace context not needed, but provided.", r);
+                }
+            }
+        });
     }
 
 }
