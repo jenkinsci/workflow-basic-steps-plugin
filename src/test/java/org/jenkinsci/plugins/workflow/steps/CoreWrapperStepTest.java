@@ -90,13 +90,20 @@ public class CoreWrapperStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 new SnippetizerTester(story.j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
-                Assume.assumeFalse(Functions.isWindows()); // TODO create Windows equivalent
                 Map<String,String> slaveEnv = new HashMap<>();
-                slaveEnv.put("PATH", "/usr/bin:/bin");
+                if (Functions.isWindows()) {
+                    slaveEnv.put("PATH", "c:\\windows\\System32");
+                } else {
+                    slaveEnv.put("PATH", "/usr/bin:/bin");
+                }
                 slaveEnv.put("HOME", "/home/jenkins");
                 createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}", true));
+                if (Functions.isWindows()) {
+                    p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; bat 'echo shell PATH=%PATH%:'}}", true));
+                } else {
+                    p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; sh 'echo shell PATH=$PATH:'}}", true));
+                }
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
             }
@@ -107,7 +114,7 @@ public class CoreWrapperStepTest {
                 WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
-                String expected = "/home/jenkins/extra/bin:/usr/bin:/bin";
+                String expected = Functions.isWindows() ? "/home/jenkins/extra/bin;c:\\windows\\System32" : "/home/jenkins/extra/bin:/usr/bin:/bin";
                 story.j.assertLogContains("groovy PATH=" + expected + ":", b);
                 story.j.assertLogContains("shell PATH=" + expected + ":", b);
                 story.j.assertLogContains("ran DisposerImpl", b);
@@ -143,12 +150,12 @@ public class CoreWrapperStepTest {
     @Test public void envStickiness() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                Assume.assumeFalse(Functions.isWindows()); // TODO create Windows equivalent
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "def show(which) {\n" +
                     "  echo \"groovy ${which} ${env.TESTVAR}\"\n" +
-                    "  sh \"echo shell ${which} \\$TESTVAR\"\n" +
+                    (Functions.isWindows() ? "bat \"echo shell ${which} %TESTVAR%\"\n" :
+                    "  sh \"echo shell ${which} \\$TESTVAR\"\n") +
                     "}\n" +
                     "env.TESTVAR = 'initial'\n" +
                     "node {\n" +
