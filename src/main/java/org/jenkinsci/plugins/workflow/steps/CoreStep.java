@@ -85,21 +85,7 @@ public final class CoreStep extends Step {
             final Launcher launcher = ctx.get(Launcher.class);
             final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
             final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
-            boolean workspaceRequired = true;
-            // In Jenkins 2.258, a SimpleBuildStep can indicate that it does not require a workspace context by
-            // overriding a requiresWorkspace() method to return false. So use that if it's available.
-            // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation can
-            // get this behaviour without switching to Jenkins 2.258 itself.
-            // TODO: Use 'workspaceRequired = this.delegate.requiresWorkspace()' once this plugin depends on Jenkins 2.258 or later.
-            try {
-                final Method requiresWorkspace = this.delegate.getClass().getMethod("requiresWorkspace");
-                workspaceRequired = (boolean) requiresWorkspace.invoke(this.delegate);
-            } catch(NoSuchMethodException e) {
-                // ok, default to true
-            } catch (InvocationTargetException ite) {
-                final Throwable realException = ite.getCause();
-                throw realException instanceof Exception ? (Exception) realException : ite;
-            }
+            boolean workspaceRequired = this.delegate.requiresWorkspace();
             if (workspaceRequired) {
                 if (workspace == null) {
                     throw new MissingContextVariableException(FilePath.class);
@@ -115,18 +101,7 @@ public final class CoreStep extends Step {
             if (workspace != null && launcher != null) {
                 delegate.perform(run, workspace, env, launcher, listener);
             } else {
-                // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
-                // overload of perform() introduced in Jenkins 2.258 MUST exist.
-                // Note: this uses getMethod() on the delegate's type and not SimpleBuildStep so that an implementation
-                // can get this behaviour without switching to Jenkins 2.258 itself.
-                // TODO: Use 'this.delegate.perform(run, env, listener)' once the minimum core version for this plugin is 2.258 or newer.
-                final Method perform = this.delegate.getClass().getMethod("perform", Run.class, EnvVars.class, TaskListener.class);
-                try {
-                    perform.invoke(this.delegate, run, env, listener);
-                } catch (InvocationTargetException ite) {
-                    final Throwable realException = ite.getCause();
-                    throw realException instanceof Exception ? (Exception) realException : ite;
-                }
+                this.delegate.perform(run, env, listener);
             }
             return null;
         }

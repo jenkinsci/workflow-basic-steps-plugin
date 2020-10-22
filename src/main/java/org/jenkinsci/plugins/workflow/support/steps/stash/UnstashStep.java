@@ -83,8 +83,6 @@ public class UnstashStep extends Step {
 
         private static final long serialVersionUID = 1L;
 
-//        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-//        private transient final String name;
         private transient final UnstashStep step;
 
         Execution(UnstashStep step, StepContext context) {
@@ -92,7 +90,7 @@ public class UnstashStep extends Step {
             this.step = step;
         }
 
-        private void verbose(List<File> files) throws Exception {
+        private void verbose(List<File> files)  {
             if (step.verbose) {
                 files.stream().forEach(file -> {
                     PrintStream logger = null;
@@ -110,10 +108,8 @@ public class UnstashStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-//            verbose();
             List<File> unstash = StashManager.unstash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class));
             verbose(unstash);
-            System.out.println(" Giles "+ unstash.size());
             return null;
         }
 
