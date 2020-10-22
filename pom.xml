@@ -64,7 +64,7 @@
     <properties>
         <revision>2.23</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.249.1</jenkins.version>
+        <jenkins.version>2.264-SNAPSHOT</jenkins.version>
         <java.level>8</java.level>
         <useBeta>true</useBeta>
     </properties>
@@ -83,6 +83,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
+            <version>2.23</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -97,6 +98,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
+            <version>2.41-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -200,7 +202,14 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>scm-api</artifactId>
+            <version>2.6.4</version>
             <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>scm-api</artifactId>
+            <version>2.6.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
