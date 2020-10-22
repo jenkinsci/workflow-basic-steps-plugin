@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
+import java.io.IOException;
 import java.util.List;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -48,6 +49,39 @@ public class StashTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
+
+    @Test
+    public void listFilesWhenStashing() throws Exception {
+
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  writeFile file: 'p/p/fname', text: 'whatever'\n" +
+                        "  writeFile file: 'p/p/other', text: 'more'\n" +
+                        "  dir('p/p') {stash name: 'whatever', verbose: true}\n" +
+                        "}\n" +
+                        "node {\n" +
+                        "  dir('elsewhere') {\n" +
+                        "    unstash name:'whatever', verbose: true\n" +
+                        "    echo \"got fname: ${readFile 'fname'} other: ${readFile 'other'}\"\n" +
+                        "  }\n" +
+                        "  writeFile file: 'at-top', text: 'ignored'\n" +
+                        "  stash name: 'from-top', includes: 'elsewhere/', excludes: '**/other'\n" +
+                        "  semaphore 'ending'\n" +
+                        "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ending/1", b);
+        assertEquals("{from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}}", StashManager.stashesOf(b).toString());
+        SemaphoreStep.success("ending/1", null);
+        r.assertBuildStatusSuccess(r.waitForCompletion(b));
+        r.assertLogContains("got fname: whatever other: more", b);
+        r.assertLogContains("stashed file /p/p/p/fname", b);
+        r.assertLogContains("stashed file /p/p/p/other", b);
+        r.assertLogContains("unstashed file /p/elsewhere/fname", b);
+        r.assertLogContains("unstashed file /p/elsewhere/other", b);
+        assertEquals("{}", StashManager.stashesOf(b).toString()); // TODO flake expected:<{[]}> but was:<{[from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}]}>
+
+    }
 
     @Issue("JENKINS-26942")
     @Test public void smokes() throws Exception {

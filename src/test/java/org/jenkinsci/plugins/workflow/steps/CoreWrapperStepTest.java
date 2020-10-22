@@ -352,11 +352,12 @@ public class CoreWrapperStepTest {
         }
         public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
             // TODO: Remove once the minimum core version for this plugin is 2.258 or newer.
-            public boolean requiresWorkspace() { return false; }
-            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-                listener.getLogger().println("<<< workspace context not needed, but provided.");
-            }
+//            public boolean requiresWorkspace() { return false; }
+//            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+//                listener.getLogger().println("<<< workspace context not needed, but provided.");
+//            }
             // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
+            @Override
             public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed.");
             }

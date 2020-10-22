@@ -32,15 +32,25 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import hudson.util.DirScanner;
+import hudson.util.FileVisitor;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -49,13 +59,18 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 public class StashStep extends Step {
 
-    private final @Nonnull String name;
-    private @CheckForNull String includes;
-    private @CheckForNull String excludes;
+    private final @Nonnull
+    String name;
+    private @CheckForNull
+    String includes;
+    private @CheckForNull
+    String excludes;
     private boolean useDefaultExcludes = true;
     private boolean allowEmpty = false;
+    private boolean verbose;
 
-    @DataBoundConstructor public StashStep(@Nonnull String name) {
+    @DataBoundConstructor
+    public StashStep(@Nonnull String name) {
         Jenkins.checkGoodName(name);
         this.name = name;
     }
@@ -68,7 +83,8 @@ public class StashStep extends Step {
         return includes;
     }
 
-    @DataBoundSetter public void setIncludes(String includes) {
+    @DataBoundSetter
+    public void setIncludes(String includes) {
         this.includes = Util.fixEmpty(includes);
     }
 
@@ -76,7 +92,8 @@ public class StashStep extends Step {
         return excludes;
     }
 
-    @DataBoundSetter public void setExcludes(String excludes) {
+    @DataBoundSetter
+    public void setExcludes(String excludes) {
         this.excludes = Util.fixEmpty(excludes);
     }
 
@@ -84,7 +101,8 @@ public class StashStep extends Step {
         return useDefaultExcludes;
     }
 
-    @DataBoundSetter public void setUseDefaultExcludes(boolean useDefaultExcludes) {
+    @DataBoundSetter
+    public void setUseDefaultExcludes(boolean useDefaultExcludes) {
         this.useDefaultExcludes = useDefaultExcludes;
     }
 
@@ -92,11 +110,22 @@ public class StashStep extends Step {
         return allowEmpty;
     }
 
-    @DataBoundSetter public void setAllowEmpty(boolean allowEmpty) {
+    @DataBoundSetter
+    public void setAllowEmpty(boolean allowEmpty) {
         this.allowEmpty = allowEmpty;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    @DataBoundSetter
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
 
@@ -111,29 +140,53 @@ public class StashStep extends Step {
             this.step = step;
         }
 
-        @Override protected Void run() throws Exception {
-            StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class), step.includes, step.excludes,
+        private void verbose(List<File> files) throws Exception {
+            if (step.verbose) {
+                files.stream().forEach(file -> {
+                    PrintStream logger = null;
+                    try {
+                        String name = getContext().get(Run.class).getParent().getName();
+                        logger = getContext().get(TaskListener.class).getLogger();
+                        String gibberish = file.getCanonicalPath().split("/" + name + "/")[0];
+                        logger.println("stashed file " + StringUtils.substring(file.getCanonicalPath(), gibberish.length()));
+                    } catch (IOException | InterruptedException e) {
+                        logger.println("stashed file " + file.getName());
+                    }
+
+                });
+            }
+        }
+
+        @Override
+        protected Void run() throws Exception {
+            List<File> stash = StashManager.stash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class), step.includes, step.excludes,
                     step.useDefaultExcludes, step.allowEmpty);
+            verbose(stash);
             return null;
         }
 
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "stash";
         }
 
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Stash some files to be used later in the build";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
             Object name = namedArgs.get("name");
             return name instanceof String ? (String) name : null;
         }

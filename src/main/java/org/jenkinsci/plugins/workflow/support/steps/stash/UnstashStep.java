@@ -30,11 +30,22 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
+
+import hudson.util.DirScanner;
+import hudson.util.FileVisitor;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -42,10 +53,13 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class UnstashStep extends Step {
 
     private final @Nonnull String name;
+
+    private boolean verbose;
 
     @DataBoundConstructor public UnstashStep(@Nonnull String name) {
         Jenkins.checkGoodName(name);
@@ -56,24 +70,50 @@ public class UnstashStep extends Step {
         return name;
     }
 
+    @DataBoundSetter
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
     @Override public StepExecution start(StepContext context) throws Exception {
-        return new Execution(name, context);
+        return new Execution(this, context);
     }
 
     public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
         private static final long serialVersionUID = 1L;
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String name;
+//        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+//        private transient final String name;
+        private transient final UnstashStep step;
 
-        Execution(String name, StepContext context) {
+        Execution(UnstashStep step, StepContext context) {
             super(context);
-            this.name = name;
+            this.step = step;
+        }
+
+        private void verbose(List<File> files) throws Exception {
+            if (step.verbose) {
+                files.stream().forEach(file -> {
+                    PrintStream logger = null;
+                    try {
+                        String name = getContext().get(Run.class).getParent().getName();
+                        logger = getContext().get(TaskListener.class).getLogger();
+                        String gibberish = file.getCanonicalPath().split("/" + name + "/")[0];
+                        logger.println("unstashed file " + StringUtils.substring(file.getCanonicalPath(), gibberish.length()));
+                    } catch (IOException | InterruptedException e) {
+                        logger.println("unstashed file " + file.getName());
+                    }
+
+                });
+            }
         }
 
         @Override protected Void run() throws Exception {
-            StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class));
+//            verbose();
+            List<File> unstash = StashManager.unstash(getContext().get(Run.class), step.name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class));
+            verbose(unstash);
+            System.out.println(" Giles "+ unstash.size());
             return null;
         }
 
