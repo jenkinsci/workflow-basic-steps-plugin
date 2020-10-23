@@ -115,8 +115,6 @@ public class CoreWrapperStep extends Step {
                 if (workspace != null && launcher != null) {
                     this.delegate.setUp(c, run, workspace, launcher, listener, env);
                 } else {
-                    // If we get here, workspaceRequired is false and there is no workspace context. In that case, the
-                    // overload of setUp() introduced in Jenkins 2.258 MUST exist.
                     delegate.setUp(c, run, listener, env);
                 }
             }
