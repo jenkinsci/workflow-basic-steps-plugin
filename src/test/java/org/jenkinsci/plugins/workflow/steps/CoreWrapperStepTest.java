@@ -293,8 +293,7 @@ public class CoreWrapperStepTest {
             listener.getLogger().println(">>> workspace context required and provided.");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required but not provided!");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
@@ -302,8 +301,7 @@ public class CoreWrapperStepTest {
             @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required and provided.");
             }
-            // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-            public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required but not provided!");
             }
         }
@@ -339,14 +337,12 @@ public class CoreWrapperStepTest {
 
     public static final class WrapperWithoutWorkspaceRequirement extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithoutWorkspaceRequirement() { }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public boolean requiresWorkspace() { return false; }
+        @Override public boolean requiresWorkspace() { return false; }
         @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed, but provided.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
@@ -354,8 +350,7 @@ public class CoreWrapperStepTest {
             @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed, but provided.");
             }
-            // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-            public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed.");
             }
         }
