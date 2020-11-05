@@ -207,16 +207,10 @@ public class CoreStepTest {
         @DataBoundConstructor
         public BuilderWithWorkspaceRequirement() {
         }
-        // TODO: Remove once the minimum core version for this plugin is 2.258 or newer.
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
-            fail("This method should not get called.");
-        }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required, but not provided!");
         }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required and provided.");
         }
         // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
@@ -247,20 +241,13 @@ public class CoreStepTest {
         @DataBoundConstructor
         public BuilderWithoutWorkspaceRequirement() {
         }
-        // TODO: Remove once the minimum core version for this plugin is 2.258 or newer.
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
-            fail("This method should not get called.");
-        }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed.");
         }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed, but provided.");
         }
-        // TODO: Mark as @Override once the minimum core version for this plugin is 2.258 or newer.
-        public boolean requiresWorkspace() {
+        @Override public boolean requiresWorkspace() {
             return false;
         }
         // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
