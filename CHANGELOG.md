@@ -1,5 +1,13 @@
 ## Changelog
 
+### 2.23
+
+Release date: 2020-11-06
+
+- This plugin now requires Jenkins 2.263 or newer
+- Fix: The implementation of [JENKINS-46175](https://issues.jenkins-ci.org/browse/JENKINS-46175) added in version 2.22 did not work correctly ([PR #134](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/134))
+- Internal: Add Windows support to various tests ([PR #132](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/132), [PR #135](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/135))
+
 ### 2.22
 
 Release date: 2020-10-01
