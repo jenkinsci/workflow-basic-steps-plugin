@@ -262,7 +262,7 @@ public class TimeoutStepTest {
                      "node('!master') {\n" +
                      "  timeout(time:5, unit:'SECONDS', activity: true) {\n" +
                     (Functions.isWindows() ?
-                     "   bat '@echo off & echo NotHere && ping -n 3 127.0.0.1 >NUL && echo NotHereYet && ping -n 3 127.0.0.1 >NUL && echo JustHere && ping -n 10 127.0.0.1 >NUL && echo ShouldNot'\n" :
+                     "   bat '@echo off & echo NotHere && ping -n 3 127.0.0.1 >NUL && echo NotHereYet && ping -n 3 127.0.0.1 >NUL && echo JustHere && ping -n 20 127.0.0.1 >NUL && echo ShouldNot'\n" :
                      "   sh 'set +x; echo NotHere; sleep 3; echo NotHereYet; sleep 3; echo JustHere; sleep 10; echo ShouldNot'\n" ) +
                      "  }\n" +
                      "}\n", true));
