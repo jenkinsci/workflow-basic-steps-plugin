@@ -116,7 +116,9 @@ public class StashTest {
         SemaphoreStep.success("ending/1", null);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("Stashed 0 file(s)", b);
-        assertEquals("{}", StashManager.stashesOf(b).toString());
+        while (!StashManager.stashesOf(b).isEmpty()) {
+            Thread.sleep(100);
+        }
         List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("stash"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertEquals("whatever", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
