@@ -9,7 +9,10 @@
     consider using plain <code>try</code>-<code>catch</code>(-<code>finally</code>) blocks.
     It is also useful when using certain post-build actions (notifiers)
     originally defined for freestyle projects which pay attention to the result of the ongoing build.
-<p><pre>
+
+    <p>Use the <a href="https://www.jenkins.io/redirect/pipeline-snippet-generator">Pipeline Snippet Generator</a> to generate a sample pipeline script for the catchError step.</p>
+
+    <p><pre>
 node {
     catchError {
         sh 'might fail'
