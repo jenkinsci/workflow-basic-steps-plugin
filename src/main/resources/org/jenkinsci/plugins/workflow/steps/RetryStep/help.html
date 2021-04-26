@@ -3,3 +3,12 @@
     If an exception happens on the final attempt then it will lead to aborting the build (unless it is caught and processed somehow).
     User aborts of the build are <em>not</em> caught.
 </div>
+<br>
+<p>The <a href="https://www.jenkins.io/redirect/pipeline-snippet-generator">Pipeline Snippet Generator</a> generates this example:
+<pre>
+    retry(5) {
+    // some block
+    }
+</pre>
+
+</p>
