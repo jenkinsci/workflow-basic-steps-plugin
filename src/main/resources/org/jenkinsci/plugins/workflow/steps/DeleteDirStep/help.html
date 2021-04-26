@@ -2,15 +2,11 @@
     Recursively deletes the current directory and its contents.
     Symbolic links and junctions will not be followed but will be removed.
     To delete a specific directory of a workspace wrap the <code>deleteDir</code>
-    step in a <code>dir</code> step. For example:
+    step in a <code>dir</code> step.
 </div>
-<p><pre><code>
-    stage('Setup') {
-    steps {
-        dir ('bin') {
-            deleteDir()
-        }
-     }
-
-    }
-</code></pre></p>
+<br>
+<p>The <a href="https://www.jenkins.io/redirect/pipeline-snippet-generator">Pipeline Snippet Generator</a> generates this example:
+<pre><code>
+    deleteDir()
+</code></pre>
+</p>
