@@ -3,3 +3,11 @@
     If an exception happens on the final attempt then it will lead to aborting the build (unless it is caught and processed somehow).
     User aborts of the build are <em>not</em> caught.
 </div>
+<br>
+<p>Example:
+<pre><code>
+    retry(5) {
+    // some block
+    }
+</code></pre>
+</p>

@@ -3,3 +3,11 @@
     If the time limit is reached, an exception (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException) is thrown, which leads to aborting
     the build (unless it is caught and processed somehow).
 </div>
+<br>
+<p>Example:
+<pre><code>
+   timeout(activity: true, time: 5, unit: 'MINUTES') {
+    // some block
+    }
+</code></pre>
+</p>
