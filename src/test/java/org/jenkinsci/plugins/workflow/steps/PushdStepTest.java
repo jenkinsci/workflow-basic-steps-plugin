@@ -24,53 +24,45 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.Functions;
-import java.io.File;
+import java.util.logging.Level;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class PushdStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
-
-    private String pwdStep() {
-        return Functions.isWindows() ? "bat 'cd'" : "sh 'pwd'";
-    }
+    @Rule public RestartableJenkinsRule rr = new RestartableJenkinsRule();
+    @Rule public LoggerRule logging = new LoggerRule().record(FilePathDynamicContext.class, Level.FINE);
 
     @Test public void basics() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {" + pwdStep() + "}}"));
-                story.j.assertLogContains(File.separator + "subdir", story.j.assertBuildStatusSuccess(p.scheduleBuild2(0)));
-            }
+        rr.then(r -> {
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {echo(/now the pwd=${pwd()}/)}}", true));
+            r.assertLogContains("now the pwd=" + r.jenkins.getWorkspaceFor(p).child("subdir"), r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
         });
     }
 
     @Test public void restarting() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {semaphore 'restarting'; " + pwdStep() + "}}"));
-                WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
-                SemaphoreStep.waitForStart("restarting/1", b);
-            }
+        rr.then(r -> {
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {semaphore 'restarting'; echo(/now the pwd=${pwd()}/)}}", true));
+            WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
+            SemaphoreStep.waitForStart("restarting/1", b);
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                SemaphoreStep.success("restarting/1", null);
-                WorkflowRun b = story.j.jenkins.getItemByFullName("p", WorkflowJob.class).getLastBuild();
-                story.j.assertLogContains(File.separator + "subdir", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+        rr.then(r -> {
+            SemaphoreStep.success("restarting/1", null);
+            WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
+            WorkflowRun b = p.getLastBuild();
+            r.assertLogContains("now the pwd=" + r.jenkins.getWorkspaceFor(p).child("subdir"), r.assertBuildStatusSuccess(r.waitForCompletion(b)));
         });
     }
 

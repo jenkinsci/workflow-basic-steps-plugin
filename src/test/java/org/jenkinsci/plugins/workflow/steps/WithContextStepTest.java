@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.ClassRule;
@@ -39,7 +40,8 @@ public class WithContextStepTest {
 
     @Test public void pushd() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {withContext(getContext(hudson.FilePath).child('subdir')) {echo(/simulating dir step in ${pwd()}/)}}", false));
+        ScriptApproval.get().approveSignature("method hudson.FilePath child java.lang.String");
+        p.setDefinition(new CpsFlowDefinition("node {withContext(getContext(hudson.FilePath).child('subdir')) {echo(/simulating dir step in ${pwd()}/)}}", true));
         r.assertLogContains("simulating dir step in " + r.jenkins.getWorkspaceFor(p).child("subdir").getRemote(), r.buildAndAssertSuccess(p));
     }
 

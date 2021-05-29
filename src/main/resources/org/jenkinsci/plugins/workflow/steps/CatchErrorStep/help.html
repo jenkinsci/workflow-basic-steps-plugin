@@ -1,7 +1,13 @@
 <div>
     If the body throws an exception, mark the build as a failure, but nonetheless
     continue to execute the Pipeline from the statement following the <code>catchError</code> step.
-    This is <em>only</em> necessary when using certain post-build actions (notifiers)
+    The behavior of the step when an exception is thrown can be configured to print
+    a message, set a build result other than failure, change the stage result,
+    or ignore certain kinds of exceptions that are used to interrupt the build.
+    <p>This step is most useful when used in Declarative Pipeline or with the
+    options to set the stage result or ignore build interruptions. Otherwise,
+    consider using plain <code>try</code>-<code>catch</code>(-<code>finally</code>) blocks.
+    It is also useful when using certain post-build actions (notifiers)
     originally defined for freestyle projects which pay attention to the result of the ongoing build.
 <p><pre>
 node {
@@ -26,7 +32,7 @@ node {
     step([$class: 'Mailer', recipients: 'admin@somewhere'])
 }
 </pre>
-    <p>For all other cases, use plain <code>try</code>-<code>catch</code>(-<code>finally</code>) blocks:
+    <p>For other cases, plain <code>try</code>-<code>catch</code>(-<code>finally</code>) blocks may be used:
 <p><pre>
 node {
     sh './set-up.sh'

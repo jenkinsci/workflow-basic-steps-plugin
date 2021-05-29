@@ -27,6 +27,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -41,6 +42,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
@@ -75,9 +77,29 @@ public final class CoreStep extends Step {
         }
 
         @Override protected Void run() throws Exception {
-            FilePath workspace = getContext().get(FilePath.class);
-            workspace.mkdirs();
-            delegate.perform(getContext().get(Run.class), workspace, getContext().get(Launcher.class), getContext().get(TaskListener.class));
+            final StepContext ctx = this.getContext();
+            final FilePath workspace = ctx.get(FilePath.class);
+            final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
+            final Launcher launcher = ctx.get(Launcher.class);
+            final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
+            final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
+            if (delegate.requiresWorkspace()) {
+                if (workspace == null) {
+                    throw new MissingContextVariableException(FilePath.class);
+                }
+                if (launcher == null) {
+                    throw new MissingContextVariableException(Launcher.class);
+                }
+            }
+            if (workspace != null) {
+                workspace.mkdirs();
+            }
+            // always pass the workspace context when available, even when it is not strictly required
+            if (workspace != null && launcher != null) {
+                delegate.perform(run, workspace, env, launcher, listener);
+            } else {
+                delegate.perform(run, env, listener);
+            }
             return null;
         }
 
@@ -121,7 +143,7 @@ public final class CoreStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, TaskListener.class);
+            return ImmutableSet.of(Run.class, EnvVars.class, TaskListener.class);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

@@ -29,6 +29,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.TaskListener;
+import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.Set;
@@ -90,7 +91,8 @@ public class PushdStep extends Step {
             FilePath dir = getContext().get(FilePath.class).child(path);
             getContext().get(TaskListener.class).getLogger().println("Running in " + dir);
             getContext().newBodyInvoker()
-                    .withContext(dir)
+                    // TODO perhaps should just be moved into workflow-durable-task-step?
+                    .withContext(FilePathDynamicContext.createContextualObject(dir))
                     // Could use a dedicated BodyExecutionCallback here if we wished to print a message at the end ("Returning to ${cwd}"):
                     .withCallback(BodyExecutionCallback.wrap(getContext()))
                     .start();

@@ -1,0 +1,7 @@
+<div>
+    Executes its body, and if an exception is thrown, sets the overall build result
+    and the stage result to <code>UNSTABLE</code>, prints a specified message and
+    the thrown exception to the build log, and associates the stage result with the
+    message so that it can be displayed by visualizations.
+    <p>Equivalent to <code>catchError(message: message, buildResult: 'UNSTABLE', stageResult: 'UNSTABLE')</code>.
+</div>

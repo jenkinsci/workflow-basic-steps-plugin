@@ -4,7 +4,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Functions;
 import hudson.model.TaskListener;
-import jenkins.model.CauseOfInterruption;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -56,7 +55,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
         @Override
         public void onFailure(StepContext context, Throwable t) {
             try {
-                if (t instanceof FlowInterruptedException) {
+                if (t instanceof FlowInterruptedException && ((FlowInterruptedException)t).isActualInterruption()) {
                     context.onFailure(t);
                     return;
                 }
@@ -66,7 +65,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                     if (t instanceof AbortException) {
                         l.error(t.getMessage());
                     } else {
-                        l.error("Execution failed").println(Functions.printThrowable(t).trim()); // TODO 2.43+ use Functions.printStackTrace
+                        Functions.printStackTrace(t, l.error("Execution failed"));
                     }
                     l.getLogger().println("Retrying");
                     context.newBodyInvoker().withCallback(this).start();

@@ -80,6 +80,7 @@ public final class FileExistsStep extends Step {
         @Override protected Boolean run() throws Exception {
             if (StringUtils.isEmpty(file)) {
                 getContext().get(TaskListener.class).getLogger().println(Messages.FileExistsStep_EmptyString());
+                return getContext().get(FilePath.class).child("").exists();
             }
         	return getContext().get(FilePath.class).child(file).exists();
         }
