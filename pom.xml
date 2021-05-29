@@ -67,6 +67,7 @@
         <jenkins.version>2.263</jenkins.version>
         <java.level>8</java.level>
         <useBeta>true</useBeta>
+        <workflow-step-api-plugin.version>2.24-rc571.1dab8b291fed</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/61 -->
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -83,6 +84,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
+            <version>${workflow-step-api-plugin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -91,6 +93,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
+            <version>${workflow-step-api-plugin.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>

@@ -152,15 +152,13 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     }
 
     private void cancel() {
-        String timeoutNodeId = null;
+        FlowNode flowNode = null;
         try {
-            FlowNode timeoutFlowNode = getContext().get(FlowNode.class);
-            if (timeoutFlowNode != null) {
-                timeoutNodeId = timeoutFlowNode.getId();
-            }
-        } catch (IOException | InterruptedException ex) {
-            LOGGER.log(Level.WARNING, null, ex);
+            flowNode = getContext().get(FlowNode.class);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, null, e);
         }
+        String nodeId = flowNode != null ? flowNode.getId() : null;
         if (forcible) {
             if (!killer.isCancelled()) {
                 listener().getLogger().println("Body did not finish within grace period; terminating with extreme prejudice");
@@ -171,7 +169,10 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     LOGGER.log(Level.WARNING, null, x);
                     return;
                 }
-                final Throwable death = new FlowInterruptedException(Result.ABORTED, new ExceededTimeout(timeoutNodeId));
+                ExceededTimeout exceededTimeout = new ExceededTimeout();
+                exceededTimeout.setNodeId(nodeId);
+                final Throwable death =
+                        new FlowInterruptedException(Result.ABORTED, exceededTimeout);
                 /* Due to JENKINS-25504, this does not accomplish anything beyond what the original body.cancel would have:
                 getContext().onFailure(death);
                 */
@@ -201,7 +202,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             }
         } else {
             listener().getLogger().println("Cancelling nested steps due to timeout");
-            body.cancel(new ExceededTimeout(timeoutNodeId));
+            ExceededTimeout exceededTimeout = new ExceededTimeout();
+            exceededTimeout.setNodeId(nodeId);
+            body.cancel(exceededTimeout);
             forcible = true;
             timeout = GRACE_PERIOD;
             resetTimer();
@@ -229,7 +232,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    /** @deprecated kept only for serial compatibility  */
+    /** @deprecated only here for serial compatibility */
     @Deprecated
     private class Callback extends BodyExecutionCallback.TailCall {
 
@@ -246,7 +249,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     private class Callback2 extends BodyExecutionCallback {
 
-        @Override public void onSuccess(StepContext context, Object result) {
+        @Override
+        public void onSuccess(StepContext context, Object result) {
             if (killer != null) {
                 killer.cancel(true);
                 killer = null;
@@ -254,34 +258,39 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             context.onSuccess(result);
         }
 
-        @Override public void onFailure(StepContext context, Throwable t) {
+        @Override
+        public void onFailure(StepContext context, Throwable t) {
             if (killer != null) {
                 killer.cancel(true);
                 killer = null;
             }
             if (t instanceof FlowInterruptedException) {
+                /*
+                 * Check whether the FlowInterruptedException has propagated past the corresponding
+                 * timeout step.
+                 */
+                FlowNode flowNode = null;
                 try {
-                    FlowNode timeoutFlowNode = getContext().get(FlowNode.class);
-                    if (timeoutFlowNode != null) {
-                        String nodeId = timeoutFlowNode.getId();
-                        for (CauseOfInterruption cause : ((FlowInterruptedException) t).getCauses()) {
-                            if (cause instanceof ExceededTimeout) {
-                                ExceededTimeout etCause = (ExceededTimeout) cause;
-                                if (nodeId.equals(etCause.nodeId)) {
-                                    etCause.insideBlock = false;
-                                }
+                    flowNode = getContext().get(FlowNode.class);
+                } catch (IOException | InterruptedException e) {
+                    LOGGER.log(Level.WARNING, null, e);
+                }
+                if (flowNode != null) {
+                    String nodeId = flowNode.getId();
+                    for (CauseOfInterruption cause : ((FlowInterruptedException) t).getCauses()) {
+                        if (cause instanceof ExceededTimeout) {
+                            ExceededTimeout exceededTimeout = (ExceededTimeout) cause;
+                            if (nodeId.equals(exceededTimeout.getNodeId())) {
+                                ((FlowInterruptedException) t).setActualInterruption(false);
                             }
                         }
                     }
-                } catch (IOException | InterruptedException ex) {
-                    LOGGER.log(Level.WARNING, null, ex);
                 }
             }
             context.onFailure(t);
         }
 
         private static final long serialVersionUID = 1L;
-
     }
 
     /**
@@ -291,19 +300,15 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1L;
 
-        private boolean insideBlock = true;
-        private String nodeId; //id of the corresponding timeout block
+        /** Flow node ID of the corresponding timeout block */
+        private String nodeId;
 
-        private ExceededTimeout(String nodeId) {
-            this.nodeId = nodeId;
+        private String getNodeId() {
+            return nodeId;
         }
 
-        /**
-         * Check whether the {@link FlowInterruptedException} containing this cause has propagated past the corresponding timeout step.
-         * @return {@code true} if called within the curly braces of the timeout step that generated the exception; {@code false} otherwise
-         */
-        public boolean isInsideTimeoutBlock() {
-            return insideBlock;
+        private void setNodeId(String nodeId) {
+            this.nodeId = nodeId;
         }
 
         @Override
