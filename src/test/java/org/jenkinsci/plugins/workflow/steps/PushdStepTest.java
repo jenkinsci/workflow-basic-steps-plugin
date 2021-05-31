@@ -35,34 +35,34 @@ import org.junit.Test;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.LoggerRule;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsSessionRule;
 
 public class PushdStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule rr = new RestartableJenkinsRule();
+    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
     @Rule public LoggerRule logging = new LoggerRule().record(FilePathDynamicContext.class, Level.FINE);
 
-    @Test public void basics() {
-        rr.then(r -> {
-            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void basics() throws Throwable {
+        sessions.then(j -> {
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {echo(/now the pwd=${pwd()}/)}}", true));
-            r.assertLogContains("now the pwd=" + r.jenkins.getWorkspaceFor(p).child("subdir"), r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+            j.assertLogContains("now the pwd=" + j.jenkins.getWorkspaceFor(p).child("subdir"), j.buildAndAssertSuccess(p));
         });
     }
 
-    @Test public void restarting() {
-        rr.then(r -> {
-            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void restarting() throws Throwable {
+        sessions.then(j -> {
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {semaphore 'restarting'; echo(/now the pwd=${pwd()}/)}}", true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarting/1", b);
         });
-        rr.then(r -> {
+        sessions.then(j -> {
             SemaphoreStep.success("restarting/1", null);
-            WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
+            WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
             WorkflowRun b = p.getLastBuild();
-            r.assertLogContains("now the pwd=" + r.jenkins.getWorkspaceFor(p).child("subdir"), r.assertBuildStatusSuccess(r.waitForCompletion(b)));
+            j.assertLogContains("now the pwd=" + j.jenkins.getWorkspaceFor(p).child("subdir"), j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
