@@ -169,10 +169,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     LOGGER.log(Level.WARNING, null, x);
                     return;
                 }
-                ExceededTimeout exceededTimeout = new ExceededTimeout();
-                exceededTimeout.setNodeId(nodeId);
-                final Throwable death =
-                        new FlowInterruptedException(Result.ABORTED, exceededTimeout);
+                final Throwable death = new FlowInterruptedException(Result.ABORTED, new ExceededTimeout(nodeId));
                 /* Due to JENKINS-25504, this does not accomplish anything beyond what the original body.cancel would have:
                 getContext().onFailure(death);
                 */
@@ -202,9 +199,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             }
         } else {
             listener().getLogger().println("Cancelling nested steps due to timeout");
-            ExceededTimeout exceededTimeout = new ExceededTimeout();
-            exceededTimeout.setNodeId(nodeId);
-            body.cancel(exceededTimeout);
+            body.cancel(new ExceededTimeout(nodeId));
             forcible = true;
             timeout = GRACE_PERIOD;
             resetTimer();
@@ -301,14 +296,14 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private static final long serialVersionUID = 1L;
 
         /** Flow node ID of the corresponding timeout block */
-        private String nodeId;
+        private final String nodeId;
 
-        private String getNodeId() {
-            return nodeId;
+        public ExceededTimeout(String nodeId) {
+            this.nodeId = nodeId;
         }
 
-        private void setNodeId(String nodeId) {
-            this.nodeId = nodeId;
+        public String getNodeId() {
+            return nodeId;
         }
 
         @Override
