@@ -298,6 +298,11 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         /** Flow node ID of the corresponding timeout block */
         private final String nodeId;
 
+        @Deprecated
+        public ExceededTimeout() {
+            this(null);
+        }
+
         public ExceededTimeout(String nodeId) {
             this.nodeId = nodeId;
         }
