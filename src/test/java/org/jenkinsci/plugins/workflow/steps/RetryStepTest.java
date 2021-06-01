@@ -179,4 +179,50 @@ public class RetryStepTest {
         r.assertLogContains("trying 2", b);
         r.assertLogContains("trying 3", b);
     }
+
+    @Issue("JENKINS-44379")
+    @Test
+    public void shouldNotRetryAfterOuterTimeout() throws Exception {
+        WorkflowJob p = r.createProject(WorkflowJob.class);
+        p.setDefinition(
+                new CpsFlowDefinition(
+                        "int count = 0\n"
+                                + "timeout(time: 5, unit: 'SECONDS') {\n"
+                                + "  retry(3) {\n"
+                                + "    echo 'try ' + count++\n"
+                                + "    sleep 15\n"
+                                + "    error 'failure'\n"
+                                + "  }\n"
+                                + "}\n",
+                        true));
+
+        WorkflowRun run = r.buildAndAssertStatus(Result.ABORTED, p);
+        r.assertLogContains("Timeout has been exceeded", run);
+        r.assertLogContains("try 0", run);
+        r.assertLogNotContains("try 1", run);
+        r.assertLogNotContains("try 2", run);
+    }
+
+    @Issue("JENKINS-51454")
+    @Test
+    public void shouldRetryAfterInnerTimeout() throws Exception {
+        WorkflowJob p = r.createProject(WorkflowJob.class);
+        p.setDefinition(
+                new CpsFlowDefinition(
+                        "int count = 0\n"
+                                + "retry(3) {\n"
+                                + "  timeout(time: 5, unit: 'SECONDS') {\n"
+                                + "    echo 'try ' + count++\n"
+                                + "    sleep 15\n"
+                                + "    error 'failure'\n"
+                                + "  }\n"
+                                + "}\n",
+                        true));
+
+        WorkflowRun run = r.buildAndAssertStatus(Result.ABORTED, p);
+        r.assertLogContains("Timeout has been exceeded", run);
+        r.assertLogContains("try 0", run);
+        r.assertLogContains("try 1", run);
+        r.assertLogContains("try 2", run);
+    }
 }
