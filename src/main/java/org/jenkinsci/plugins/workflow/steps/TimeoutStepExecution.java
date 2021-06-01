@@ -74,7 +74,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     public boolean start() throws Exception {
         StepContext context = getContext();
         BodyInvoker bodyInvoker = context.newBodyInvoker()
-                .withCallback(new Callback2());
+                .withCallback(new Callback());
 
         if (step.isActivity()) {
             bodyInvoker = bodyInvoker.withContext(
@@ -227,8 +227,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    /** @deprecated only here for serial compatibility */
-    @Deprecated
     private class Callback extends BodyExecutionCallback.TailCall {
 
         @Override protected void finished(StepContext context) throws Exception {
@@ -238,27 +236,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             }
         }
 
-        private static final long serialVersionUID = 1L;
-
-    }
-
-    private class Callback2 extends BodyExecutionCallback {
-
-        @Override
-        public void onSuccess(StepContext context, Object result) {
-            if (killer != null) {
-                killer.cancel(true);
-                killer = null;
-            }
-            context.onSuccess(result);
-        }
-
         @Override
         public void onFailure(StepContext context, Throwable t) {
-            if (killer != null) {
-                killer.cancel(true);
-                killer = null;
-            }
+            super.onFailure(context, t);
             if (t instanceof FlowInterruptedException) {
                 /*
                  * Check whether the FlowInterruptedException has propagated past the corresponding
@@ -282,10 +262,10 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     }
                 }
             }
-            context.onFailure(t);
         }
 
         private static final long serialVersionUID = 1L;
+
     }
 
     /**

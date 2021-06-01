@@ -67,7 +67,7 @@
         <jenkins.version>2.263</jenkins.version>
         <java.level>8</java.level>
         <useBeta>true</useBeta>
-        <workflow-step-api-plugin.version>2.24-rc571.1dab8b291fed</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/61 -->
+        <workflow-step-api-plugin.version>2.24-rc572.0f709b207590</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/61 -->
     </properties>
     <dependencyManagement>
         <dependencies>
