@@ -23,12 +23,12 @@
   ~ THE SOFTWARE.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.12</version>
+        <version>4.24</version>
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -44,9 +44,9 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-        <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+        <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
+        <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+        <url>https://github.com/${gitHubRepo}</url>
         <tag>${scmTag}</tag>
     </scm>
     <repositories>
@@ -64,16 +64,17 @@
     <properties>
         <revision>2.24</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.263</jenkins.version>
+        <jenkins.version>2.263.1</jenkins.version>
         <java.level>8</java.level>
         <useBeta>true</useBeta>
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.249.x</artifactId> <!-- TODO https://github.com/jenkinsci/bom/pull/339 -->
-                <version>12</version>
+                <artifactId>bom-2.263.x</artifactId>
+                <version>919.v3c802a29576e</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -146,6 +147,11 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>matrix-project</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
