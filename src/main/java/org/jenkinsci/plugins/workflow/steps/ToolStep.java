@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -36,6 +35,8 @@ import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.util.ListBoxModel;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 
 import javax.annotation.CheckForNull;
@@ -120,7 +121,9 @@ public final class ToolStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, TaskListener.class, EnvVars.class, Node.class);
+            return Collections.unmodifiableSet(context);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

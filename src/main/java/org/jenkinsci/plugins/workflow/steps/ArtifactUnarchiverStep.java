@@ -1,13 +1,13 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,7 +46,9 @@ public class ArtifactUnarchiverStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(FilePath.class, Run.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, FilePath.class, Run.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
     }
