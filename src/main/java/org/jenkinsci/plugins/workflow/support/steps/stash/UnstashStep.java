@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
-import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -32,6 +31,8 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -90,7 +91,9 @@ public class UnstashStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
     }
