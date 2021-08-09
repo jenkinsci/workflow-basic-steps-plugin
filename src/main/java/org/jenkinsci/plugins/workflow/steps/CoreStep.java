@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import hudson.EnvVars;
@@ -39,7 +38,9 @@ import hudson.tasks.Builder;
 import hudson.tasks.Publisher;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -143,7 +144,9 @@ public final class CoreStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, EnvVars.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, Run.class, EnvVars.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
@@ -37,6 +36,8 @@ import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -160,7 +161,9 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(FlowNode.class, Run.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, FlowNode.class, Run.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
         public ListBoxModel doFillBuildResultItems() {

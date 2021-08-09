@@ -24,13 +24,14 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -91,7 +92,9 @@ public class UnstableStep extends Step {
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(FlowNode.class, Run.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, FlowNode.class, Run.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
         public FormValidation doCheckMessage(@QueryParameter String message) {
