@@ -8,6 +8,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -92,7 +93,40 @@ public class TimeoutStep extends Step implements Serializable {
             return Collections.singleton(TaskListener.class);
         }
 
-        // TODO argumentsToString as for SleepStep
+        private static String getUnitString(String tu) {
+            switch(tu) {
+                case "DAYS":
+                    return "d";
+                case "HOURS":
+                    return "h";
+                case "MINUTES":
+                    return "m";
+                case "SECONDS":
+                    return "s";
+                case "NANOSECONDS":
+                    return "ns";
+                case "MICROSECONDS":
+                    return "us";
+                case "MILLISECONDS":
+                    return "ms";
+            }
+            return "";
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object time = namedArgs.get("time");
+            if (time != null) {
+                Object activity = namedArgs.get("activity");
+                String activityS = activity instanceof Boolean ? activity.toString() : "false";
+                Object unit = namedArgs.get("unit");
+                if (unit instanceof String) {
+                    return time.toString() + getUnitString((String) unit) + ", " + activityS;
+                } else {
+                    return time.toString() + "s, " + activityS;
+                }
+            }
+            return null;
+        }
 
     }
 

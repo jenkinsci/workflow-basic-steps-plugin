@@ -29,6 +29,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -151,7 +152,38 @@ public final class SleepStep extends Step {
             return Collections.singleton(TaskListener.class);
         }
 
-        // TODO argumentsToString should perhaps return "3m" etc.
+        private static String getUnitString(String tu) {
+            switch(tu) {
+                case "DAYS":
+                    return "d";
+                case "HOURS":
+                    return "h";
+                case "MINUTES":
+                    return "m";
+                case "SECONDS":
+                    return "s";
+                case "NANOSECONDS":
+                    return "ns";
+                case "MICROSECONDS":
+                    return "us";
+                case "MILLISECONDS":
+                    return "ms";
+            }
+            return "";
+        }
+
+        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+            Object time = namedArgs.get("time");
+            if (time != null) {
+                Object unit = namedArgs.get("unit");
+                if (unit instanceof String) {
+                    return time.toString() + getUnitString((String) unit);
+                } else {
+                    return time.toString() + "s";
+                }
+            }
+            return null;
+        }
 
     }
 }
