@@ -68,8 +68,6 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.*;
-import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,6 +78,10 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class CoreWrapperStepTest {
 
@@ -132,6 +134,7 @@ public class CoreWrapperStepTest {
         }
         @Symbol("mock")
         @TestExtension("useWrapper") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "MockWrapper";
             }
@@ -178,6 +181,7 @@ public class CoreWrapperStepTest {
             context.env("TESTVAR", "wrapped");
         }
         @TestExtension("envStickiness") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "OneVarWrapper";
             }
@@ -216,6 +220,7 @@ public class CoreWrapperStepTest {
             }
         }
         @TestExtension("loggerDecorator") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "WrapperWithLogger";
             }

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,15 +44,17 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
         for (Entry<String, String> e : mapping.entrySet()) {
             FilePath dst = new FilePath(getContext().get(FilePath.class), e.getValue());
             String src = e.getKey();
-            String[] all = am.root().list(src);
-            if (all.length == 0) {
+            Collection<String> all = am.root().list(src, null, true);
+            if (all.isEmpty()) {
                 throw new AbortException("no artifacts to unarchive in " + src);
-            } else if (all.length == 1 && all[0].equals(src)) {
+            } else if (all.size() == 1 && all.stream().findFirst().get().equals(src)) {
+                final String firstElement = all.stream().findFirst().get();
                 // the source is a file
-                if (dst.isDirectory())
-                    dst = dst.child(getFileName(all[0]));
+                if (dst.isDirectory()) {
+                    dst = dst.child(getFileName(firstElement));
+                }
 
-                files.add(copy(am.root().child(all[0]), dst, listener));
+                files.add(copy(am.root().child(firstElement), dst, listener));
             } else {
                 // copy into a directory
                 for (String path : all) {

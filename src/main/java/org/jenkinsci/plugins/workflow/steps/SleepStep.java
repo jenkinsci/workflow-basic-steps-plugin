@@ -96,11 +96,7 @@ public final class SleepStep extends Step {
             }
             if (end > now) {
                 listener.getLogger().println("Sleeping for " + Util.getTimeSpanString(end - now));
-                task = Timer.get().schedule(new Runnable() {
-                    @Override public void run() {
-                        getContext().onSuccess(null);
-                    }
-                }, end - now, TimeUnit.MILLISECONDS);
+                task = Timer.get().schedule(() -> getContext().onSuccess(null), end - now, TimeUnit.MILLISECONDS);
             } else {
                 listener.getLogger().println("No need to sleep any longer");
                 getContext().onSuccess(null);
@@ -123,7 +119,7 @@ public final class SleepStep extends Step {
             if (end > now) {
                 return "sleeping for another " + Util.getTimeSpanString(end - now);
             } else {
-                return "should have stopped sleeping " + Util.getPastTimeString(now - end);
+                return "should have stopped sleeping " + Util.getTimeSpanString(now - end);
             }
         }
 

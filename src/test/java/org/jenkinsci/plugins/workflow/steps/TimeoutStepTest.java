@@ -36,6 +36,7 @@ import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
 import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
@@ -48,9 +49,7 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 import org.junit.ClassRule;
 import org.junit.Ignore;

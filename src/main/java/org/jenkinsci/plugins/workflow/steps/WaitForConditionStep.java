@@ -119,13 +119,11 @@ public final class WaitForConditionStep extends Step {
         }
 
         private static void retry(final String id, final StepContext context) {
-            StepExecution.applyAll(Execution.class, new Function<Execution, Void>() {
-                @Override public Void apply(@NonNull Execution execution) {
-                    if (execution.id.equals(id)) {
-                        execution.retry(context);
-                    }
-                    return null;
+            StepExecution.applyAll(Execution.class, execution -> {
+                if (execution.id.equals(id)) {
+                    execution.retry(context);
                 }
+                return null;
             });
         }
 
@@ -140,11 +138,9 @@ public final class WaitForConditionStep extends Step {
                     return;
                 }
             }
-            task = Timer.get().schedule(new Runnable() {
-                @Override public void run() {
-                    task = null;
-                    body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
-                }
+            task = Timer.get().schedule(() -> {
+                task = null;
+                body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
             }, recurrencePeriod, TimeUnit.MILLISECONDS);
             recurrencePeriod = Math.min((long)(recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
         }

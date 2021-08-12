@@ -56,7 +56,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private long end = 0;
 
     /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
-    private boolean activity = false;
+    private final boolean activity;
 
     /**
      * Whether we are forcing the body to end.
@@ -140,12 +140,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
                 }
             }
-            killer = Timer.get().schedule(new Runnable() {
-                @Override
-                public void run() {
-                    cancel();
-                }
-            }, delay, TimeUnit.MILLISECONDS);
+            killer = Timer.get().schedule(this::cancel, delay, TimeUnit.MILLISECONDS);
         } else {
             listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(- delay) + " ago");
             cancel();
@@ -182,25 +177,23 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 */
                 final ListenableFuture<List<StepExecution>> currentExecutions = exec.getCurrentExecutions(true);
                 // TODO would use Futures.addCallback but this is still @Beta in Guava 19 and the Pipeline copy is in workflow-support on which we have no dep
-                currentExecutions.addListener(new Runnable() {
-                    @Override public void run() {
-                        assert currentExecutions.isDone();
-                        try {
-                            FlowNode outer = getContext().get(FlowNode.class); // timeout
-                            for (StepExecution exec : currentExecutions.get()) {
-                                FlowNode inner = exec.getContext().get(FlowNode.class); // some deadbeat step, perhaps
-                                LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
-                                scanner.setup(inner);
-                                for (FlowNode enclosing : scanner) {
-                                    if (enclosing.equals(outer)) {
-                                        exec.getContext().onFailure(death);
-                                        break;
-                                    }
+                currentExecutions.addListener(() -> {
+                    assert currentExecutions.isDone();
+                    try {
+                        FlowNode outer = getContext().get(FlowNode.class); // timeout
+                        for (StepExecution exec1 : currentExecutions.get()) {
+                            FlowNode inner = exec1.getContext().get(FlowNode.class); // some deadbeat step, perhaps
+                            LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
+                            scanner.setup(inner);
+                            for (FlowNode enclosing : scanner) {
+                                if (enclosing.equals(outer)) {
+                                    exec1.getContext().onFailure(death);
+                                    break;
                                 }
                             }
-                        } catch (IOException | InterruptedException | ExecutionException x) {
-                            LOGGER.log(Level.WARNING, null, x);
                         }
+                    } catch (IOException | InterruptedException | ExecutionException x) {
+                        LOGGER.log(Level.WARNING, null, x);
                     }
                 }, newExecutorService());
             }

@@ -162,8 +162,7 @@ public final class CoreStep extends Step {
                 // thus for, e.g., `junit testResults: '*.xml', keepLongStdio: true` we will get null
                 return new HashMap<>(((UninstantiatedDescribable) delegate).getArguments());
             } else if (delegate instanceof Map) {
-                Map<String, Object> r = new HashMap<>();
-                r.putAll((Map) delegate);
+                Map<String, Object> r = new HashMap<>((Map<String, Object>) delegate);
                 r.remove(DescribableModel.CLAZZ);
                 return r;
             } else {
