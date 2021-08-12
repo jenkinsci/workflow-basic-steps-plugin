@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import java.util.Collections;
@@ -71,6 +72,7 @@ public class RetryStep extends Step {
             return true;
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Retry the body up to N times";

@@ -103,7 +103,7 @@ public final class WaitForConditionStep extends Step {
             return false;
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
+        @Override public void stop(@NonNull Throwable cause) throws Exception {
             if (task != null) {
                 task.cancel(false);
             }
@@ -194,6 +194,7 @@ public final class WaitForConditionStep extends Step {
             return "waitUntil";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Wait for condition";
         }

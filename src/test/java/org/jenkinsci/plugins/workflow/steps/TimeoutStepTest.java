@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Functions;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -340,7 +341,7 @@ public class TimeoutStepTest {
             @Override public boolean start() throws Exception {
                 return false;
             }
-            @Override public void stop(Throwable cause) throws Exception {
+            @Override public void stop(@NonNull Throwable cause) throws Exception {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }

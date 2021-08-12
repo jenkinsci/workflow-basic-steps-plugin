@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -52,6 +53,7 @@ public class ArtifactArchiverStep extends Step {
             return "archive";
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Archive artifacts";

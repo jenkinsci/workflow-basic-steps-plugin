@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Result;
@@ -65,11 +66,13 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
         return message;
     }
 
+    @NonNull
     @Override
     public Result getBuildResultOnError() {
         return Result.UNSTABLE;
     }
 
+    @NonNull
     @Override
     public Result getStepResultOnError() {
         return Result.UNSTABLE;
@@ -97,6 +100,7 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
             return "warnError";
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Catch error and set build and stage result to unstable";

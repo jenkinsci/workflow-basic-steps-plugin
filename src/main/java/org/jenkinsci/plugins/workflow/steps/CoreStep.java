@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import hudson.EnvVars;
@@ -45,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
@@ -104,6 +105,7 @@ public final class CoreStep extends Step {
             return null;
         }
 
+        @NonNull
         @Override public String getStatus() {
             String supe = super.getStatus();
             return delegate != null ? delegate.getClass().getName() + ": " + supe : supe;
@@ -119,6 +121,7 @@ public final class CoreStep extends Step {
             return "step";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "General Build Step";
         }
@@ -155,7 +158,8 @@ public final class CoreStep extends Step {
         }
 
         @SuppressWarnings("unchecked")
-        static @CheckForNull Map<String, Object> delegateArguments(@CheckForNull Object delegate) {
+        @CheckForNull
+        static Map<String, Object> delegateArguments(@CheckForNull Object delegate) {
             if (delegate instanceof UninstantiatedDescribable) {
                 // TODO JENKINS-45101 getStepArgumentsAsString does not resolve its arguments
                 // thus delegate.model == null and we cannot inspect DescribableModel.soleRequiredParameter

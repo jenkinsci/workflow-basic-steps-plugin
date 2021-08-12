@@ -61,10 +61,12 @@ public class StashStep extends Step {
         this.name = name;
     }
 
+    @NonNull
     public String getName() {
         return name;
     }
 
+    @CheckForNull
     public String getIncludes() {
         return includes;
     }
@@ -73,6 +75,7 @@ public class StashStep extends Step {
         this.includes = Util.fixEmpty(includes);
     }
 
+    @CheckForNull
     public String getExcludes() {
         return excludes;
     }
@@ -126,6 +129,7 @@ public class StashStep extends Step {
             return "stash";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Stash some files to be used later in the build";
         }

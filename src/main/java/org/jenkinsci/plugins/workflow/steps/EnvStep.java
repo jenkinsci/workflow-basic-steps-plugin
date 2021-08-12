@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -109,6 +110,7 @@ public class EnvStep extends Step {
             return "withEnv";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Set environment variables";
         }

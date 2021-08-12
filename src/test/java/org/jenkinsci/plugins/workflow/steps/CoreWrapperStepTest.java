@@ -205,7 +205,7 @@ public class CoreWrapperStepTest {
     public static class WrapperWithLogger extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithLogger() {}
         @Override public void setUp(SimpleBuildWrapper.Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {}
-        @Override public ConsoleLogFilter createLoggerDecorator(Run<?,?> build) {
+        @Override public ConsoleLogFilter createLoggerDecorator(@NonNull Run<?,?> build) {
             return new UpcaseFilter();
         }
         private static class UpcaseFilter extends ConsoleLogFilter implements Serializable {

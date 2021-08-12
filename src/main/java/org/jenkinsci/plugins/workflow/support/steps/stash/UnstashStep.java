@@ -53,6 +53,7 @@ public class UnstashStep extends Step {
         this.name = name;
     }
 
+    @NonNull
     public String getName() {
         return name;
     }
@@ -86,6 +87,7 @@ public class UnstashStep extends Step {
             return "unstash";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Restore files previously stashed";
         }

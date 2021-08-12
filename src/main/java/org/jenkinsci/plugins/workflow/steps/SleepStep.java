@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -103,7 +104,7 @@ public final class SleepStep extends Step {
             }
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
+        @Override public void stop(@NonNull Throwable cause) throws Exception {
             if (task != null) {
                 task.cancel(false);
             }
@@ -131,6 +132,7 @@ public final class SleepStep extends Step {
             return "sleep";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Sleep";
         }

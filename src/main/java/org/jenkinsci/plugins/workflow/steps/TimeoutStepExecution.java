@@ -330,7 +330,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private final @NonNull String id;
 
-        ResetTimer(String id) {
+        ResetTimer(@NonNull String id) {
             this.id = id;
         }
 
@@ -353,7 +353,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final long timeout;
         private transient @CheckForNull Channel channel;
 
-        ConsoleLogFilterImpl2(String id, long timeout) {
+        ConsoleLogFilterImpl2(@NonNull String id, long timeout) {
             this.id = id;
             this.timeout = timeout;
         }
@@ -398,7 +398,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final long timeout;
         private final @CheckForNull Channel channel;
         private final @NonNull String id;
-        Tick(AtomicBoolean active, Reference<?> stream, long timeout, Channel channel, String id) {
+        Tick(AtomicBoolean active, Reference<?> stream, long timeout, @CheckForNull Channel channel, @NonNull String id) {
             this.active = active;
             this.stream = stream;
             this.timeout = timeout;

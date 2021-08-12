@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -38,8 +40,6 @@ import hudson.util.ListBoxModel;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
 
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -66,6 +66,7 @@ public final class ToolStep extends Step {
         return name;
     }
 
+    @CheckForNull
     public String getType() {
         return type;
     }
@@ -84,6 +85,7 @@ public final class ToolStep extends Step {
             return "tool";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Use a tool from a predefined Tool Installation";
         }
