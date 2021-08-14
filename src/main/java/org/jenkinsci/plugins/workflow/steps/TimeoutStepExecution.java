@@ -32,6 +32,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.model.CauseOfInterruption;
 import jenkins.security.SlaveToMasterCallable;
+import jenkins.util.SystemProperties;
 import jenkins.util.Timer;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -42,6 +43,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     private static final Logger LOGGER = Logger.getLogger(TimeoutStepExecution.class.getName());
     private static final long GRACE_PERIOD = Main.isUnitTest ? /* 5s */5_000 : /* 1m */60_000;
+    public static /* not final */ boolean forceInterruption = SystemProperties.getBoolean(TimeoutStepExecution.class.getName() + ".forceInterruption");
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final TimeoutStep step;
@@ -265,7 +267,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         @Override
         public void onFailure(StepContext context, Throwable t) {
-            if (t instanceof FlowInterruptedException) {
+            if (t instanceof FlowInterruptedException && !forceInterruption) {
                 /*
                  * Check whether the FlowInterruptedException has propagated past the corresponding
                  * timeout step.
