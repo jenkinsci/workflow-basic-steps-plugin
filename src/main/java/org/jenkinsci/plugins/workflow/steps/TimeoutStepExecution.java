@@ -265,7 +265,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         @Override
         public void onFailure(StepContext context, Throwable t) {
-            super.onFailure(context, t);
             if (t instanceof FlowInterruptedException) {
                 /*
                  * Check whether the FlowInterruptedException has propagated past the corresponding
@@ -289,6 +288,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     }
                 }
             }
+            super.onFailure(context, t);
         }
 
         private static final long serialVersionUID = 1L;
