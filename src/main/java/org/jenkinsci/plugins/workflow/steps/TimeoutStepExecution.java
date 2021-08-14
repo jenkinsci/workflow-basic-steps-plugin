@@ -302,7 +302,10 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1L;
 
-        /** Flow node ID of the corresponding timeout block */
+        /**
+         * Flow node ID of the corresponding timeout block. Could be {@code null} for exceptions
+         * serialized before the fix for JENKINS-51454.
+         */
         private final String nodeId;
 
         @Deprecated
