@@ -67,9 +67,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                         l.error(t.getMessage());
                     } else if (t instanceof FlowInterruptedException) {
                         FlowInterruptedException fie = (FlowInterruptedException) t;
-                        for (CauseOfInterruption cause : fie.getCauses()) {
-                            cause.print(l);
-                        }
+                        fie.handle(context.get(Run.class), l);
                     } else {
                         Functions.printStackTrace(t, l.error("Execution failed"));
                     }
