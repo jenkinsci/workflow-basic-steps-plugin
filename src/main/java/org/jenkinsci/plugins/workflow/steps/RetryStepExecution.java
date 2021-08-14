@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.workflow.steps;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Functions;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.model.CauseOfInterruption;
 
