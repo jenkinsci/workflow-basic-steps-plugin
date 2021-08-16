@@ -1,5 +1,16 @@
 ## Changelog
 
+### 2.24
+
+Release date: 2021-08-16
+
+- Fix: Pipeline retry operation doesn't retry when there is a timeout inside of it ([JENKINS-51454](https://issues.jenkins-ci.org/browse/JENKINS-51454)) ([PR #144](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/144))
+    - To revert to the old behavior you can set the following [system property](https://www.jenkins.io/doc/book/managing/system-properties/) to `true`: `org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.forceInterruption`
+- Internal: Corrected flakes in StashTest ([PR #137](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/137))
+- Internal: Make compatible with Guava 21.0 and newer ([PR #147](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/147))
+- Internal: Remove usages of `com.google.common.collect.ImmutableSet` ([PR #148](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/148))
+- Internal: update plugin POM and BOM ([PR #146](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/146))
+
 ### 2.23
 
 Release date: 2020-11-06
@@ -108,7 +119,7 @@ Release date: 2019-05-14
             include those thrown when a build is manually aborted
             through the UI and those thrown by the `timeout` step.
             Defaults to `true`.
-    -   The following two steps have been added:  
+    -   The following two steps have been added:
         -   **`unstable(message: String)`**: Prints a message to the log
             and sets the overall build result and the stage result to
             `UNSTABLE`. The message will be associated with the stage
