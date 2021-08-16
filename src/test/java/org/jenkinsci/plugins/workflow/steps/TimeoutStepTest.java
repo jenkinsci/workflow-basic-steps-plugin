@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
@@ -381,7 +382,7 @@ public class TimeoutStepTest {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }
-        @TestExtension({"unresponsiveBody", "gracePeriod", "noImmediateForcibleTerminationOnResume"}) public static class DescriptorImpl extends StepDescriptor {
+        @TestExtension({"unresponsiveBody", "gracePeriod", "noImmediateForcibleTerminationOnResume", "nestingDetection"}) public static class DescriptorImpl extends StepDescriptor {
             @Override public String getFunctionName() {
                 return "unkillable";
             }
@@ -450,6 +451,108 @@ public class TimeoutStepTest {
             WorkflowJob p = r.jenkins.getItemByFullName("p", WorkflowJob.class);
             WorkflowRun b = p.getBuildByNumber(1);
             r.assertBuildStatus(Result.ABORTED, r.waitForCompletion(b));
+        });
+    }
+
+    @Test
+    public void nestingDetection() {
+        story.then(r -> {
+            ScriptApproval.get().approveSignature("method org.jenkinsci.plugins.workflow.steps.FlowInterruptedException isActualInterruption");
+            WorkflowJob p = story.j.createProject(WorkflowJob.class);
+
+            // Inside
+            p.setDefinition(
+                    new CpsFlowDefinition(
+                            "timeout(time: 5, unit: 'SECONDS') {\n"
+                                    + "  try {\n"
+                                    + "    sleep 10\n"
+                                    + "  } catch (e) {\n"
+                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
+                                    + "  }\n"
+                                    + "}",
+                            true));
+            WorkflowRun b = story.j.buildAndAssertSuccess(p);
+            story.j.assertLogContains("GOOD", b);
+            story.j.assertLogNotContains("BAD", b);
+
+            // Outside
+            p.setDefinition(
+                    new CpsFlowDefinition(
+                            "try {\n"
+                                    + "  timeout(time: 5, unit: 'SECONDS') {\n"
+                                    + "    sleep 10\n"
+                                    + "  }\n"
+                                    + "} catch (e) {\n"
+                                    + "  echo e.isActualInterruption() ? 'BAD' : 'GOOD'\n"
+                                    + "}",
+                            true));
+            b = story.j.buildAndAssertSuccess(p);
+            story.j.assertLogContains("GOOD", b);
+            story.j.assertLogNotContains("BAD", b);
+
+            // Between
+            p.setDefinition(
+                    new CpsFlowDefinition(
+                            "timeout(time: 5, unit: 'SECONDS') {\n"
+                                    + "  try {\n"
+                                    + "    timeout(time: 20, unit: 'SECONDS') {\n"
+                                    + "      sleep 10\n"
+                                    + "    }\n"
+                                    + "  } catch (e) {\n"
+                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
+                                    + "  }\n"
+                                    + "}",
+                            true));
+            b = story.j.buildAndAssertSuccess(p);
+            story.j.assertLogContains("GOOD", b);
+            story.j.assertLogNotContains("BAD", b);
+
+            // Inside (unkillable)
+            p.setDefinition(
+                    new CpsFlowDefinition(
+                            "timeout(time: 5, unit: 'SECONDS') {\n"
+                                    + "  try {\n"
+                                    + "    unkillable()\n"
+                                    + "  } catch (e) {\n"
+                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
+                                    + "  }\n"
+                                    + "}",
+                            true));
+            b = p.scheduleBuild2(0).get();
+            story.j.assertLogContains("GOOD", b);
+            story.j.assertLogNotContains("BAD", b);
+
+            // Outside (unkillable)
+            p.setDefinition(
+                    new CpsFlowDefinition(
+                            "try {\n"
+                                    + "  timeout(time: 5, unit: 'SECONDS') {\n"
+                                    + "    unkillable()\n"
+                                    + "  }\n"
+                                    + "} catch (e) {\n"
+                                    + "  echo e.isActualInterruption() ? 'BAD' : 'GOOD'"
+                                    + "}",
+                            true));
+            b = story.j.buildAndAssertSuccess(p);
+            story.j.assertLogContains("GOOD", b);
+            story.j.assertLogNotContains("BAD", b);
+
+            // Between (unkillable)
+            p.setDefinition(
+                    new CpsFlowDefinition(
+                            "timeout(time: 5, unit: 'SECONDS') {\n"
+                                    + "  try {\n"
+                                    + "    timeout(time: 20, unit: 'SECONDS') {\n"
+                                    + "      unkillable()\n"
+                                    + "    }\n"
+                                    + "  } catch (e) {\n"
+                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
+                                    + "  }\n"
+                                    + "}",
+                            true));
+            b = story.j.buildAndAssertSuccess(p);
+            story.j.assertLogContains("GOOD", b);
+            story.j.assertLogNotContains("BAD", b);
         });
     }
 }
