@@ -33,7 +33,7 @@
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
     <artifactId>workflow-basic-steps</artifactId>
-    <version>2.24</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <name>Pipeline: Basic Steps</name>
     <url>https://github.com/jenkinsci/workflow-basic-steps-plugin</url>
@@ -47,7 +47,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>workflow-basic-steps-2.24</tag>
+        <tag>${scmTag}</tag>
     </scm>
     <repositories>
         <repository>
@@ -62,7 +62,7 @@
         </pluginRepository>
     </pluginRepositories>
     <properties>
-        <revision>2.24</revision>
+        <revision>2.25</revision>
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.263.1</jenkins.version>
         <java.level>8</java.level>
