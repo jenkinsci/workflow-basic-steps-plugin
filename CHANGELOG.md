@@ -5,9 +5,8 @@
 Release date: 2021-08-16
 
 - Fix: Pipeline retry operation doesn't retry when there is a timeout inside of it ([JENKINS-51454](https://issues.jenkins-ci.org/browse/JENKINS-51454)) ([PR #144](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/144))
-    - To revert to the old behavior set the following system property to true:
-    - org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.forceInterruption
-- Fix: Corrected flakes in StashTest ([PR #137](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/137))
+    - To revert to the old behavior you can set the following [system property](https://www.jenkins.io/doc/book/managing/system-properties/) to `true`: `org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.forceInterruption`
+- Internal: Corrected flakes in StashTest ([PR #137](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/137))
 - Internal: Make compatible with Guava 21.0 and newer ([PR #147](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/147))
 - Internal: Remove usages of `com.google.common.collect.ImmutableSet` ([PR #148](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/148))
 - Internal: update plugin POM and BOM ([PR #146](https://github.com/jenkinsci/workflow-basic-steps-plugin/pull/146))
