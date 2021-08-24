@@ -45,8 +45,7 @@ import hudson.model.TaskListener;
 public class RetryStep extends Step implements Serializable {
     
     private final int count;
-    private RetryDelay delay;
-    private boolean useRetryDelay = false;
+    private RetryDelay delay = null;
     
     public int left;
 
@@ -58,14 +57,6 @@ public class RetryStep extends Step implements Serializable {
 
     public int getCount() {
         return count;
-    }
-
-    @DataBoundSetter public void setUseRetryDelay(boolean useRetryDelay) {
-        this.useRetryDelay = useRetryDelay;
-    }
-
-    public boolean isUseRetryDelay() {
-        return useRetryDelay;
     }
 
     @DataBoundSetter public void setDelay(RetryDelay delay) {

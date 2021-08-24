@@ -29,7 +29,7 @@ THE SOFTWARE.
         <f:number clazz="positive-number"/>
     </f:entry>
 
-    <f:optionalBlock field="useRetryDelay" inline="true" title="${%Use a time delay between retries.}">
+    <f:optionalBlock name="useRetryDelay" inline="true" title="${%Use a time delay between retries.}">
         <f:dropdownDescriptorSelector field="delay" title="Retry Delay" descriptors="${descriptor.applicableDescriptors}"/>
     </f:optionalBlock>
 </j:jelly>

@@ -181,7 +181,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                     } else {
                         Functions.printStackTrace(t, l.error("Execution failed"));
                     }
-                    if(step != null && !step.isUseRetryDelay()) {
+                    if(step != null && step.getDelay() == null) {
                         l.getLogger().println("Retrying");
                         context.newBodyInvoker().withCallback(this).start();
                     } else {

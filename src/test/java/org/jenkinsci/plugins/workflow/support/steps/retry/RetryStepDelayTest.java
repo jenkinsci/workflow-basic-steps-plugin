@@ -31,7 +31,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
             "int i = 0;\n" +
-            "retry(count: 3, delay: fixed(time: 10, unit: 'SECONDS'), useRetryDelay: true) {\n" +
+            "retry(count: 3, delay: fixed(time: 10, unit: 'SECONDS')) {\n" +
             "    println 'Trying!'\n" +
             "    if (i++ < 2) error('oops');\n" +
             "    println 'Done!'\n" +
@@ -96,7 +96,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
             "int i = 0\n"
-                + "retry(count: 2, delay: fixed(time: 5, unit: 'SECONDS'), useRetryDelay: true) {\n"
+                + "retry(count: 2, delay: fixed(time: 5, unit: 'SECONDS')) {\n"
                 + "  i += 1\n"
                 + "  echo 'Try #' + i\n"
                 + "  if (i == 1) {\n"
@@ -120,7 +120,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
             "int i = 0\n"
-                + "retry(count: 4, delay: random(max: 15, min: 5, unit: 'SECONDS'), useRetryDelay: true) {\n"
+                + "retry(count: 4, delay: random(max: 15, min: 5, unit: 'SECONDS')) {\n"
                 + "  if (i++ < 3) {\n"
                 + "   echo 'Try #' + i\n"
                 + "   error('oops');\n"
@@ -144,7 +144,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
             "int i = 0\n"
-                + "retry(count: 4, delay: exponential(max: 20, min: 1, multiplier: 2, unit: 'SECONDS'), useRetryDelay: true) {\n"
+                + "retry(count: 4, delay: exponential(max: 20, min: 1, multiplier: 2, unit: 'SECONDS')) {\n"
                 + "  if (i++ < 3) {\n"
                 + "   echo 'Try #' + i\n"
                 + "   error('oops');\n"
@@ -170,7 +170,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
             "int i = 0\n"
-                + "retry(count: 4, delay: incremental(increment: 2, max: 10, min: 1, unit: 'SECONDS'), useRetryDelay: true) {\n"
+                + "retry(count: 4, delay: incremental(increment: 2, max: 10, min: 1, unit: 'SECONDS')) {\n"
                 + "  if (i++ < 3) {\n"
                 + "   echo 'Try #' + i\n"
                 + "   error('oops');\n"
@@ -196,7 +196,7 @@ public class RetryStepDelayTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition( new CpsFlowDefinition(
             "int i = 0\n"
-                + "retry(count: 6, delay: randomExponential(max: 10, multiplier: 2), useRetryDelay: true, unit: 'SECONDS') {\n"
+                + "retry(count: 6, delay: randomExponential(max: 10, multiplier: 2, unit: 'SECONDS')) {\n"
                 + "  if (i++ < 5) {\n"
                 + "   echo 'Try #' + i\n"
                 + "   error('oops');\n"
