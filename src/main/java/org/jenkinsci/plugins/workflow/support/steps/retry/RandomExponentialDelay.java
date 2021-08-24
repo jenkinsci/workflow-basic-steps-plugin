@@ -12,7 +12,7 @@ import hudson.Extension;
 
 /**
  * {@link RandomExponentialDelay} The delay starts out at the 
- * 2^0 {@TimeUnit} and then increases 2^x * 1 {@TimeUnit} 
+ * 2^0 {@link java.util.concurrent.TimeUnit} and then increases 2^x * 1 {@link java.util.concurrent.TimeUnit}
  * each round after until it reaches the max, then each round after
  * it reaches the max, the delay is a random number between 1 and max.
  */

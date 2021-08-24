@@ -12,7 +12,7 @@ import hudson.Extension;
 /**
  * {@link ExponentialDelay} allows the delay to exponentially grow
  * larger for issues that cannot be immediately fixed. The delay
- * starts out at the min and then increases 2^x * 1 {@TimeUnit} 
+ * starts out at the min and then increases 2^x * 1 {@link java.util.concurrent.TimeUnit}
  * each round after until it reaches the max, then the max for the
  * remaining rounds.
  */
