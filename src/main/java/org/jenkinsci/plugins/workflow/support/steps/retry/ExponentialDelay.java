@@ -19,10 +19,11 @@ import hudson.Extension;
 @Extension
 public class ExponentialDelay extends RetryDelay implements Serializable {
 
+    private static final int base = 2;
+
     private final long min;
     private final long max;
     private final int multiplier;
-    private final int base = 2;
     private int lastMultiplier = 0;
 
     public ExponentialDelay() { 

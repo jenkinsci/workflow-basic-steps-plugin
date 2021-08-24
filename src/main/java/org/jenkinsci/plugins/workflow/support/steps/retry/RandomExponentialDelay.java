@@ -19,12 +19,13 @@ import hudson.Extension;
 @Extension
 public class RandomExponentialDelay extends RetryDelay implements Serializable {
 
+    private static final int base = 2;
+    private static final Random RANDOM = new Random();
+
     private final int multiplier;
     private final int max;
-    private final int base = 2;
     private boolean largerThanMax = false;
     private int lastMultiplier = 0;
-    private Random random = new Random();
 
     public RandomExponentialDelay() { 
         super();
@@ -48,9 +49,9 @@ public class RandomExponentialDelay extends RetryDelay implements Serializable {
 
     @Override
     public long computeRetryDelay() {
-        long delay = 0;
+        long delay;
         if(largerThanMax) {
-            delay = 1 + random.nextInt(max);
+            delay = 1 + RANDOM.nextInt(max);
         } else {
             if(lastMultiplier > 0) {
                 lastMultiplier += 1;

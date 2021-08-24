@@ -16,9 +16,10 @@ import hudson.Extension;
 @Extension
 public class RandomDelay extends RetryDelay implements Serializable {
 
+    private static final Random RANDOM = new Random();
+
     private final int min;
     private final int max;
-    private Random random = new Random();
 
     public RandomDelay() { 
         super();
@@ -42,11 +43,11 @@ public class RandomDelay extends RetryDelay implements Serializable {
 
     @Override
     public long computeRetryDelay() {
-        long delay = min;
+        long delay;
         if(min == max) {
             delay = min;
         } else {
-            delay = random.nextInt(max-min) + min;
+            delay = RANDOM.nextInt(max-min) + min;
         }
 
         return unit.toMillis(delay);
