@@ -1,4 +1,30 @@
 <div>
-    Checks if the given file (as relative path to current directory) exists.
+    Checks if the given file exists on the current node.
     Returns <code>true | false</code>.
+
+    This step must be run inside a `node` context:
+<p><pre>
+# Declarative Syntax
+stage ('Check for existence of index.html') {
+    agent any # Could be a top-level directive or a stage level directive
+    steps {
+        script {
+            if (fileExists('src/main/rersources/index.html') {
+                echo "File src/main/rersources/index.html found!"
+            }
+        }
+    }
+}
+</pre></p>
+
+With the Declarative Syntax, it must be run in a stage with a defined agent (e.g. different than `agent none`):
+
+<p><pre>
+# Scripted Syntax
+node {
+    if (fileExists('src/main/rersources/index.html') {
+        echo "File src/main/rersources/index.html found!"
+    }
+}
+</pre></p>
 </div>
