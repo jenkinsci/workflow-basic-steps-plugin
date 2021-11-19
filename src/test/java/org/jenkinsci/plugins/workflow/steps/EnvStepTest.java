@@ -158,6 +158,52 @@ public class EnvStepTest {
         });
     }
 
+    @Test public void mapArguments() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  withEnv(a: 1, b: 2, c: 'hello world', d: true, e: null) {\n" +
+                        "    echo(/a=$a b=$b c=$c d=$d e=${env.e}/)" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("a=1 b=2 c=hello world d=true e=null", b);
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
+                    b.getExecution(),
+                    Predicates.and(
+                        new NodeStepTypePredicate("withEnv"),
+                        n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("a, b, c, d, e", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
+            }
+        });
+    }
+
+    @Test public void mapArgumentsAsMap() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  withEnv([A: 1, B: 2, C: 'hello world', D: true, E: null]) {\n" +
+                        "    echo(/A=$A B=$B C=$C D=$D E=${env.E}/)\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("A=1 B=2 C=hello world D=true E=null", b);
+                List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
+                    b.getExecution(),
+                    Predicates.and(
+                        new NodeStepTypePredicate("withEnv"),
+                        n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                assertThat(coreStepNodes, Matchers.hasSize(1));
+                assertEquals("A, B, C, D, E", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
+            }
+        });
+    }
+
     @Test public void configRoundTrip() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
