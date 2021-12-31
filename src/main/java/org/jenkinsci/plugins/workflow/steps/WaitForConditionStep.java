@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.util.Timer;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -120,7 +120,7 @@ public final class WaitForConditionStep extends Step {
 
         private static void retry(final String id, final StepContext context) {
             StepExecution.applyAll(Execution.class, new Function<Execution, Void>() {
-                @Override public Void apply(@Nonnull Execution execution) {
+                @Override public Void apply(@NonNull Execution execution) {
                     if (execution.id.equals(id)) {
                         execution.retry(context);
                     }

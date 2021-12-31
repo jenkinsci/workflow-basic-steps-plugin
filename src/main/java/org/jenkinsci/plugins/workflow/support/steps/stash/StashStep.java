@@ -40,8 +40,8 @@ import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -50,13 +50,13 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 public class StashStep extends Step {
 
-    private final @Nonnull String name;
+    private final @NonNull String name;
     private @CheckForNull String includes;
     private @CheckForNull String excludes;
     private boolean useDefaultExcludes = true;
     private boolean allowEmpty = false;
 
-    @DataBoundConstructor public StashStep(@Nonnull String name) {
+    @DataBoundConstructor public StashStep(@NonNull String name) {
         Jenkins.checkGoodName(name);
         this.name = name;
     }

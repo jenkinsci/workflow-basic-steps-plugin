@@ -34,7 +34,7 @@ import hudson.model.TaskListener;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -46,9 +46,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class UnstashStep extends Step {
 
-    private final @Nonnull String name;
+    private final @NonNull String name;
 
-    @DataBoundConstructor public UnstashStep(@Nonnull String name) {
+    @DataBoundConstructor public UnstashStep(@NonNull String name) {
         Jenkins.checkGoodName(name);
         this.name = name;
     }

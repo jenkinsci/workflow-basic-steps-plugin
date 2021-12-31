@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.CauseOfInterruption;
 import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.SystemProperties;
@@ -335,7 +335,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1L;
 
-        private final @Nonnull String id;
+        private final @NonNull String id;
 
         ResetTimer(String id) {
             this.id = id;
@@ -356,7 +356,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
         private static final long serialVersionUID = 1L;
 
-        private final @Nonnull String id;
+        private final @NonNull String id;
         private final long timeout;
         private transient @CheckForNull Channel channel;
 
@@ -404,7 +404,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final Reference<?> stream;
         private final long timeout;
         private final @CheckForNull Channel channel;
-        private final @Nonnull String id;
+        private final @NonNull String id;
         Tick(AtomicBoolean active, Reference<?> stream, long timeout, Channel channel, String id) {
             this.active = active;
             this.stream = stream;

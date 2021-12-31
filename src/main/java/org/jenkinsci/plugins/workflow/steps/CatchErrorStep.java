@@ -39,8 +39,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -56,9 +56,9 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     private static final long serialVersionUID = 1L;
 
     private @CheckForNull String message;
-    private @Nonnull String buildResult = Result.FAILURE.toString();
+    private @NonNull String buildResult = Result.FAILURE.toString();
     // This result is actually associated with the step, but this name makes more sense to users.
-    private @Nonnull String stageResult = Result.SUCCESS.toString();
+    private @NonNull String stageResult = Result.SUCCESS.toString();
     private boolean catchInterruptions = true;
 
     @DataBoundConstructor public CatchErrorStep() {}

@@ -39,7 +39,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 
-import javax.annotation.CheckForNull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.kohsuke.stapler.DataBoundConstructor;
