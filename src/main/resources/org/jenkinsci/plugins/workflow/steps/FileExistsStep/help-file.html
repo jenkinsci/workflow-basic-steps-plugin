@@ -1,3 +1,28 @@
 <div>
-    Relative (<code>/</code>-separated) path to file within a workspace to verify its existence.
+    Path to a file or a directory to verify its existence.
+    <ul>
+        <li>Both absolute and relative paths are supported. When using relative path, it is relative to the current working directory (by default: the workspace).</li>
+        <li>Both Unix and Windows path are supported using a <pre>/</pre> separator:
+<p><pre>
+node('Linux') {
+    if (fileExists('/usr/local/bin/jenkins.sh') {
+        sh '/usr/local/bin/jenkins.sh'
+    }
+}
+node('Windows') {
+    if (fileExists('C:/jenkins.exe') {
+        bat 'C:/jenkins.exe'
+    }
+}
+</pre></p>
+    When using a Windows path with the backslash (<pre>\</pre>) separator, do not forget to escape it:
+<p></pre>
+node('Windows') {
+    if (fileExists('src\\main\\resources') {
+        echo 'Found a directory resources.'
+    }
+}
+</pre></p>
+        </li>
+    </ul>
 </div>
