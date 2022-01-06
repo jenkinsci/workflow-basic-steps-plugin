@@ -37,7 +37,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.Fingerprinter;
 import java.io.IOException;
 import java.util.List;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
 import jenkins.tasks.SimpleBuildStep;
@@ -175,13 +175,13 @@ public class CoreStepTest {
         }
 
         @Override
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
             assertNull(env.get("BUILD_ID"));
             assertEquals("JENKINS-29144", env.get("TICKET"));
         }
 
         @Override
-        public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
             fail("This method should not get called.");
         }
 
@@ -207,10 +207,10 @@ public class CoreStepTest {
         @DataBoundConstructor
         public BuilderWithWorkspaceRequirement() {
         }
-        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required, but not provided!");
         }
-        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required and provided.");
         }
         // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
@@ -241,10 +241,10 @@ public class CoreStepTest {
         @DataBoundConstructor
         public BuilderWithoutWorkspaceRequirement() {
         }
-        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull EnvVars env, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed.");
         }
-        @Override public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull EnvVars env, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        @Override public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed, but provided.");
         }
         @Override public boolean requiresWorkspace() {

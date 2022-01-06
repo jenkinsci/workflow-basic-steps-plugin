@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -136,7 +136,7 @@ public class CoreWrapperStep extends Step {
 
             private static final long serialVersionUID = 1;
 
-            private final @Nonnull SimpleBuildWrapper.Disposer disposer;
+            private final @NonNull SimpleBuildWrapper.Disposer disposer;
 
             Callback2(SimpleBuildWrapper.Disposer disposer) {
                 this.disposer = disposer;
@@ -166,9 +166,9 @@ public class CoreWrapperStep extends Step {
 
         private static final long serialVersionUID = 1;
 
-        private final @Nonnull SimpleBuildWrapper.Disposer disposer;
+        private final @NonNull SimpleBuildWrapper.Disposer disposer;
 
-        Callback(@Nonnull SimpleBuildWrapper.Disposer disposer) {
+        Callback(@NonNull SimpleBuildWrapper.Disposer disposer) {
             this.disposer = disposer;
         }
 

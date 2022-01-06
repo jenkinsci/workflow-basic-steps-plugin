@@ -36,7 +36,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.Transport;
@@ -73,7 +73,7 @@ public class MailStep extends Step {
     private String mimeType;
 
     @DataBoundConstructor
-    public MailStep(@Nonnull String subject, @Nonnull String body) {
+    public MailStep(@NonNull String subject, @NonNull String body) {
         this.subject = subject;
         this.body = body;
     }
