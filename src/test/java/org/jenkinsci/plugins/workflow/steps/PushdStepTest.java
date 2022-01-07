@@ -24,12 +24,15 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.FilePath;
+import hudson.slaves.DumbSlave;
 import java.util.logging.Level;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import static org.junit.Assert.assertNotNull;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
@@ -53,8 +56,9 @@ public class PushdStepTest {
 
     @Test public void restarting() throws Throwable {
         sessions.then(j -> {
+            j.createSlave("remote", null, null);
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition("node {dir('subdir') {semaphore 'restarting'; echo(/now the pwd=${pwd()}/)}}", true));
+            p.setDefinition(new CpsFlowDefinition("node('remote') {dir('subdir') {semaphore 'restarting'; echo(/now the pwd=${pwd()}/)}}", true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarting/1", b);
         });
@@ -62,7 +66,12 @@ public class PushdStepTest {
             SemaphoreStep.success("restarting/1", null);
             WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
             WorkflowRun b = p.getLastBuild();
-            j.assertLogContains("now the pwd=" + j.jenkins.getWorkspaceFor(p).child("subdir"), j.assertBuildStatusSuccess(j.waitForCompletion(b)));
+            DumbSlave agent = (DumbSlave) j.jenkins.getNode("remote");
+            assertNotNull(agent);
+            j.waitOnline(agent);
+            FilePath ws = agent.getWorkspaceFor(p);
+            assertNotNull(ws);
+            j.assertLogContains("now the pwd=" + ws.child("subdir"), j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
