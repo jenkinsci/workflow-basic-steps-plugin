@@ -64,7 +64,7 @@
     <properties>
         <revision>2.25</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.263.1</jenkins.version>
+        <jenkins.version>2.329-rc31978.fa_f50a_a_d3e46</jenkins.version> <!-- TODO https://github.com/jenkinsci/jenkins/pull/6165 -->
         <java.level>8</java.level>
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
@@ -73,8 +73,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.263.x</artifactId>
-                <version>984.vb5eaac999a7e</version>
+                <artifactId>bom-weekly</artifactId>
+                <version>1090.v0a_33df40457a_</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -143,6 +143,12 @@
             <artifactId>javadoc</artifactId>
             <version>1.6</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci</groupId>
+                    <artifactId>symbol-annotation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
