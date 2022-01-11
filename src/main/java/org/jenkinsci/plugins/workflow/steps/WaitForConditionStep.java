@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.base.Function;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
