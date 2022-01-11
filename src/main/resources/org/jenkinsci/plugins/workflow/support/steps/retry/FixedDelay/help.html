@@ -1,0 +1,12 @@
+<div>
+    Fixed Delay is a Retry Delay option that allows the you to configure the Retry
+    so that there is a fixed amount of time <code>TimeUnit</code>before the system 
+    tries to execute an action in which an exception was thrown in the previous 
+    execution. An example of the usage of <code>fixed(delay,unit) </code>in a 
+    pipeline retry step looks like:
+    
+    <code>retry(count: 4, delay: fixed(time: 2, unit: 'SECONDS'), useRetryDelay: true) {
+            error("oops")
+        }
+    </code>
+</div>

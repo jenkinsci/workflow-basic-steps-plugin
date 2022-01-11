@@ -24,28 +24,47 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.Extension;
-import hudson.model.TaskListener;
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+
+import org.jenkinsci.plugins.workflow.support.steps.retry.RetryDelay;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import hudson.model.TaskListener;
 
 /**
  * Executes the body up to N times.
  *
  * @author Kohsuke Kawaguchi
  */
-public class RetryStep extends Step {
+public class RetryStep extends Step implements Serializable {
     
     private final int count;
+    private RetryDelay delay = null;
+    
+    public int left;
 
     @DataBoundConstructor
     public RetryStep(int count) {
         this.count = count;
+        this.left = count;
     }
 
     public int getCount() {
         return count;
+    }
+
+    @DataBoundSetter public void setDelay(RetryDelay delay) {
+        this.delay = delay;
+    }
+
+    public RetryDelay getDelay() {
+        return delay;
     }
 
     @Override
@@ -55,7 +74,7 @@ public class RetryStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new RetryStepExecution(count, context);
+        return new RetryStepExecution(this, context);
     }
 
     @Extension
@@ -81,6 +100,10 @@ public class RetryStep extends Step {
             return Collections.singleton(TaskListener.class);
         }
 
+        public Collection<? extends Descriptor<?>> getApplicableDescriptors() {
+            return RetryDelay.RetryDelayDescriptor.all();
+        }
     }
 
+    private static final long serialVersionUID = 1L;
 }
