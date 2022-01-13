@@ -47,15 +47,13 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static /* not final */ boolean forceInterruption = SystemProperties.getBoolean(TimeoutStepExecution.class.getName() + ".forceInterruption");
 
-    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final TimeoutStep step;
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
     private long timeout;
     private long end = 0;
 
-    /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
+    /** Used to track whether this is timing out on inactivity. */
     private final boolean activity;
 
     /**
@@ -71,7 +69,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     TimeoutStepExecution(TimeoutStep step, StepContext context) {
         super(context);
-        this.step = step;
         this.activity = step.isActivity();
         id = activity ? UUID.randomUUID().toString() : null;
         timeout = step.getUnit().toMillis(step.getTime());
