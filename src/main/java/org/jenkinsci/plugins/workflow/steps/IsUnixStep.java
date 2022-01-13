@@ -61,9 +61,6 @@ public class IsUnixStep extends Step {
             return "isUnix";
         }
 
-        @Override public String getDisplayName() {
-            return "Checks if running on a Unix-like node";
-        }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(Launcher.class);
