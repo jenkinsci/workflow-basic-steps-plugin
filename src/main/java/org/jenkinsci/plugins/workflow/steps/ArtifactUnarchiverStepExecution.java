@@ -44,7 +44,7 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
         for (Entry<String, String> e : mapping.entrySet()) {
             FilePath dst = new FilePath(getContext().get(FilePath.class), e.getValue());
             String src = e.getKey();
-            Collection<String> all = am.root().list(src, null, true);
+            Collection<String> all = am.root().list(src.replace('\\', '/'), null, true);
             if (all.isEmpty()) {
                 throw new AbortException("no artifacts to unarchive in " + src);
             } else if (all.size() == 1 && all.stream().findFirst().get().equals(src)) {
