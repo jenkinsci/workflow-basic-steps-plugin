@@ -120,7 +120,7 @@ public final class SleepStep extends Step {
             if (end > now) {
                 return "sleeping for another " + Util.getTimeSpanString(end - now);
             } else {
-                return "should have stopped sleeping " + Util.getTimeSpanString(now - end);
+                return "should have stopped sleeping " + Util.getTimeSpanString(now - end) + " ago";
             }
         }
 
