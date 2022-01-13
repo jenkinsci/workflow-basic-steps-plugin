@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
@@ -57,6 +58,7 @@ public final class FileExistsStep extends Step {
             return "fileExists";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Verify if file exists in workspace";
         }

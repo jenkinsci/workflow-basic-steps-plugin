@@ -51,7 +51,6 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,11 +61,17 @@ import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.mock_javamail.Mailbox;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
 public class CoreStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsRule r = new JenkinsRule();
-    private SnippetizerTester st = new SnippetizerTester(r);
+    private final SnippetizerTester st = new SnippetizerTester(r);
 
     @Test public void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");

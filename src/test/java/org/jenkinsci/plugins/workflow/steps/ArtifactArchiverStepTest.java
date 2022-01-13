@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.util.VirtualFile;
@@ -46,7 +47,7 @@ public class ArtifactArchiverStepTest {
         VirtualFile archivedFile = b.getArtifactManager().root().child("msg.out");
         assertTrue(archivedFile.exists());
         try (InputStream stream = archivedFile.open()) {
-            assertEquals("hello world", IOUtils.toString(stream));
+            assertEquals("hello world", IOUtils.toString(stream, StandardCharsets.UTF_8));
         }
         j.assertLogContains(Messages.ArtifactArchiverStepExecution_Deprecated(), b);
     }
@@ -78,7 +79,7 @@ public class ArtifactArchiverStepTest {
         VirtualFile archivedFile = b.getArtifactManager().root().child("a/b/2");
         assertTrue(archivedFile.exists());
         try (InputStream stream = archivedFile.open()) {
-            assertEquals("two", IOUtils.toString(stream));
+            assertEquals("two", IOUtils.toString(stream, StandardCharsets.UTF_8));
         }
         j.assertLogContains("one/two", b);
     }

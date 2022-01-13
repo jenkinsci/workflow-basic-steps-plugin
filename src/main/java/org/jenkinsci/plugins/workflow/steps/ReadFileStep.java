@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
@@ -81,6 +82,7 @@ public final class ReadFileStep extends Step {
             return "readFile";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Read file from workspace";
         }

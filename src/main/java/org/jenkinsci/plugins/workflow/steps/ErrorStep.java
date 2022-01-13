@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
@@ -71,6 +72,7 @@ public final class ErrorStep extends Step {
             return "error";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Error signal";
         }
