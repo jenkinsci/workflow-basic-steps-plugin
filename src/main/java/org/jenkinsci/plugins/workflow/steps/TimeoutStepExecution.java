@@ -83,7 +83,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         BodyInvoker bodyInvoker = context.newBodyInvoker()
                 .withCallback(new Callback());
 
-        if (step.isActivity()) {
+        if (activity) {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
