@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import java.util.Collections;
@@ -54,6 +55,7 @@ public final class DeleteDirStep extends Step {
             return "deleteDir";
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Recursively delete the current directory from the workspace";

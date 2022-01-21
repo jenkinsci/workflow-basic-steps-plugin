@@ -108,6 +108,7 @@ public class MailStep extends Step {
             return "mail";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Mail";
         }

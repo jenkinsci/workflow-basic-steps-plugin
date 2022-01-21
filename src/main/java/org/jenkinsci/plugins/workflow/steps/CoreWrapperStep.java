@@ -138,7 +138,7 @@ public class CoreWrapperStep extends Step {
 
             private final @NonNull SimpleBuildWrapper.Disposer disposer;
 
-            Callback2(SimpleBuildWrapper.Disposer disposer) {
+            Callback2(@NonNull SimpleBuildWrapper.Disposer disposer) {
                 this.disposer = disposer;
             }
 
@@ -203,6 +203,7 @@ public class CoreWrapperStep extends Step {
             return "wrap";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "General Build Wrapper";
         }

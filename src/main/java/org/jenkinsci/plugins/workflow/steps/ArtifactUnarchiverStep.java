@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
@@ -36,6 +37,7 @@ public class ArtifactUnarchiverStep extends Step {
             return "unarchive";
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Copy archived artifacts into the workspace";

@@ -63,6 +63,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
 
     @DataBoundConstructor public CatchErrorStep() {}
 
+    @CheckForNull
     @Override
     public String getMessage() {
         return message;
@@ -73,11 +74,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         this.message = Util.fixEmptyAndTrim(message);
     }
 
+    @NonNull
     @Override
     public Result getBuildResultOnError() {
         return Result.fromString(buildResult);
     }
 
+    @NonNull
     public String getBuildResult() {
         return buildResult;
     }
@@ -93,11 +96,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         this.buildResult = buildResult;
     }
 
+    @NonNull
     @Override
     public Result getStepResultOnError() {
         return Result.fromString(stageResult);
     }
 
+    @NonNull
     public String getStageResult() {
         return stageResult;
     }
@@ -152,6 +157,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             return "catchError";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Catch error and set build result to failure";
         }
@@ -267,11 +273,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             return null;
         }
 
+        @NonNull
         @Override
         public Result getBuildResultOnError() {
             return Result.FAILURE;
         }
 
+        @NonNull
         @Override
         public Result getStepResultOnError() {
             return Result.SUCCESS;

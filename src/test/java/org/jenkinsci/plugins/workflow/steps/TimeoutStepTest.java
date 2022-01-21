@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Functions;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -36,6 +37,7 @@ import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
 import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
@@ -48,15 +50,12 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsSessionRule;
@@ -341,7 +340,7 @@ public class TimeoutStepTest {
             @Override public boolean start() throws Exception {
                 return false;
             }
-            @Override public void stop(Throwable cause) throws Exception {
+            @Override public void stop(@NonNull Throwable cause) throws Exception {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }

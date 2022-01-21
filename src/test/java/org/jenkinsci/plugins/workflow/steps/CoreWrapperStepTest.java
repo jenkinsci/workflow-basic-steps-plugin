@@ -68,18 +68,19 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.*;
-import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class CoreWrapperStepTest {
 
@@ -132,6 +133,7 @@ public class CoreWrapperStepTest {
         }
         @Symbol("mock")
         @TestExtension("useWrapper") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "MockWrapper";
             }
@@ -178,6 +180,7 @@ public class CoreWrapperStepTest {
             context.env("TESTVAR", "wrapped");
         }
         @TestExtension("envStickiness") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "OneVarWrapper";
             }
@@ -201,7 +204,7 @@ public class CoreWrapperStepTest {
     public static class WrapperWithLogger extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithLogger() {}
         @Override public void setUp(SimpleBuildWrapper.Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {}
-        @Override public ConsoleLogFilter createLoggerDecorator(Run<?,?> build) {
+        @Override public ConsoleLogFilter createLoggerDecorator(@NonNull Run<?,?> build) {
             return new UpcaseFilter();
         }
         private static class UpcaseFilter extends ConsoleLogFilter implements Serializable {
@@ -216,6 +219,7 @@ public class CoreWrapperStepTest {
             }
         }
         @TestExtension("loggerDecorator") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "WrapperWithLogger";
             }

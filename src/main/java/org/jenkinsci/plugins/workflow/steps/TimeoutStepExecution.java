@@ -47,16 +47,14 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static /* not final */ boolean forceInterruption = SystemProperties.getBoolean(TimeoutStepExecution.class.getName() + ".forceInterruption");
 
-    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final TimeoutStep step;
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
 
     private long timeout;
     private long end = 0;
 
-    /** Used to track whether this is timing out on inactivity without needing to reference {@link #step}. */
-    private boolean activity = false;
+    /** Used to track whether this is timing out on inactivity. */
+    private final boolean activity;
 
     /**
      * Whether we are forcing the body to end.
@@ -71,7 +69,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     TimeoutStepExecution(TimeoutStep step, StepContext context) {
         super(context);
-        this.step = step;
         this.activity = step.isActivity();
         id = activity ? UUID.randomUUID().toString() : null;
         timeout = step.getUnit().toMillis(step.getTime());
@@ -83,7 +80,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         BodyInvoker bodyInvoker = context.newBodyInvoker()
                 .withCallback(new Callback());
 
-        if (step.isActivity()) {
+        if (activity) {
             bodyInvoker = bodyInvoker.withContext(
                     BodyInvoker.mergeConsoleLogFilters(
                             context.get(ConsoleLogFilter.class),
@@ -140,12 +137,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
                 }
             }
-            killer = Timer.get().schedule(new Runnable() {
-                @Override
-                public void run() {
-                    cancel();
-                }
-            }, delay, TimeUnit.MILLISECONDS);
+            killer = Timer.get().schedule(this::cancel, delay, TimeUnit.MILLISECONDS);
         } else {
             listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(- delay) + " ago");
             cancel();
@@ -182,25 +174,23 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 */
                 final ListenableFuture<List<StepExecution>> currentExecutions = exec.getCurrentExecutions(true);
                 // TODO would use Futures.addCallback but this is still @Beta in Guava 19 and the Pipeline copy is in workflow-support on which we have no dep
-                currentExecutions.addListener(new Runnable() {
-                    @Override public void run() {
-                        assert currentExecutions.isDone();
-                        try {
-                            FlowNode outer = getContext().get(FlowNode.class); // timeout
-                            for (StepExecution exec : currentExecutions.get()) {
-                                FlowNode inner = exec.getContext().get(FlowNode.class); // some deadbeat step, perhaps
-                                LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
-                                scanner.setup(inner);
-                                for (FlowNode enclosing : scanner) {
-                                    if (enclosing.equals(outer)) {
-                                        exec.getContext().onFailure(death);
-                                        break;
-                                    }
+                currentExecutions.addListener(() -> {
+                    assert currentExecutions.isDone();
+                    try {
+                        FlowNode outer = getContext().get(FlowNode.class); // timeout
+                        for (StepExecution exec1 : currentExecutions.get()) {
+                            FlowNode inner = exec1.getContext().get(FlowNode.class); // some deadbeat step, perhaps
+                            LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
+                            scanner.setup(inner);
+                            for (FlowNode enclosing : scanner) {
+                                if (enclosing.equals(outer)) {
+                                    exec1.getContext().onFailure(death);
+                                    break;
                                 }
                             }
-                        } catch (IOException | InterruptedException | ExecutionException x) {
-                            LOGGER.log(Level.WARNING, null, x);
                         }
+                    } catch (IOException | InterruptedException | ExecutionException x) {
+                        LOGGER.log(Level.WARNING, null, x);
                     }
                 }, newExecutorService());
             }
@@ -337,7 +327,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         private final @NonNull String id;
 
-        ResetTimer(String id) {
+        ResetTimer(@NonNull String id) {
             this.id = id;
         }
 
@@ -360,7 +350,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final long timeout;
         private transient @CheckForNull Channel channel;
 
-        ConsoleLogFilterImpl2(String id, long timeout) {
+        ConsoleLogFilterImpl2(@NonNull String id, long timeout) {
             this.id = id;
             this.timeout = timeout;
         }
@@ -405,7 +395,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final long timeout;
         private final @CheckForNull Channel channel;
         private final @NonNull String id;
-        Tick(AtomicBoolean active, Reference<?> stream, long timeout, Channel channel, String id) {
+        Tick(AtomicBoolean active, Reference<?> stream, long timeout, @CheckForNull Channel channel, @NonNull String id) {
             this.active = active;
             this.stream = stream;
             this.timeout = timeout;
