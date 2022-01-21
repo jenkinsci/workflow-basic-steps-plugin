@@ -38,7 +38,7 @@ import hudson.tasks.Fingerprinter;
 import java.io.IOException;
 import java.util.List;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
 import jenkins.tasks.SimpleBuildStep;
 import org.hamcrest.Matchers;

@@ -25,8 +25,8 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
 import java.util.List;
-import javax.mail.Message;
-import javax.mail.internet.MimeMultipart;
+import jakarta.mail.Message;
+import jakarta.mail.internet.MimeMultipart;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
