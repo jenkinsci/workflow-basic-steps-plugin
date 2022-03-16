@@ -65,4 +65,14 @@ public interface CatchExecutionOptions extends Serializable {
      * not interfere with their intended behavior.
      */
     boolean isCatchInterruptions();
+
+    /**
+     * When set or not a result for the current build.
+     * <p>
+     * Return {@code false} to leave the build result unchanged, {@code true} to
+     * use the value of {@link #getBuildResultOnError()} as build result.
+     */
+    default boolean getSetBuildResult() {
+        return true;
+    }
 }

@@ -51,6 +51,7 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
 
     private final String message;
     private boolean catchInterruptions = true;
+    private Boolean setBuildResult = Boolean.TRUE;
 
     @DataBoundConstructor
     public WarnErrorStep(String message) {
@@ -88,6 +89,15 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
         this.catchInterruptions = catchInterruptions;
     }
 
+    public boolean getSetBuildResult() {
+        return setBuildResult == null || setBuildResult;
+    }
+
+    @DataBoundSetter
+    public void setSetBuildResult(Boolean setBuildResult) {
+        this.setBuildResult = setBuildResult;
+    }
+
     @Override
     public StepExecution start(StepContext context) throws Exception {
         return new CatchErrorStep.Execution(context, this);
@@ -103,7 +113,7 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
         @NonNull
         @Override
         public String getDisplayName() {
-            return "Catch error and set build and stage result to unstable";
+            return "Catch error and set build and/or stage result to unstable";
         }
 
         @Override public boolean takesImplicitBlockArgument() {

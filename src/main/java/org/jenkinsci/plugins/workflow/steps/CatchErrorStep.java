@@ -247,7 +247,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                     } else {
                         Functions.printStackTrace(t, listener.getLogger());
                     }
-                    if (buildResult.isWorseThan(Result.SUCCESS)) {
+
+                    if (options.getSetBuildResult() && buildResult.isWorseThan(Result.SUCCESS)) {
                         context.get(Run.class).setResult(buildResult);
                     }
                     if (stepResult.isWorseThan(Result.SUCCESS)) {

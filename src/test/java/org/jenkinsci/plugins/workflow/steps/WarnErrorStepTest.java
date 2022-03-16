@@ -53,6 +53,17 @@ public class WarnErrorStepTest {
         assertCatchError(r, b, Result.UNSTABLE, Result.UNSTABLE, true);
     }
 
+    @Test
+    @Issue("JENKINS-67697")
+    public void doNotSetBuildResult() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("warnError(message: 'caught error', setBuildResult: false) {\n" +
+                "  error 'oops'\n" +
+                "}", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.SUCCESS, Result.UNSTABLE, true);
+    }
+
     @Test public void requiresMessage() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
