@@ -57,6 +57,15 @@ public class UnstableStepTest {
     }
 
     @Test
+    @Issue("JENKINS-67697")
+    public void doNotSetBuildStatus() throws Exception {
+        WorkflowJob p = r.createProject(WorkflowJob.class);
+        p.setDefinition(new CpsFlowDefinition("unstable(message: 'oops', setBuildStatus: 'false')", true));
+        WorkflowRun b = r.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0));
+        assertWarning(b, "oops");
+    }
+
+    @Test
     public void messageRequired() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(new CpsFlowDefinition("unstable()", true));

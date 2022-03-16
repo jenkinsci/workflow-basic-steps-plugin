@@ -37,11 +37,13 @@ import java.util.Set;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 public class UnstableStep extends Step {
 
     private final String message;
+    private Boolean setBuildStatus = Boolean.TRUE;
 
     @DataBoundConstructor
     public UnstableStep(String message) {
@@ -54,6 +56,15 @@ public class UnstableStep extends Step {
 
     public String getMessage() {
         return message;
+    }
+
+    public Boolean getSetBuildStatus() {
+        return setBuildStatus;
+    }
+
+    @DataBoundSetter
+    public void setSetBuildStatus(Boolean setBuildStatus) {
+        this.setBuildStatus = setBuildStatus;
     }
 
     @Override
@@ -72,9 +83,12 @@ public class UnstableStep extends Step {
 
         @Override
         protected Void run() throws Exception {
-            getContext().get(FlowNode.class).addOrReplaceAction(new WarningAction(Result.UNSTABLE).withMessage(step.message));
-            getContext().get(Run.class).setResult(Result.UNSTABLE);
-            getContext().get(TaskListener.class).getLogger().append("WARNING: ").println(step.message);
+            StepContext context = getContext();
+            context.get(FlowNode.class).addOrReplaceAction(new WarningAction(Result.UNSTABLE).withMessage(step.message));
+            if (step.setBuildStatus == null || step.setBuildStatus) {
+                context.get(Run.class).setResult(Result.UNSTABLE);
+            }
+            context.get(TaskListener.class).getLogger().append("WARNING: ").println(step.message);
             return null;
         }
     }

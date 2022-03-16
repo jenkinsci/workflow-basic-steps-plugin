@@ -28,4 +28,7 @@ THE SOFTWARE.
     <f:entry field="message" title="${%Message}">
         <f:textbox/>
     </f:entry>
+    <f:entry field="setBuildStatus" title="${%Do not set build result}">
+        <f:checkbox checked="true"/>
+    </f:entry>
 </j:jelly>
