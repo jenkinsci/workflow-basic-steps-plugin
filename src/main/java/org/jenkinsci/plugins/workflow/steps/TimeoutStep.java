@@ -4,6 +4,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
+import jenkins.util.SystemProperties;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -59,6 +60,9 @@ public class TimeoutStep extends Step implements Serializable {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
+        if (SystemProperties.getBoolean(TimeoutStep.class.getName() + ".threadsafe")) {
+            return new TimeoutStepExecutionThreadSafe(this, context);
+        }
         return new TimeoutStepExecution(this, context);
     }
 
