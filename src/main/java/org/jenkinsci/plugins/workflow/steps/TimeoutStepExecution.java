@@ -17,12 +17,9 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -192,7 +189,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     } catch (IOException | InterruptedException | ExecutionException x) {
                         LOGGER.log(Level.WARNING, null, x);
                     }
-                }, newExecutorService());
+                }, MoreExecutors.newDirectExecutorService());
             }
         } else {
             listener().getLogger().println("Cancelling nested steps due to timeout");
@@ -200,30 +197,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             forcible = true;
             timeout = GRACE_PERIOD;
             resetTimer();
-        }
-    }
-
-    /**
-     * Returns an {@link ExecutorService} to be used as a parameter in other methods. It calls
-     * {@code MoreExecutors#newDirectExecutorService} or falls back to {@code
-     * MoreExecutors#sameThreadExecutor} for compatibility with older (&lt; 18.0) versions of Guava.
-     *
-     * @since TODO
-     */
-    private static ExecutorService newExecutorService() {
-        try {
-            try {
-                // Guava older than 18
-                Method method = MoreExecutors.class.getMethod("sameThreadExecutor");
-                return (ExecutorService) method.invoke(null);
-            } catch (NoSuchMethodException e) {
-                // TODO Invert this to prefer the newer Guava method once Guava is upgraded in
-                // Jenkins core.
-                Method method = MoreExecutors.class.getMethod("newDirectExecutorService");
-                return (ExecutorService) method.invoke(null);
-            }
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
         }
     }
 
