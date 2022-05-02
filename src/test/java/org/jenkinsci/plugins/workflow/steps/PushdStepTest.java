@@ -44,7 +44,8 @@ public class PushdStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
-    @Rule public LoggerRule logging = new LoggerRule().record(FilePathDynamicContext.class, Level.FINE);
+    @Rule public LoggerRule logging = new LoggerRule().recordPackage(FilePathDynamicContext.class, Level.FINE);
+    // logging.recordPackage(FilePathPickle.class, Level.FINE);
 
     @Test public void basics() throws Throwable {
         sessions.then(j -> {

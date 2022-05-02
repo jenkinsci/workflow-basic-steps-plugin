@@ -28,8 +28,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 /**
  * Executes the body up to N times.
@@ -39,6 +42,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class RetryStep extends Step {
     
     private final int count;
+    private List<ErrorCondition> errorConditions;
 
     @DataBoundConstructor
     public RetryStep(int count) {
@@ -49,6 +53,14 @@ public class RetryStep extends Step {
         return count;
     }
 
+    public List<ErrorCondition> getErrorConditions() {
+        return errorConditions;
+    }
+
+    @DataBoundSetter public void setErrorConditions(List<ErrorCondition> errorConditions) {
+        this.errorConditions = errorConditions;
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
@@ -56,7 +68,7 @@ public class RetryStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new RetryStepExecution(count, context);
+        return new RetryStepExecution(count, context, errorConditions);
     }
 
     @Extension

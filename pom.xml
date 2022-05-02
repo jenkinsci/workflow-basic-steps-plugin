@@ -96,6 +96,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
+            <version>1150.vea_8e33e127c8</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -124,6 +125,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
+            <!-- TODO <version>999999-SNAPSHOT</version> https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
