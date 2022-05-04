@@ -55,6 +55,7 @@ import java.util.Locale;
 import java.util.Map;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.logging.Level;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
@@ -79,15 +80,19 @@ import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepDynamicContext;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import org.jvnet.hudson.test.LoggerRule;
 
 public class CoreWrapperStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
+    @Rule public LoggerRule logging = new LoggerRule();
 
     @Test public void useWrapper() throws Throwable {
+        logging.record(ExecutorStepDynamicContext.class, Level.FINE);
         sessions.then(j -> {
                 new SnippetizerTester(j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Map<String,String> slaveEnv = new HashMap<>();
@@ -106,6 +111,7 @@ public class CoreWrapperStepTest {
                 SemaphoreStep.waitForStart("restarting/1", b);
         });
         sessions.then(j -> {
+                j.waitOnline((Slave) j.jenkins.getNode("slave")); // TODO otherwise sh will fail until the agent reconnects
                 SemaphoreStep.success("restarting/1", null);
                 WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
