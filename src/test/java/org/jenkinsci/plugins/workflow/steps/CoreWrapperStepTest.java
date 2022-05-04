@@ -257,8 +257,7 @@ public class CoreWrapperStepTest {
      * @see <a href="https://github.com/jenkinsci/jenkins/pull/1553/files#r23784822">explanation in core PR 1553</a>
      */
     public static Slave createSpecialEnvSlave(JenkinsRule rule, String nodeName, @CheckForNull String labels, Map<String,String> env) throws Exception {
-        @SuppressWarnings("deprecation") // keep consistency with original signature rather than force the caller to pass in a TemporaryFolder rule
-        File remoteFS = rule.createTmpDir();
+        File remoteFS = new File(rule.jenkins.getRootDir(), "agent-work-dirs/" + nodeName);
         SpecialEnvSlave slave = new SpecialEnvSlave(remoteFS, rule.createComputerLauncher(/* yes null */null), nodeName, labels != null ? labels : "", env);
         rule.jenkins.addNode(slave);
         return slave;
