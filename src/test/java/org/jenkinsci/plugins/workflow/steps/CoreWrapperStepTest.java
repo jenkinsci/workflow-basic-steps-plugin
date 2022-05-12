@@ -111,7 +111,6 @@ public class CoreWrapperStepTest {
                 SemaphoreStep.waitForStart("restarting/1", b);
         });
         sessions.then(j -> {
-                j.waitOnline((Slave) j.jenkins.getNode("slave")); // TODO otherwise sh will fail until the agent reconnects
                 SemaphoreStep.success("restarting/1", null);
                 WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();

@@ -73,7 +73,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.332.x</artifactId>
-                <version>1342.v729ca_3818e88</version>
+                <version>1370.vfa_e23fe119c3</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>1150.vea_8e33e127c8</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
+            <version>1159.v27cb_4545c3ff</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -110,23 +110,26 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
+            <version>2691.va_688a_c3d8fd0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
+            <version>2691.va_688a_c3d8fd0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-job</artifactId>
+            <version>1181.vcea_0362753c3</version> <!-- TODO https://github.com/jenkinsci/workflow-job-plugin/pull/260 -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
-            <version>1189.v39b_0b_d397ccf</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
+            <version>1200.v7231de192754</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
