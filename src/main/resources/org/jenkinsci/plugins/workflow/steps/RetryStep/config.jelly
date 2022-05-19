@@ -28,7 +28,7 @@ THE SOFTWARE.
     <f:entry field="count" title="${%Retry Count}">
         <f:number clazz="positive-number"/>
     </f:entry>
-    <f:entry field="errorConditions" title="${%Error conditions}">
+    <f:entry field="conditions" title="${%Error conditions}">
         <f:repeatableHeteroProperty hasHeader="true"/>
     </f:entry>
 </j:jelly>

@@ -74,7 +74,7 @@ public class RetryExecutorStepTest {
             s.setLabelString("dumb");
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                "retry(count: 2, errorConditions: [custom()]) {\n" +
+                "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
                 "    sh 'sleep 10'\n" +
                 "  }\n" +
@@ -101,7 +101,7 @@ public class RetryExecutorStepTest {
             s.setLabelString("dumb");
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                "retry(count: 2, errorConditions: [custom()]) {\n" +
+                "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
                 "    hang()\n" +
                 "  }\n" +
@@ -149,7 +149,7 @@ public class RetryExecutorStepTest {
             s.setLabelString("dumb");
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                "retry(count: 2, errorConditions: [custom()]) {\n" +
+                "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
                 "    semaphore 'wait'\n" +
                 "    isUnix()\n" +
@@ -181,7 +181,7 @@ public class RetryExecutorStepTest {
             s.setLabelString("dumb");
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                "retry(count: 2, errorConditions: [custom()]) {\n" +
+                "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
                 "    waitWithoutAgent()\n" +
                 "  }\n" +

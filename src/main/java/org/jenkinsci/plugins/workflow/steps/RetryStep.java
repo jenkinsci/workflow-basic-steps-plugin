@@ -42,7 +42,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 public class RetryStep extends Step {
     
     private final int count;
-    private List<ErrorCondition> errorConditions;
+    private List<ErrorCondition> conditions;
 
     @DataBoundConstructor
     public RetryStep(int count) {
@@ -53,12 +53,12 @@ public class RetryStep extends Step {
         return count;
     }
 
-    public List<ErrorCondition> getErrorConditions() {
-        return errorConditions;
+    public List<ErrorCondition> getConditions() {
+        return conditions;
     }
 
-    @DataBoundSetter public void setErrorConditions(List<ErrorCondition> errorConditions) {
-        this.errorConditions = errorConditions;
+    @DataBoundSetter public void setConditions(List<ErrorCondition> conditions) {
+        this.conditions = conditions;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class RetryStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new RetryStepExecution(count, context, errorConditions);
+        return new RetryStepExecution(count, context, conditions);
     }
 
     @Extension

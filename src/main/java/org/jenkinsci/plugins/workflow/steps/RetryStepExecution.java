@@ -19,19 +19,19 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
     private transient final int count;
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final @CheckForNull List<ErrorCondition> errorConditions;
+    private transient final @CheckForNull List<ErrorCondition> conditions;
 
-    RetryStepExecution(int count, StepContext context, List<ErrorCondition> errorConditions) {
+    RetryStepExecution(int count, StepContext context, List<ErrorCondition> conditions) {
         super(context);
         this.count = count;
-        this.errorConditions = errorConditions;
+        this.conditions = conditions;
     }
 
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
         context.newBodyInvoker()
-            .withCallback(new Callback(count, errorConditions))
+            .withCallback(new Callback(count, conditions))
             .start();
         return false;   // execution is asynchronous
     }
@@ -41,11 +41,11 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
     private static class Callback extends BodyExecutionCallback {
 
         private int left;
-        private final @CheckForNull List<ErrorCondition> errorConditions;
+        private final @CheckForNull List<ErrorCondition> conditions;
 
-        Callback(int count, List<ErrorCondition> errorConditions) {
+        Callback(int count, List<ErrorCondition> conditions) {
             left = count;
-            this.errorConditions = errorConditions;
+            this.conditions = conditions;
         }
 
         /* Could be added, but seems unnecessary, given the message already printed in onFailure:
@@ -68,7 +68,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
             try {
                 left--;
                 TaskListener l = context.get(TaskListener.class);
-                if (left > 0 && matchesErrorConditions(t, context)) {
+                if (left > 0 && matchesConditions(t, context)) {
                     if (t instanceof AbortException) {
                         l.error(t.getMessage());
                     } else if (t instanceof FlowInterruptedException) {
@@ -88,11 +88,11 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
             }
         }
 
-        private boolean matchesErrorConditions(Throwable t, StepContext context) throws IOException, InterruptedException {
-            if (errorConditions == null || errorConditions.isEmpty()) {
+        private boolean matchesConditions(Throwable t, StepContext context) throws IOException, InterruptedException {
+            if (conditions == null || conditions.isEmpty()) {
                 return !(t instanceof FlowInterruptedException) || !((FlowInterruptedException) t).isActualInterruption();
             }
-            for (ErrorCondition ec : errorConditions) {
+            for (ErrorCondition ec : conditions) {
                 if (ec.test(t, context)) {
                     return true;
                 }
