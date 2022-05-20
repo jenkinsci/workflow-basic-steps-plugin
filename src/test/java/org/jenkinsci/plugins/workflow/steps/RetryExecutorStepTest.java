@@ -33,10 +33,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.durabletask.FileMonitoringTask;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
+import org.jenkinsci.plugins.workflow.flow.FlowExecutionList;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
@@ -175,7 +177,7 @@ public class RetryExecutorStepTest {
 
     @Issue({"JENKINS-49707", "JENKINS-30383"})
     @Test public void retryNodeBlockSynchAcrossRestarts() throws Throwable {
-        logging.record(ExecutorStepExecution.class, Level.FINE);
+        logging.record(ExecutorStepExecution.class, Level.FINE).record(FlowExecutionList.class, Level.FINE);
         sessions.then(r -> {
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
@@ -206,7 +208,14 @@ public class RetryExecutorStepTest {
         @Override public StepExecution start(StepContext context) throws Exception {
             return StepExecutions.synchronousNonBlocking(context, c -> {
                 c.get(TaskListener.class).getLogger().println("Sleeping without agent");
+                Jenkins j = Jenkins.get();
                 Thread.sleep(10_000);
+                if (Jenkins.get() != j) {
+                    // Finished sleeping in another session, which outside of JenkinsSessionRule is impossible.
+                    // Avoid marking the step as completed since the Java objects here are stale.
+                    // See https://github.com/jenkinsci/workflow-cps-plugin/pull/540.
+                    Thread.sleep(Long.MAX_VALUE);
+                }
                 return null;
             });
         }
