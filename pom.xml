@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>1159.v27cb_4545c3ff</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
+            <version>1166.v459a_d69b_3271</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -110,13 +110,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2691.va_688a_c3d8fd0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
+            <version>2713.v8b_f3c8cb_97a_0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2691.va_688a_c3d8fd0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
+            <version>2713.v8b_f3c8cb_97a_0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -129,7 +129,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
-            <version>1200.v7231de192754</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
+            <version>1204.v2a_40b_1127a_a_8</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -189,6 +189,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>script-security</artifactId>
+            <version>1172.v35f6a_0b_8207e</version> <!-- TODO until in BOM -->
             <scope>test</scope>
         </dependency>
         <dependency>
