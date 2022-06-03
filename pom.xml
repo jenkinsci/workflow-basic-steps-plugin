@@ -64,6 +64,7 @@
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
+        <jenkins-test-harness.version>1746.v2b_3c5d1983b_e</jenkins-test-harness.version> <!-- TODO until in plugin-pom -->
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
@@ -72,7 +73,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.332.x</artifactId>
-                <version>1289.v5c4b_1c43511b_</version>
+                <version>1370.vfa_e23fe119c3</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -96,6 +97,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
+            <version>1171.vc28585a_716e7</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -124,6 +126,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
+            <version>1145.ve842533f4d9a_</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/231 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
