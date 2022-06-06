@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Functions;
+import hudson.Launcher;
 import hudson.model.Slave;
 import hudson.model.TaskListener;
 import java.io.IOException;
@@ -45,7 +46,6 @@ import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 import org.jenkinsci.plugins.workflow.support.steps.AgentErrorCondition;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -70,7 +70,6 @@ public class RetryExecutorStepTest {
 
     @Issue("JENKINS-49707")
     @Test public void retryNodeBlock() throws Throwable {
-        Assume.assumeFalse("TODO corresponding batch script TBD", Functions.isWindows());
         sessions.then(r -> {
             logging.record(DurableTaskStep.class, Level.FINE).record(FileMonitoringTask.class, Level.FINE).record(ExecutorStepExecution.class, Level.FINE);
             Slave s = inboundAgents.createAgent(r, "dumbo1");
@@ -80,7 +79,7 @@ public class RetryExecutorStepTest {
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
-                "    sh 'sleep 10'\n" +
+                "    if (isUnix()) {sh 'sleep 10'} else {powershell 'echo \"+ sleep\"; sleep 10'}\n" +
                 "  }\n" +
                 "}", true));
             WorkflowRun b = p.scheduleBuild2(0).waitForStart();
@@ -98,7 +97,6 @@ public class RetryExecutorStepTest {
 
     @Issue("JENKINS-49707")
     @Test public void retryNodeBlockSynch() throws Throwable {
-        Assume.assumeFalse("TODO corresponding Windows process TBD", Functions.isWindows());
         sessions.then(r -> {
             logging.record(ExecutorStepExecution.class, Level.FINE);
             Slave s = inboundAgents.createAgent(r, "dumbo1");
@@ -132,7 +130,14 @@ public class RetryExecutorStepTest {
         @DataBoundConstructor public HangStep() {}
         @Override public StepExecution start(StepContext context) throws Exception {
             return StepExecutions.synchronousNonBlocking(context, c -> {
-                c.get(hudson.Launcher.class).launch().cmds("sleep", "10").stdout(c.get(TaskListener.class)).start().join();
+                Launcher launcher = c.get(hudson.Launcher.class);
+                Launcher.ProcStarter procStarter = launcher.launch();
+                if (launcher.isUnix()) {
+                    procStarter.cmds("sleep", "10");
+                } else {
+                    procStarter.cmds("powershell", "-Command", "echo '$ sleep'; sleep 10");
+                }
+                procStarter.stdout(c.get(TaskListener.class)).start().join();
                 return null;
             });
         }
