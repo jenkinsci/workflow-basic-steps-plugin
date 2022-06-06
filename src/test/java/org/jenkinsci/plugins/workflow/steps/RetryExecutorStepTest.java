@@ -75,6 +75,7 @@ public class RetryExecutorStepTest {
             logging.record(DurableTaskStep.class, Level.FINE).record(FileMonitoringTask.class, Level.FINE).record(ExecutorStepExecution.class, Level.FINE);
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s); // to force setLabelString to be honored
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
@@ -89,7 +90,7 @@ public class RetryExecutorStepTest {
             r.waitForMessage(RetryThis.MESSAGE, b);
             s = inboundAgents.createAgent(r, "dumbo2");
             s.setLabelString("dumb");
-            r.jenkins.updateNode(s); // to force setLabelString to be honored
+            r.jenkins.updateNode(s);
             r.waitForMessage("Running on dumbo2 in ", b);
             r.assertBuildStatusSuccess(r.waitForCompletion(b));
         });
@@ -102,6 +103,7 @@ public class RetryExecutorStepTest {
             logging.record(ExecutorStepExecution.class, Level.FINE);
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s);
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
@@ -151,6 +153,7 @@ public class RetryExecutorStepTest {
         sessions.then(r -> {
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s);
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
@@ -184,6 +187,7 @@ public class RetryExecutorStepTest {
         sessions.then(r -> {
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s);
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
