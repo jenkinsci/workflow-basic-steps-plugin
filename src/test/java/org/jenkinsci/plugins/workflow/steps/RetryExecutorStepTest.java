@@ -79,7 +79,7 @@ public class RetryExecutorStepTest {
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
-                "    if (isUnix()) {sh 'sleep 10'} else {powershell 'echo \"+ sleep\"; sleep 10'}\n" +
+                "    if (isUnix()) {sh 'sleep 10'} else {bat 'echo + sleep && ping -n 10 localhost'}\n" +
                 "  }\n" +
                 "}", true));
             WorkflowRun b = p.scheduleBuild2(0).waitForStart();
@@ -135,7 +135,7 @@ public class RetryExecutorStepTest {
                 if (launcher.isUnix()) {
                     procStarter.cmds("sleep", "10");
                 } else {
-                    procStarter.cmds("powershell", "-Command", "echo '$ sleep'; sleep 10");
+                    procStarter.cmds("cmd", "/c", "echo $ sleep && ping -n 10 localhost");
                 }
                 procStarter.stdout(c.get(TaskListener.class)).start().join();
                 return null;
