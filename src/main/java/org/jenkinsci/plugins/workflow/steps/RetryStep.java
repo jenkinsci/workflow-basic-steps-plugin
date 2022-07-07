@@ -29,8 +29,11 @@ import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 /**
@@ -41,6 +44,7 @@ import org.kohsuke.stapler.QueryParameter;
 public class RetryStep extends Step {
     
     private final int count;
+    private List<ErrorCondition> conditions;
 
     @DataBoundConstructor
     public RetryStep(int count) {
@@ -51,6 +55,14 @@ public class RetryStep extends Step {
         return count;
     }
 
+    public List<ErrorCondition> getConditions() {
+        return conditions;
+    }
+
+    @DataBoundSetter public void setConditions(List<ErrorCondition> conditions) {
+        this.conditions = conditions;
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
@@ -58,7 +70,7 @@ public class RetryStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new RetryStepExecution(count, context);
+        return new RetryStepExecution(count, context, conditions);
     }
 
     @Extension
