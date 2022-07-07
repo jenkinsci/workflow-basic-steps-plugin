@@ -27,9 +27,11 @@ package org.jenkinsci.plugins.workflow.steps;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
+import hudson.util.FormValidation;
 import java.util.Collections;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  * Executes the body up to N times.
@@ -81,6 +83,16 @@ public class RetryStep extends Step {
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
+        }
+
+        public FormValidation doCheckCount(@QueryParameter int count) {
+            if (count < 1) {
+                return FormValidation.error("Count must be positive.");
+            } else if (count == 1) {
+                return FormValidation.warning("Count of one means that the retry step has no effect. Use ≥2.");
+            } else {
+                return FormValidation.ok();
+            }
         }
 
     }
