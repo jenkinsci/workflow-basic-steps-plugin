@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.40</version>
+        <version>4.42</version>
         <relativePath />
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -64,7 +64,6 @@
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
-        <jenkins-test-harness.version>1746.v2b_3c5d1983b_e</jenkins-test-harness.version> <!-- TODO until in plugin-pom -->
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
@@ -73,7 +72,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.332.x</artifactId>
-                <version>1370.vfa_e23fe119c3</version>
+                <version>1438.v6a_2c29d73f82</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -97,7 +96,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-api</artifactId>
-            <version>1171.vc28585a_716e7</version> <!-- TODO https://github.com/jenkinsci/workflow-api-plugin/pull/217 -->
+            <version>1182.v41475e53ea_43</version> <!-- TODO until in BOM -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -110,31 +109,23 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2713.v8b_f3c8cb_97a_0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2713.v8b_f3c8cb_97a_0</version> <!-- TODO https://github.com/jenkinsci/workflow-cps-plugin/pull/534 -->
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-job</artifactId>
-            <version>1181.vcea_0362753c3</version> <!-- TODO https://github.com/jenkinsci/workflow-job-plugin/pull/260 -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
-            <version>1204.v2a_40b_1127a_a_8</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-support</artifactId>
-            <scope>test</scope>
+            <version>1235.vb_9618c5d0471</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/180 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -184,12 +175,6 @@
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness-tools</artifactId>
             <version>2.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>script-security</artifactId>
-            <version>1172.v35f6a_0b_8207e</version> <!-- TODO until in BOM -->
             <scope>test</scope>
         </dependency>
         <dependency>

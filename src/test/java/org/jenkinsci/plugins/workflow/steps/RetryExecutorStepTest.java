@@ -25,6 +25,7 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.Functions;
+import hudson.Launcher;
 import hudson.model.Slave;
 import hudson.model.TaskListener;
 import java.io.IOException;
@@ -45,7 +46,6 @@ import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 import org.jenkinsci.plugins.workflow.support.steps.AgentErrorCondition;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,16 +69,16 @@ public class RetryExecutorStepTest {
 
     @Issue("JENKINS-49707")
     @Test public void retryNodeBlock() throws Throwable {
-        Assume.assumeFalse("TODO corresponding batch script TBD", Functions.isWindows());
         sessions.then(r -> {
             logging.record(DurableTaskStep.class, Level.FINE).record(FileMonitoringTask.class, Level.FINE).record(ExecutorStepExecution.class, Level.FINE);
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s); // to force setLabelString to be honored
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
                 "  node('dumb') {\n" +
-                "    sh 'sleep 10'\n" +
+                "    if (isUnix()) {sh 'sleep 10'} else {bat 'echo + sleep && ping -n 10 localhost'}\n" +
                 "  }\n" +
                 "}", true));
             WorkflowRun b = p.scheduleBuild2(0).waitForStart();
@@ -88,7 +88,7 @@ public class RetryExecutorStepTest {
             r.waitForMessage(RetryThis.MESSAGE, b);
             s = inboundAgents.createAgent(r, "dumbo2");
             s.setLabelString("dumb");
-            r.jenkins.updateNode(s); // to force setLabelString to be honored
+            r.jenkins.updateNode(s);
             r.waitForMessage("Running on dumbo2 in ", b);
             r.assertBuildStatusSuccess(r.waitForCompletion(b));
         });
@@ -96,11 +96,11 @@ public class RetryExecutorStepTest {
 
     @Issue("JENKINS-49707")
     @Test public void retryNodeBlockSynch() throws Throwable {
-        Assume.assumeFalse("TODO corresponding Windows process TBD", Functions.isWindows());
         sessions.then(r -> {
             logging.record(ExecutorStepExecution.class, Level.FINE);
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s);
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
@@ -129,7 +129,14 @@ public class RetryExecutorStepTest {
         @DataBoundConstructor public HangStep() {}
         @Override public StepExecution start(StepContext context) throws Exception {
             return StepExecutions.synchronousNonBlocking(context, c -> {
-                c.get(hudson.Launcher.class).launch().cmds("sleep", "10").stdout(c.get(TaskListener.class)).start().join();
+                Launcher launcher = c.get(hudson.Launcher.class);
+                Launcher.ProcStarter procStarter = launcher.launch();
+                if (launcher.isUnix()) {
+                    procStarter.cmds("sleep", "10");
+                } else {
+                    procStarter.cmds("cmd", "/c", "echo $ sleep && ping -n 10 localhost");
+                }
+                procStarter.stdout(c.get(TaskListener.class)).start().join();
                 return null;
             });
         }
@@ -149,6 +156,7 @@ public class RetryExecutorStepTest {
         sessions.then(r -> {
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s);
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
@@ -181,6 +189,7 @@ public class RetryExecutorStepTest {
         sessions.then(r -> {
             Slave s = inboundAgents.createAgent(r, "dumbo1");
             s.setLabelString("dumb");
+            r.jenkins.updateNode(s);
             WorkflowJob p = r.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "retry(count: 2, conditions: [custom()]) {\n" +
