@@ -1,26 +1,34 @@
 package org.jenkinsci.plugins.workflow.steps;
 
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import hudson.model.ParametersAction;
+import hudson.model.ParametersDefinitionProperty;
 import hudson.model.Result;
+import hudson.model.StringParameterDefinition;
+import hudson.model.StringParameterValue;
 import hudson.model.User;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
+import java.io.IOException;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
+import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.input.InputAction;
 import org.jenkinsci.plugins.workflow.support.steps.input.InputStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import static org.junit.Assert.*;
+import org.jvnet.hudson.test.TestExtension;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Tests {@link RetryStep}.
@@ -225,4 +233,22 @@ public class RetryStepTest {
         r.assertLogContains("try 1", run);
         r.assertLogContains("try 2", run);
     }
+
+    @Issue("JENKINS-49707")
+    @Test public void conditions() throws Exception {
+        WorkflowJob p = r.createProject(WorkflowJob.class);
+        p.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition("MSG")));
+        p.setDefinition(new CpsFlowDefinition("int i = 0; retry(count: 2, conditions: [nonfatal()]) {if (i++ == 0) {error MSG} else {echo 'ok'}}", true));
+        r.assertBuildStatusSuccess(p.scheduleBuild2(0, new ParametersAction(new StringParameterValue("MSG", "just a warning"))));
+        r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0, new ParametersAction(new StringParameterValue("MSG", "fatal error"))));
+    }
+    public static final class MyCondition extends ErrorCondition {
+        @DataBoundConstructor public MyCondition() {}
+        @Override public boolean test(Throwable error, StepContext context) throws IOException, InterruptedException {
+            return !error.getMessage().contains("fatal");
+        }
+        @Symbol("nonfatal")
+        @TestExtension("conditions") public static final class DescriptorImpl extends ErrorConditionDescriptor {}
+    }
+
 }
