@@ -86,7 +86,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>mailer</artifactId>
-            <version>410.va_7940d9ded39</version> <!-- TODO https://github.com/jenkinsci/mailer-plugin/pull/144 -->
+            <version>435.v79ef3972b_5c7</version> <!-- TODO until in BOM -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
