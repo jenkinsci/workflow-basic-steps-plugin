@@ -37,10 +37,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.mail.Address;
-import javax.mail.Message;
-import javax.mail.Transport;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Address;
+import jakarta.mail.Message;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.MimeMessage;
 
 /**
  * Simple email sender step.
