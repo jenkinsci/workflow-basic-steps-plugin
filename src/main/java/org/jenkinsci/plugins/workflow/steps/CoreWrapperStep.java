@@ -41,6 +41,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -49,6 +51,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * A step that runs a {@link SimpleBuildWrapper} as defined in Jenkins core.
  */
 public class CoreWrapperStep extends Step {
+
+    private static final Logger LOGGER = Logger.getLogger(CoreWrapperStep.class.getName());
 
     private final SimpleBuildWrapper delegate;
 
@@ -177,14 +181,25 @@ public class CoreWrapperStep extends Step {
             assert run != null;
             final TaskListener listener = context.get(TaskListener.class);
             assert listener != null;
-            final FilePath workspace = context.get(FilePath.class);
-            final Launcher launcher = context.get(Launcher.class);
+            FilePath workspace;
+            Launcher launcher;
             if (disposer.requiresWorkspace()) {
+                workspace = context.get(FilePath.class);
                 if (workspace == null) {
                     throw new MissingContextVariableException(FilePath.class);
                 }
+                launcher = context.get(Launcher.class);
                 if (launcher == null) {
                     throw new MissingContextVariableException(Launcher.class);
+                }
+            } else {
+                try {
+                    workspace = context.get(FilePath.class);
+                    launcher = context.get(Launcher.class);
+                } catch (IOException | InterruptedException x) {
+                    LOGGER.log(Level.FINE, null, x);
+                    workspace = null;
+                    launcher = null;
                 }
             }
             // always pass the workspace context when available, even when it is not strictly required
