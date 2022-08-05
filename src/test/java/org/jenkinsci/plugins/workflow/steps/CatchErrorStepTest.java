@@ -166,10 +166,10 @@ public class CatchErrorStepTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
                 "import jenkins.model.CauseOfInterruption\n" +
-                        "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
-                        "catchError(message: 'caught error') {\n" +
-                        "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
-                        "}", false));
+                "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
+                "catchError(message: 'caught error') {\n" +
+                "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
+                "}", false));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
     }
@@ -178,10 +178,10 @@ public class CatchErrorStepTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
                 "import jenkins.model.CauseOfInterruption\n" +
-                        "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
-                        "catchError(message: 'caught error', catchInterruptions: false) {\n" +
-                        "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
-                        "}", false));
+                "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
+                "catchError(message: 'caught error', catchInterruptions: false) {\n" +
+                "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
+                "}", false));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, null, false);
     }
