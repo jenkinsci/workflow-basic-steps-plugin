@@ -336,11 +336,13 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         @Override
         public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
                 throws IOException, InterruptedException {
-            // TODO if channel == null, we can safely ResetTimer.call synchronously from eol and skip the Tick
             AtomicBoolean active = new AtomicBoolean();
             OutputStream decorated = new LineTransformationOutputStream() {
                 @Override
                 protected void eol(byte[] b, int len) throws IOException {
+                    if (channel == null) {
+                        new ResetTimer(id).call();
+                    }
                     logger.write(b, 0, len);
                     active.set(true);
                 }
@@ -357,7 +359,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                     logger.close();
                 }
             };
-            new Tick(active, new WeakReference<>(decorated), timeout, channel, id).schedule();
+            if (channel != null) {
+                new Tick(active, new WeakReference<>(decorated), timeout, channel, id).schedule();
+            }
             return decorated;
         }
     }
