@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
@@ -60,7 +59,6 @@ import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsSessionRule;
-import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.recipes.LocalData;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -72,8 +70,6 @@ public class TimeoutStepTest {
     @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
 
     @Rule public GitSampleRepoRule git = new GitSampleRepoRule();
-
-    @Rule public LoggerRule logging = new LoggerRule().record(TimeoutStepExecution.class, Level.FINE);
 
     @Test public void configRoundTrip() throws Throwable {
         sessions.then(j -> {
@@ -216,14 +212,13 @@ public class TimeoutStepTest {
                         + "    echo 'NotHereYet';\n"
                         + "    sleep 10;\n"
                         + "    echo 'JustHere!';\n"
-                        + "    sleep 20;\n"
+                        + "    sleep 30;\n"
                         + "    echo 'ShouldNot!';\n"
                         + "  }\n"
                         + "}\n", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarted/1", b);
         });
-        Thread.sleep(10_000); // restarting should count as activity
         sessions.then(j -> {
                 WorkflowJob p = j.jenkins.getItemByFullName("restarted", WorkflowJob.class);
                 WorkflowRun b = p.getBuildByNumber(1);
