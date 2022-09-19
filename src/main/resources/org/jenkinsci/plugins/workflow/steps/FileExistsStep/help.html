@@ -9,8 +9,8 @@ stage ('Check for existence of index.html') {
     agent any # Could be a top-level directive or a stage level directive
     steps {
         script {
-            if (fileExists('src/main/rersources/index.html') {
-                echo "File src/main/rersources/index.html found!"
+            if (fileExists('src/main/resources/index.html')) {
+                echo "File src/main/resources/index.html found!"
             }
         }
     }
@@ -22,8 +22,8 @@ With the Declarative Syntax, it must be run in a stage with a defined agent (e.g
 <p><pre>
 # Scripted Syntax
 node {
-    if (fileExists('src/main/rersources/index.html') {
-        echo "File src/main/rersources/index.html found!"
+    if (fileExists('src/main/resources/index.html')) {
+        echo "File src/main/resources/index.html found!"
     }
 }
 </pre></p>
