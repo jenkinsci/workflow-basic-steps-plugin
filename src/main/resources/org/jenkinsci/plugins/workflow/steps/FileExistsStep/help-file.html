@@ -5,12 +5,12 @@
         <li>Both Unix and Windows path are supported using a <pre>/</pre> separator:
 <p><pre>
 node('Linux') {
-    if (fileExists('/usr/local/bin/jenkins.sh') {
+    if (fileExists('/usr/local/bin/jenkins.sh')) {
         sh '/usr/local/bin/jenkins.sh'
     }
 }
 node('Windows') {
-    if (fileExists('C:/jenkins.exe') {
+    if (fileExists('C:/jenkins.exe')) {
         bat 'C:/jenkins.exe'
     }
 }
@@ -18,7 +18,7 @@ node('Windows') {
     When using a Windows path with the backslash (<pre>\</pre>) separator, do not forget to escape it:
 <p></pre>
 node('Windows') {
-    if (fileExists('src\\main\\resources') {
+    if (fileExists('src\\main\\resources')) {
         echo 'Found a directory resources.'
     }
 }
