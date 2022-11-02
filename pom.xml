@@ -139,7 +139,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>javadoc</artifactId>
-            <version>217.v905b_86277a_2a_</version>
+            <version>226.v71211feb_e7e9</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
