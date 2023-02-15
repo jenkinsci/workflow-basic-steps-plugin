@@ -33,8 +33,8 @@ import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 /**
  * Temporarily changes the working directory.
@@ -71,9 +71,7 @@ public class PushdStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            Set<Class<?>> context = new HashSet<>();
-            Collections.addAll(context, TaskListener.class, FilePath.class);
-            return Collections.unmodifiableSet(context);
+            return Set.of(TaskListener.class, FilePath.class, FlowNode.class);
         }
         
         @Override public Set<? extends Class<?>> getProvidedContext() {
@@ -97,7 +95,7 @@ public class PushdStep extends Step {
             getContext().get(TaskListener.class).getLogger().println("Running in " + dir);
             getContext().newBodyInvoker()
                     // TODO perhaps should just be moved into workflow-durable-task-step?
-                    .withContext(FilePathDynamicContext.createContextualObject(dir))
+                    .withContext(FilePathDynamicContext.createContextualObject(dir, getContext().get(FlowNode.class)))
                     // Could use a dedicated BodyExecutionCallback here if we wished to print a message at the end ("Returning to ${cwd}"):
                     .withCallback(BodyExecutionCallback.wrap(getContext()))
                     .start();
