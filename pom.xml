@@ -79,7 +79,7 @@
             <dependency>
                 <groupId>org.jenkins-ci.plugins.workflow</groupId>
                 <artifactId>workflow-durable-task-step</artifactId>
-                <version>1226.v90702611ce45</version> <!-- TODO https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/293 -->
+                <version>1227.vdc0a_d1fd4338</version> <!-- TODO until in BOM -->
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -129,7 +129,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
-            <scope>runtime</scope> <!-- TODO switch to test once https://github.com/jenkinsci/workflow-durable-task-step-plugin/pull/293 is widely adopted -->
+            <scope>runtime</scope> <!-- TODO switch to test once 1227.vdc0a_d1fd4338 or later is widely adopted -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
