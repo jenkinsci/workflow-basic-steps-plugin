@@ -28,8 +28,8 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.49</version>
-        <relativePath />
+        <version>4.54</version>
+        <relativePath/>
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
     <artifactId>workflow-basic-steps</artifactId>
@@ -63,7 +63,7 @@
     </pluginRepositories>
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
-        <jenkins.version>2.332.1</jenkins.version>
+        <jenkins.version>2.361.4</jenkins.version>
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
@@ -71,8 +71,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.332.x</artifactId>
-                <version>1500.ve4d05cd32975</version>
+                <artifactId>bom-2.361.x</artifactId>
+                <version>1654.vcb_69d035fa_20</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -139,14 +139,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>javadoc</artifactId>
-            <version>226.v71211feb_e7e9</version>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jenkins-ci</groupId>
-                    <artifactId>symbol-annotation</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
