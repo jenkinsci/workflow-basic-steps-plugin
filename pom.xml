@@ -76,6 +76,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <dependency>
+                <groupId>org.jenkins-ci.plugins.workflow</groupId>
+                <artifactId>workflow-durable-task-step</artifactId>
+                <version>1227.vdc0a_d1fd4338</version> <!-- TODO until in BOM -->
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -124,6 +129,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
+            <scope>runtime</scope> <!-- TODO switch to test once 1227.vdc0a_d1fd4338 or later is widely adopted -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>

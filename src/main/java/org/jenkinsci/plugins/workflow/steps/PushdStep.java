@@ -24,84 +24,22 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.model.TaskListener;
-import org.jenkinsci.plugins.workflow.support.steps.FilePathDynamicContext;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 /**
- * Temporarily changes the working directory.
+ * @deprecated Only exists as a placeholder for old running builds; now {@code org.jenkinsci.plugins.workflow.support.steps.PushdStep}.
  */
-public class PushdStep extends Step {
+@Deprecated
+public class PushdStep {
 
-    private final String path;
-
-    @DataBoundConstructor public PushdStep(String path) {
-        this.path = path;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    @Override public StepExecution start(StepContext context) throws Exception {
-        return new Execution(path, context);
-    }
-
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
-
-        @Override public String getFunctionName() {
-            return "dir";
-        }
-
-        @NonNull
-        @Override public String getDisplayName() {
-            return "Change current directory";
-        }
-
-        @Override public boolean takesImplicitBlockArgument() {
-            return true;
-        }
-
-        @Override public Set<? extends Class<?>> getRequiredContext() {
-            Set<Class<?>> context = new HashSet<>();
-            Collections.addAll(context, TaskListener.class, FilePath.class);
-            return Collections.unmodifiableSet(context);
-        }
-        
-        @Override public Set<? extends Class<?>> getProvidedContext() {
-            return Collections.singleton(FilePath.class);
-        }
-
-    }
+    private PushdStep() {}
 
     public static class Execution extends AbstractStepExecutionImpl {
         
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String path;
-
-        Execution(String path, StepContext context) {
-            super(context);
-            this.path = path;
+        private Execution() {
+            throw new AssertionError("only deserialized");
         }
 
         @Override public boolean start() throws Exception {
-            FilePath dir = getContext().get(FilePath.class).child(path);
-            getContext().get(TaskListener.class).getLogger().println("Running in " + dir);
-            getContext().newBodyInvoker()
-                    // TODO perhaps should just be moved into workflow-durable-task-step?
-                    .withContext(FilePathDynamicContext.createContextualObject(dir))
-                    // Could use a dedicated BodyExecutionCallback here if we wished to print a message at the end ("Returning to ${cwd}"):
-                    .withCallback(BodyExecutionCallback.wrap(getContext()))
-                    .start();
-            return false;
+            throw new AssertionError("only deserialized");
         }
 
         @Override public void onResume() {}
