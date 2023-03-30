@@ -148,6 +148,7 @@ public class ReadWriteFileStepTest {
         assertThat("The data should round-trip correctly using Base64 encoding",
                 getBytes(p, "round-trip-base64"), equalTo(bytes));
         SemaphoreStep.success("bytes-checked/1", null);
+        r.assertBuildStatusSuccess(r.waitForCompletion(b));
     }
 
     private byte[] getBytes(TopLevelItem item, String fileName) throws Exception {
