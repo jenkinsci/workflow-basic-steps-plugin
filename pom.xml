@@ -79,7 +79,7 @@
             <dependency>
                 <groupId>org.jenkins-ci.plugins.workflow</groupId>
                 <artifactId>workflow-durable-task-step</artifactId>
-                <version>1227.vdc0a_d1fd4338</version> <!-- TODO until in BOM -->
+                <version>1241.v1a_63e465f943</version> <!-- TODO until in BOM -->
             </dependency>
         </dependencies>
     </dependencyManagement>
