@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.54</version>
+        <version>4.56</version>
         <relativePath/>
     </parent>
     <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -72,14 +72,9 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.361.x</artifactId>
-                <version>1654.vcb_69d035fa_20</version>
+                <version>1883.vcb_768a_7c3610</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>org.jenkins-ci.plugins.workflow</groupId>
-                <artifactId>workflow-durable-task-step</artifactId>
-                <version>1227.vdc0a_d1fd4338</version> <!-- TODO until in BOM -->
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -165,6 +160,12 @@
             <artifactId>mock-javamail</artifactId>
             <version>2.0</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.mail</groupId>
+                    <artifactId>jakarta.mail</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!--
             This must come after mock-javamail in the class path in order to avoid eclipse-ee4j/mail#350.
