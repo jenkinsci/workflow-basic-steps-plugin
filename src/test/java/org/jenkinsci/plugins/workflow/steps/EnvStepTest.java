@@ -39,24 +39,24 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.JenkinsSessionRule;
 
 public class EnvStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
 
-    @Test public void overriding() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void overriding() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "env.CUSTOM = 'initial'\n" +
                     "env.FOOPATH = node {isUnix() ? '/opt/foos' : 'C:\\\\foos'}\n" +
@@ -68,10 +68,10 @@ public class EnvStepTest {
                     "  }\n" +
                     "  isUnix() ? sh('echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside') : bat('echo outside CUSTOM=%CUSTOM% NOVEL=%NOVEL% NULLED=outside')\n" +
                     "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
-                story.j.assertLogContains("groovy NULLED=null", b);
-                story.j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside", b);
+                WorkflowRun b = j.buildAndAssertSuccess(p);
+                j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
+                j.assertLogContains("groovy NULLED=null", b);
+                j.assertLogContains("outside CUSTOM=initial NOVEL= NULLED=outside", b);
                 List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
                         b.getExecution(),
                         Predicates.and(
@@ -79,14 +79,12 @@ public class EnvStepTest {
                                 n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
                 assertThat(coreStepNodes, Matchers.hasSize(1));
                 assertEquals("CUSTOM, NOVEL, BUILD_TAG, NULLED, FOOPATH+BALL", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
-            }
         });
     }
 
-    @Test public void parallel() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void parallel() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "parallel a: {\n" +
                     "  node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo a TOOL=$TOOL') : bat('echo a TOOL=%TOOL%')}}\n" +
@@ -98,17 +96,15 @@ public class EnvStepTest {
                 SemaphoreStep.waitForStart("b/1", b);
                 SemaphoreStep.success("a/1", null);
                 SemaphoreStep.success("b/1", null);
-                story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
-                story.j.assertLogContains("a TOOL=aloc", b);
-                story.j.assertLogContains("b TOOL=bloc", b);
-            }
+                j.assertBuildStatusSuccess(j.waitForCompletion(b));
+                j.assertLogContains("a TOOL=aloc", b);
+                j.assertLogContains("b TOOL=bloc", b);
         });
     }
 
-    @Test public void restarting() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void restarting() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "def show(which) {\n" +
                     "  echo \"groovy ${which} ${env.TESTVAR}:\"\n" +
@@ -124,26 +120,22 @@ public class EnvStepTest {
                     "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
-            }
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+        sessions.then(j -> {
                 SemaphoreStep.success("restarting/1", null);
-                WorkflowRun b = story.j.assertBuildStatusSuccess(story.j.waitForCompletion(story.j.jenkins.getItemByFullName("p", WorkflowJob.class).getLastBuild()));
-                story.j.assertLogContains("groovy before val:", b);
-                story.j.assertLogContains("shell before val:", b);
-                story.j.assertLogContains("groovy after val:", b);
-                story.j.assertLogContains("shell after val:", b);
-                story.j.assertLogContains("groovy outside null:", b);
-                story.j.assertLogContains("shell outside :", b);
-            }
+                WorkflowRun b = j.assertBuildStatusSuccess(j.waitForCompletion(j.jenkins.getItemByFullName("p", WorkflowJob.class).getLastBuild()));
+                j.assertLogContains("groovy before val:", b);
+                j.assertLogContains("shell before val:", b);
+                j.assertLogContains("groovy after val:", b);
+                j.assertLogContains("shell after val:", b);
+                j.assertLogContains("groovy outside null:", b);
+                j.assertLogContains("shell outside :", b);
         });
     }
 
-    @Test public void nested() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void nested() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withEnv(['A=one']) {\n" +
@@ -152,23 +144,21 @@ public class EnvStepTest {
                     "    }\n" +
                     "  }\n" +
                     "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("A=one B=two", b);
-            }
+                WorkflowRun b = j.buildAndAssertSuccess(p);
+                j.assertLogContains("A=one B=two", b);
         });
     }
 
-    @Test public void configRoundTrip() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                configRoundTrip(Collections.emptyList());
-                configRoundTrip(Collections.singletonList("VAR1=val1"));
-                configRoundTrip(Arrays.asList("VAR1=val1", "VAR2=val2"));
-            }
-            private void configRoundTrip(List<String> overrides) throws Exception {
-                assertEquals(overrides, new StepConfigTester(story.j).configRoundTrip(new EnvStep(overrides)).getOverrides());
-            }
+    @Test public void configRoundTrip() throws Throwable {
+        sessions.then(j -> {
+                configRoundTrip(Collections.emptyList(), j);
+                configRoundTrip(Collections.singletonList("VAR1=val1"), j);
+                configRoundTrip(Arrays.asList("VAR1=val1", "VAR2=val2"), j);
         });
+    }
+
+    private static void configRoundTrip(List<String> overrides, JenkinsRule j) throws Exception {
+        assertEquals(overrides, new StepConfigTester(j).configRoundTrip(new EnvStep(overrides)).getOverrides());
     }
 
     // TODO add @LocalData serialForm test proving compatibility with executions dating back to workflow 1.4.3 on 1.580.1

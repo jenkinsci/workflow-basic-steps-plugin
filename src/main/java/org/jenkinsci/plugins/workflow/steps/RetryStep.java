@@ -24,11 +24,17 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
+import hudson.util.FormValidation;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  * Executes the body up to N times.
@@ -38,6 +44,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class RetryStep extends Step {
     
     private final int count;
+    private List<ErrorCondition> conditions;
 
     @DataBoundConstructor
     public RetryStep(int count) {
@@ -48,6 +55,14 @@ public class RetryStep extends Step {
         return count;
     }
 
+    public List<ErrorCondition> getConditions() {
+        return conditions;
+    }
+
+    @DataBoundSetter public void setConditions(List<ErrorCondition> conditions) {
+        this.conditions = conditions;
+    }
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
@@ -55,7 +70,7 @@ public class RetryStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new RetryStepExecution(count, context);
+        return new RetryStepExecution(count, context, conditions);
     }
 
     @Extension
@@ -71,6 +86,7 @@ public class RetryStep extends Step {
             return true;
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Retry the body up to N times";
@@ -79,6 +95,16 @@ public class RetryStep extends Step {
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
+        }
+
+        public FormValidation doCheckCount(@QueryParameter int count) {
+            if (count < 1) {
+                return FormValidation.error("Count must be positive.");
+            } else if (count == 1) {
+                return FormValidation.warning("Count of one means that the retry step has no effect. Use ≥2.");
+            } else {
+                return FormValidation.ok();
+            }
         }
 
     }

@@ -42,10 +42,10 @@ import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.recipes.LocalData;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 public class CatchErrorStepTest {
     @ClassRule public static BuildWatcher w = new BuildWatcher();
@@ -162,26 +162,26 @@ public class CatchErrorStepTest {
         assertCatchError(r, b, Result.SUCCESS, Result.UNSTABLE, true);
     }
 
-    @Test public void catchesTimeoutsByDefault() throws Exception {
+    @Test public void catchesInterruptionsByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "timeout(time: 250, unit: 'MILLISECONDS') {\n" +
-                "  catchError(message: 'caught error') {\n" +
-                "    sleep 1\n" +
-                "  }\n" +
-                "}", true));
+                "import jenkins.model.CauseOfInterruption\n" +
+                "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
+                "catchError(message: 'caught error') {\n" +
+                "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
+                "}", false));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
     }
 
-    @Test public void canAvoidCatchingTimeoutsWithOption() throws Exception {
+    @Test public void canAvoidCatchingInterruptionsWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "timeout(time: 250, unit: 'MILLISECONDS') {\n" +
-                "  catchError(message: 'caught error', catchInterruptions: false) {\n" +
-                "    sleep 1\n" +
-                "  }\n" +
-                "}", true));
+                "import jenkins.model.CauseOfInterruption\n" +
+                "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
+                "catchError(message: 'caught error', catchInterruptions: false) {\n" +
+                "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
+                "}", false));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, null, false);
     }

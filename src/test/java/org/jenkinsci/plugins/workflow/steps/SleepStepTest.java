@@ -36,20 +36,18 @@ import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsSessionRule;
 
 public class SleepStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule r = new RestartableJenkinsRule();
+    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
 
-    @Test public void sleepAndRestart() {
-        r.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = r.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void sleepAndRestart() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("semaphore 'start'; sleep 10", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("start/1", b);
@@ -57,27 +55,21 @@ public class SleepStepTest {
                 ((CpsFlowExecution) b.getExecution()).waitForSuspension();
                 List<FlowNode> heads = b.getExecution().getCurrentHeads();
                 assertEquals(1, heads.size());
-                assertEquals(r.j.jenkins.getDescriptorByType(SleepStep.DescriptorImpl.class), ((StepAtomNode) heads.get(0)).getDescriptor());
-            }
+                assertEquals(j.jenkins.getDescriptorByType(SleepStep.DescriptorImpl.class), ((StepAtomNode) heads.get(0)).getDescriptor());
         });
-        r.addStep(new Statement() {
-            @SuppressWarnings("SleepWhileInLoop")
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = r.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+        sessions.then(j -> {
+                WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                r.j.assertBuildStatusSuccess(r.j.waitForCompletion(b));
-            }
+                j.assertBuildStatusSuccess(j.waitForCompletion(b));
         });
     }
 
     @Issue("JENKINS-31701")
-    @Test public void sleepInsideNode() {
-        r.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = r.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void sleepInsideNode() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("node {sleep 1}", true));
-                r.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-            }
+                j.buildAndAssertSuccess(p);
         });
     }
 

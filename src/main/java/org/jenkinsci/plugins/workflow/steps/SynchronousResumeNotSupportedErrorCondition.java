@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2014 Jesse Glick.
+ * Copyright 2022 CloudBees, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,29 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import hudson.Extension;
+import java.io.IOException;
+import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
+import org.kohsuke.stapler.DataBoundConstructor;
+
 /**
- * @deprecated Only exists as a placeholder for old running builds; now {@code org.jenkinsci.plugins.workflow.support.steps.PushdStep}.
+ * Checks for {@link SynchronousResumeNotSupportedException}.
  */
-@Deprecated
-public class PushdStep {
+public final class SynchronousResumeNotSupportedErrorCondition extends ErrorCondition {
 
-    private PushdStep() {}
+    @DataBoundConstructor public SynchronousResumeNotSupportedErrorCondition() {}
 
-    public static class Execution extends AbstractStepExecutionImpl {
-        
-        private Execution() {
-            throw new AssertionError("only deserialized");
+    @Override public boolean test(Throwable error, StepContext context) throws IOException, InterruptedException {
+        return error instanceof SynchronousResumeNotSupportedException;
+    }
+
+    @Symbol("nonresumable")
+    @Extension public static final class DescriptorImpl extends ErrorConditionDescriptor {
+
+        @Override public String getDisplayName() {
+            return "Non-resumable steps";
         }
-
-        @Override public boolean start() throws Exception {
-            throw new AssertionError("only deserialized");
-        }
-
-        @Override public void onResume() {}
-
-        private static final long serialVersionUID = 1L;
 
     }
 

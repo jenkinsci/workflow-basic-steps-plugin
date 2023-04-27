@@ -43,7 +43,6 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +51,10 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.ToolInstallations;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class ToolStepTest {
 

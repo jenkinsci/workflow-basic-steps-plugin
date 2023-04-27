@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -36,10 +35,14 @@ import hudson.tasks.BuildWrapperDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -48,6 +51,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * A step that runs a {@link SimpleBuildWrapper} as defined in Jenkins core.
  */
 public class CoreWrapperStep extends Step {
+
+    private static final Logger LOGGER = Logger.getLogger(CoreWrapperStep.class.getName());
 
     private final SimpleBuildWrapper delegate;
 
@@ -135,9 +140,9 @@ public class CoreWrapperStep extends Step {
 
             private static final long serialVersionUID = 1;
 
-            private final @Nonnull SimpleBuildWrapper.Disposer disposer;
+            private final @NonNull SimpleBuildWrapper.Disposer disposer;
 
-            Callback2(SimpleBuildWrapper.Disposer disposer) {
+            Callback2(@NonNull SimpleBuildWrapper.Disposer disposer) {
                 this.disposer = disposer;
             }
 
@@ -165,9 +170,9 @@ public class CoreWrapperStep extends Step {
 
         private static final long serialVersionUID = 1;
 
-        private final @Nonnull SimpleBuildWrapper.Disposer disposer;
+        private final @NonNull SimpleBuildWrapper.Disposer disposer;
 
-        Callback(@Nonnull SimpleBuildWrapper.Disposer disposer) {
+        Callback(@NonNull SimpleBuildWrapper.Disposer disposer) {
             this.disposer = disposer;
         }
 
@@ -176,14 +181,25 @@ public class CoreWrapperStep extends Step {
             assert run != null;
             final TaskListener listener = context.get(TaskListener.class);
             assert listener != null;
-            final FilePath workspace = context.get(FilePath.class);
-            final Launcher launcher = context.get(Launcher.class);
+            FilePath workspace;
+            Launcher launcher;
             if (disposer.requiresWorkspace()) {
+                workspace = context.get(FilePath.class);
                 if (workspace == null) {
                     throw new MissingContextVariableException(FilePath.class);
                 }
+                launcher = context.get(Launcher.class);
                 if (launcher == null) {
                     throw new MissingContextVariableException(Launcher.class);
+                }
+            } else {
+                try {
+                    workspace = context.get(FilePath.class);
+                    launcher = context.get(Launcher.class);
+                } catch (IOException | InterruptedException x) {
+                    LOGGER.log(Level.FINE, null, x);
+                    workspace = null;
+                    launcher = null;
                 }
             }
             // always pass the workspace context when available, even when it is not strictly required
@@ -202,6 +218,7 @@ public class CoreWrapperStep extends Step {
             return "wrap";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "General Build Wrapper";
         }
@@ -226,7 +243,9 @@ public class CoreWrapperStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, TaskListener.class, EnvVars.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, Run.class, TaskListener.class, EnvVars.class);
+            return Collections.unmodifiableSet(context);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

@@ -1,12 +1,14 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -51,6 +53,7 @@ public class ArtifactArchiverStep extends Step {
             return "archive";
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Archive artifacts";
@@ -67,7 +70,9 @@ public class ArtifactArchiverStep extends Step {
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(FilePath.class, Run.class, Launcher.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, FilePath.class, Run.class, Launcher.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
     }

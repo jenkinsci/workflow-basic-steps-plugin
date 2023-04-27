@@ -25,8 +25,8 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import hudson.model.Result;
 import java.util.List;
-import javax.mail.Message;
-import javax.mail.internet.MimeMultipart;
+import jakarta.mail.Message;
+import jakarta.mail.internet.MimeMultipart;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -36,8 +36,9 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;

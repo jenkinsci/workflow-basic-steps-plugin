@@ -53,8 +53,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.tasks.SimpleBuildWrapper;
 import org.hamcrest.Matchers;
 import org.jenkinsci.Symbol;
@@ -68,28 +68,28 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.*;
-import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class CoreWrapperStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
 
-    @Test public void useWrapper() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                new SnippetizerTester(story.j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
+    @Test public void useWrapper() throws Throwable {
+        sessions.then(j -> {
+                new SnippetizerTester(j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Map<String,String> slaveEnv = new HashMap<>();
                 if (Functions.isWindows()) {
                     slaveEnv.put("PATH", "c:\\windows\\System32");
@@ -97,27 +97,24 @@ public class CoreWrapperStepTest {
                     slaveEnv.put("PATH", "/usr/bin:/bin");
                 }
                 slaveEnv.put("HOME", "/home/jenkins");
-                createSpecialEnvSlave(story.j, "slave", "", slaveEnv);
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                createSpecialEnvSlave(j, "slave", "", slaveEnv);
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; " + (Functions.isWindows()
                         ? "bat 'echo shell PATH=%PATH%:'}}"
                         : "sh 'echo shell PATH=$PATH:'}}"), true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
-            }
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+        sessions.then(j -> {
                 SemaphoreStep.success("restarting/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
+                j.assertBuildStatusSuccess(j.waitForCompletion(b));
                 String expected = Functions.isWindows() ? "/home/jenkins/extra/bin;c:\\windows\\System32" : "/home/jenkins/extra/bin:/usr/bin:/bin";
-                story.j.assertLogContains("groovy PATH=" + expected + ":", b);
-                story.j.assertLogContains("shell PATH=" + expected + ":", b);
-                story.j.assertLogContains("ran DisposerImpl", b);
-                story.j.assertLogNotContains("CoreWrapperStep", b);
-            }
+                j.assertLogContains("groovy PATH=" + expected + ":", b);
+                j.assertLogContains("shell PATH=" + expected + ":", b);
+                j.assertLogContains("ran DisposerImpl", b);
+                j.assertLogNotContains("CoreWrapperStep", b);
         });
     }
     public static class MockWrapper extends SimpleBuildWrapper {
@@ -136,6 +133,7 @@ public class CoreWrapperStepTest {
         }
         @Symbol("mock")
         @TestExtension("useWrapper") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "MockWrapper";
             }
@@ -145,10 +143,9 @@ public class CoreWrapperStepTest {
         }
     }
 
-    @Test public void envStickiness() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void envStickiness() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "def show(which) {\n" +
                     "  echo \"groovy ${which} ${env.TESTVAR}\"\n" +
@@ -164,17 +161,16 @@ public class CoreWrapperStepTest {
                     "  }\n" +
                     "  show 'outside'\n" +
                     "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("received initial", b);
-                story.j.assertLogContains("groovy before wrapped", b);
-                story.j.assertLogContains("shell before wrapped", b);
+                WorkflowRun b = j.buildAndAssertSuccess(p);
+                j.assertLogContains("received initial", b);
+                j.assertLogContains("groovy before wrapped", b);
+                j.assertLogContains("shell before wrapped", b);
                 // Any custom values set via EnvActionImpl.setProperty will be “frozen” for the duration of the CoreWrapperStep,
                 // because they are always overridden by contextual values.
-                story.j.assertLogContains("groovy after wrapped", b);
-                story.j.assertLogContains("shell after wrapped", b);
-                story.j.assertLogContains("groovy outside edited", b);
-                story.j.assertLogContains("shell outside edited", b);
-            }
+                j.assertLogContains("groovy after wrapped", b);
+                j.assertLogContains("shell after wrapped", b);
+                j.assertLogContains("groovy outside edited", b);
+                j.assertLogContains("shell outside edited", b);
         });
     }
     public static class OneVarWrapper extends SimpleBuildWrapper {
@@ -184,6 +180,7 @@ public class CoreWrapperStepTest {
             context.env("TESTVAR", "wrapped");
         }
         @TestExtension("envStickiness") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "OneVarWrapper";
             }
@@ -194,22 +191,20 @@ public class CoreWrapperStepTest {
     }
 
     @Issue("JENKINS-27392")
-    @Test public void loggerDecorator() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void loggerDecorator() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("node {echo 'outside #1'; wrap([$class: 'WrapperWithLogger']) {echo 'inside the block'}; echo 'outside #2'}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
-                story.j.assertLogContains("outside #1", b);
-                story.j.assertLogContains("outside #2", b);
-                story.j.assertLogContains("INSIDE THE BLOCK", b);
-            }
+                WorkflowRun b = j.buildAndAssertSuccess(p);
+                j.assertLogContains("outside #1", b);
+                j.assertLogContains("outside #2", b);
+                j.assertLogContains("INSIDE THE BLOCK", b);
         });
     }
     public static class WrapperWithLogger extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithLogger() {}
         @Override public void setUp(SimpleBuildWrapper.Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {}
-        @Override public ConsoleLogFilter createLoggerDecorator(Run<?,?> build) {
+        @Override public ConsoleLogFilter createLoggerDecorator(@NonNull Run<?,?> build) {
             return new UpcaseFilter();
         }
         private static class UpcaseFilter extends ConsoleLogFilter implements Serializable {
@@ -224,6 +219,7 @@ public class CoreWrapperStepTest {
             }
         }
         @TestExtension("loggerDecorator") public static class DescriptorImpl extends BuildWrapperDescriptor {
+            @NonNull
             @Override public String getDisplayName() {
                 return "WrapperWithLogger";
             }
@@ -234,15 +230,14 @@ public class CoreWrapperStepTest {
     }
 
     @Issue("JENKINS-45101")
-    @Test public void argumentsToString() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void argumentsToString() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                      "    wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {}\n" +
                      "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                WorkflowRun b = j.buildAndAssertSuccess(p);
                 List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
                         b.getExecution(),
                         Predicates.and(
@@ -250,7 +245,6 @@ public class CoreWrapperStepTest {
                                 n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
                 assertThat(coreStepNodes, Matchers.hasSize(1));
                 assertEquals("xterm", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
-            }
         });
     }
 
@@ -263,15 +257,14 @@ public class CoreWrapperStepTest {
      * @see <a href="https://github.com/jenkinsci/jenkins/pull/1553/files#r23784822">explanation in core PR 1553</a>
      */
     public static Slave createSpecialEnvSlave(JenkinsRule rule, String nodeName, @CheckForNull String labels, Map<String,String> env) throws Exception {
-        @SuppressWarnings("deprecation") // keep consistency with original signature rather than force the caller to pass in a TemporaryFolder rule
-        File remoteFS = rule.createTmpDir();
+        File remoteFS = new File(rule.jenkins.getRootDir(), "agent-work-dirs/" + nodeName);
         SpecialEnvSlave slave = new SpecialEnvSlave(remoteFS, rule.createComputerLauncher(/* yes null */null), nodeName, labels != null ? labels : "", env);
         rule.jenkins.addNode(slave);
         return slave;
     }
     private static class SpecialEnvSlave extends Slave {
         private final Map<String,String> env;
-        SpecialEnvSlave(File remoteFS, ComputerLauncher launcher, String nodeName, @Nonnull String labels, Map<String,String> env) throws Descriptor.FormException, IOException {
+        SpecialEnvSlave(File remoteFS, ComputerLauncher launcher, String nodeName, @NonNull String labels, Map<String,String> env) throws Descriptor.FormException, IOException {
             super(nodeName, nodeName, remoteFS.getAbsolutePath(), 1, Node.Mode.NORMAL, labels, launcher, RetentionStrategy.NOOP, Collections.emptyList());
             this.env = env;
         }
@@ -294,19 +287,19 @@ public class CoreWrapperStepTest {
 
     public static final class WrapperWithWorkspaceRequirement extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithWorkspaceRequirement() { }
-        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required and provided.");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
-        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required but not provided!");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
         public static final class DisposerWithWorkspaceRequirement extends Disposer {
-            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required and provided.");
             }
-            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required but not provided!");
             }
         }
@@ -319,43 +312,41 @@ public class CoreWrapperStepTest {
 
     @Issue("JENKINS-46175")
     @Test
-    public void wrapperWithWorkspaceRequirement() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    public void wrapperWithWorkspaceRequirement() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 // make sure it works inside a node
                 p.setDefinition(new CpsFlowDefinition("node { wrapperWithWorkspaceRequirement { echo 'wrapped' } }", true));
                 {
-                    Run<?, ?> r = story.j.buildAndAssertSuccess(p);
-                    story.j.assertLogContains(">>> workspace context required and provided.", r);
-                    story.j.assertLogContains("<<< workspace context required and provided.", r);
+                    Run<?, ?> r = j.buildAndAssertSuccess(p);
+                    j.assertLogContains(">>> workspace context required and provided.", r);
+                    j.assertLogContains("<<< workspace context required and provided.", r);
                 }
                 // but fails outside of one
                 p.setDefinition(new CpsFlowDefinition("wrapperWithWorkspaceRequirement { echo 'wrapped' }", true));
                 {
-                    Run<?, ?> r = story.j.buildAndAssertStatus(Result.FAILURE, p);
-                    story.j.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r);
+                    Run<?, ?> r = j.buildAndAssertStatus(Result.FAILURE, p);
+                    j.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r);
                 }
-            }
         });
     }
 
     public static final class WrapperWithoutWorkspaceRequirement extends SimpleBuildWrapper {
         @DataBoundConstructor public WrapperWithoutWorkspaceRequirement() { }
         @Override public boolean requiresWorkspace() { return false; }
-        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed, but provided.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
-        @Override public void setUp(@Nonnull Context context, @Nonnull Run<?, ?> build, @Nonnull TaskListener listener, @Nonnull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
         public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
-            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed, but provided.");
             }
-            @Override public void tearDown(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed.");
             }
         }
@@ -368,25 +359,23 @@ public class CoreWrapperStepTest {
 
     @Issue("JENKINS-46175")
     @Test
-    public void wrapperWithoutWorkspaceRequirement() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    public void wrapperWithoutWorkspaceRequirement() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 // make sure it works outside of a node
                 p.setDefinition(new CpsFlowDefinition("wrapperWithoutWorkspaceRequirement { echo 'wrapped' }", true));
                 {
-                    Run<?, ?> r = story.j.buildAndAssertSuccess(p);
-                    story.j.assertLogContains(">>> workspace context not needed.", r);
-                    story.j.assertLogContains("<<< workspace context not needed.", r);
+                    Run<?, ?> r = j.buildAndAssertSuccess(p);
+                    j.assertLogContains(">>> workspace context not needed.", r);
+                    j.assertLogContains("<<< workspace context not needed.", r);
                 }
                 // but also inside of one
                 p.setDefinition(new CpsFlowDefinition("node { wrapperWithoutWorkspaceRequirement { echo 'wrapped' } }", true));
                 {
-                    Run<?, ?> r = story.j.buildAndAssertSuccess(p);
-                    story.j.assertLogContains(">>> workspace context not needed, but provided.", r);
-                    story.j.assertLogContains("<<< workspace context not needed, but provided.", r);
+                    Run<?, ?> r = j.buildAndAssertSuccess(p);
+                    j.assertLogContains(">>> workspace context not needed, but provided.", r);
+                    j.assertLogContains("<<< workspace context not needed, but provided.", r);
                 }
-            }
         });
     }
 

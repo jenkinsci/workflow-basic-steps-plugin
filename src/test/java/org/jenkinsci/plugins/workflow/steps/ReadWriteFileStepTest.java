@@ -41,10 +41,11 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
@@ -147,6 +148,7 @@ public class ReadWriteFileStepTest {
         assertThat("The data should round-trip correctly using Base64 encoding",
                 getBytes(p, "round-trip-base64"), equalTo(bytes));
         SemaphoreStep.success("bytes-checked/1", null);
+        r.assertBuildStatusSuccess(r.waitForCompletion(b));
     }
 
     private byte[] getBytes(TopLevelItem item, String fileName) throws Exception {

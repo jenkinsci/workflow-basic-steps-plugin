@@ -1,0 +1,9 @@
+<div>
+    The Jenkins controller was restarted while the build was running a step which cannot be resumed.
+    Some steps like <code>sh</code> or <code>input</code> are written to survive a Jenkins restart
+    and simply pick up where they left off when the build resumes.
+    Others like <code>checkout</code> or <code>junit</code> normally complete promptly but cannot tolerate a restart.
+    In case one of these steps happened to be in progress when Jenkins shut down,
+    the resumed build will throw an error;
+    using this condition with <code>retry</code> allows the step (or the whole enclosing <code>node</code> block) to be rerun.
+</div>

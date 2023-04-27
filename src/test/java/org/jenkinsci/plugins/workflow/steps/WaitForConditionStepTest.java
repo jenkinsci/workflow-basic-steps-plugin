@@ -37,19 +37,17 @@ import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsSessionRule;
 
 public class WaitForConditionStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
 
-    @Test public void simple() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void simple() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; semaphore 'waited'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
@@ -60,15 +58,13 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.success("wait/3", true);
                 SemaphoreStep.waitForStart("waited/1", b);
                 SemaphoreStep.success("waited/1", null);
-                story.j.assertLogContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.MIN_RECURRENCE_PERIOD), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+                j.assertLogContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.MIN_RECURRENCE_PERIOD), j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
-    @Test public void initialRecurrence() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void initialRecurrence() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil(initialRecurrencePeriod: 999) {semaphore 'wait'}; semaphore 'waited'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
@@ -79,15 +75,13 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.success("wait/3", true);
                 SemaphoreStep.waitForStart("waited/1", b);
                 SemaphoreStep.success("waited/1", null);
-                story.j.assertLogContains("Will try again after " + Util.getTimeSpanString(999), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+                j.assertLogContains("Will try again after " + Util.getTimeSpanString(999), j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
-    @Test public void failure() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void failure() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
@@ -95,18 +89,16 @@ public class WaitForConditionStepTest {
                 SemaphoreStep.waitForStart("wait/2", b);
                 String message = "broken condition";
                 SemaphoreStep.failure("wait/2", new AbortException(message));
-                // TODO the following fails (missing message) when run as part of whole suite, but not standalone: story.j.assertLogContains(message, story.j.assertBuildStatus(Result.FAILURE, story.j.waitForCompletion(b)));
-                story.j.waitForCompletion(b);
-                story.j.assertBuildStatus(Result.FAILURE, b);
-                story.j.waitForMessage(message, b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a “Will try again after 0.25 sec” but no such message
-            }
+                // TODO the following fails (missing message) when run as part of whole suite, but not standalone: j.assertLogContains(message, j.assertBuildStatus(Result.FAILURE, j.waitForCompletion(b)));
+                j.waitForCompletion(b);
+                j.assertBuildStatus(Result.FAILURE, b);
+                j.waitForMessage(message, b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a “Will try again after 0.25 sec” but no such message
         });
     }
 
-    @Test public void catchErrors() throws Exception {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void catchErrors() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  waitUntil {\n" +
@@ -124,40 +116,33 @@ public class WaitForConditionStepTest {
                     "echo 'finished waiting'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
-                story.j.jenkins.getWorkspaceFor(p).child("flag").write("", null);
+                j.jenkins.getWorkspaceFor(p).child("flag").write("", null);
                 SemaphoreStep.success("wait/1", null);
-                story.j.assertLogContains("finished waiting", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+                j.assertLogContains("finished waiting", j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
-    @Test public void restartDuringBody() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void restartDuringBody() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; echo 'finished waiting'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
                 SemaphoreStep.success("wait/1", false);
                 SemaphoreStep.waitForStart("wait/2", b);
-            }
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowRun b = story.j.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
+        sessions.then(j -> {
+                WorkflowRun b = j.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
                 SemaphoreStep.success("wait/2", false);
                 SemaphoreStep.waitForStart("wait/3", b);
                 SemaphoreStep.success("wait/3", true);
-                story.j.assertLogContains("finished waiting", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+                j.assertLogContains("finished waiting", j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
-    @Test public void restartDuringDelay() {
-        story.addStep(new Statement() {
-            @SuppressWarnings("SleepWhileInLoop")
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void restartDuringDelay() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; echo 'finished waiting'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
@@ -175,34 +160,29 @@ public class WaitForConditionStepTest {
                 while (executions.get(0).recurrencePeriod == LONG_TIME) {
                     Thread.sleep(100);
                 }
-                story.j.waitForMessage("Will try again after " + Util.getTimeSpanString(LONG_TIME), b);
+                j.waitForMessage("Will try again after " + Util.getTimeSpanString(LONG_TIME), b);
                 // timer is now waiting for a long time
-            }
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowRun b = story.j.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
+        sessions.then(j -> {
+                WorkflowRun b = j.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
                 SemaphoreStep.waitForStart("wait/3", b); // TODO pending https://github.com/jenkinsci/workflow-cps-plugin/pull/141 this will flake out
                 SemaphoreStep.success("wait/3", false);
                 SemaphoreStep.waitForStart("wait/4", b);
                 SemaphoreStep.success("wait/4", true);
-                story.j.assertLogContains("finished waiting", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+                j.assertLogContains("finished waiting", j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 
-    @Test public void quiet() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+    @Test public void quiet() throws Throwable {
+        sessions.then(j -> {
+                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil(quiet: true) {semaphore 'wait'}; semaphore 'waited'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
                 SemaphoreStep.success("wait/1", true);
                 SemaphoreStep.waitForStart("waited/1", b);
                 SemaphoreStep.success("waited/1", null);
-                story.j.assertLogNotContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.MIN_RECURRENCE_PERIOD), story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-            }
+                j.assertLogNotContains("Will try again after " + Util.getTimeSpanString(WaitForConditionStep.MIN_RECURRENCE_PERIOD), j.assertBuildStatusSuccess(j.waitForCompletion(b)));
         });
     }
 

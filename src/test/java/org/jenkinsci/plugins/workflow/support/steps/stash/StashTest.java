@@ -42,7 +42,8 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 public class StashTest {
 
@@ -73,7 +74,9 @@ public class StashTest {
         SemaphoreStep.success("ending/1", null);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("got fname: whatever other: more", b);
-        assertEquals("{}", StashManager.stashesOf(b).toString()); // TODO flake expected:<{[]}> but was:<{[from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}]}>
+        while (!StashManager.stashesOf(b).isEmpty()) {
+            Thread.sleep(100);
+        }
     }
 
     @Issue("JENKINS-31086")
@@ -114,7 +117,9 @@ public class StashTest {
         SemaphoreStep.success("ending/1", null);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("Stashed 0 file(s)", b);
-        assertEquals("{}", StashManager.stashesOf(b).toString());
+        while (!StashManager.stashesOf(b).isEmpty()) {
+            Thread.sleep(100);
+        }
         List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("stash"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertEquals("whatever", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));

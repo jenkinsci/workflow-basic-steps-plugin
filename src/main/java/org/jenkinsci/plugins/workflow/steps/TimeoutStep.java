@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
@@ -74,6 +75,7 @@ public class TimeoutStep extends Step implements Serializable {
             return true;
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Enforce time limit";

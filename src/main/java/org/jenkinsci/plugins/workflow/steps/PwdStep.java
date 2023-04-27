@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
@@ -71,6 +72,7 @@ public class PwdStep extends Step {
             return "pwd";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Determine current directory";
         }
@@ -79,7 +81,7 @@ public class PwdStep extends Step {
             return Collections.singleton(FilePath.class);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override public String argumentsToString(@NonNull Map<String, Object> namedArgs) {
             return null; // "true" is not a reasonable description
         }
 
