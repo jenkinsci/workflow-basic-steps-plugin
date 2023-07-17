@@ -2,7 +2,11 @@
 
 ## Introduction
 
-Commonly used steps for Pipelines.
+Commonly used steps for Pipelines. General Jenkins Pipeline documentation is available in the [Pipeline chapter](https://www.jenkins.io/doc/book/pipeline/) of the [User Handbook](https://www.jenkins.io/doc/book/getting-started/).
+
+The [Pipeline steps reference](https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/) describes the Pipeline steps provided by this plugin.
+
+The [Pipeline solutions page](https://www.jenkins.io/solutions/pipeline/) provides videos, tutorials, and other Pipeline resources.
 
 ## Version History
 
