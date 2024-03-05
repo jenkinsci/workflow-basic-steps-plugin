@@ -152,7 +152,7 @@ public final class ToolStep extends Step {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
-                    if (tool.getName().equals(name)) {
+                    if (name.equals(tool.getName())) {
                         if (tool instanceof NodeSpecific) {
                             tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(getContext().get(Node.class), getContext().get(TaskListener.class));
                         }

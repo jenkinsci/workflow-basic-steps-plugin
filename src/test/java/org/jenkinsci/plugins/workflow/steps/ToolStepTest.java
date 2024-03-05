@@ -48,6 +48,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.ToolInstallations;
@@ -116,6 +117,21 @@ public class ToolStepTest {
         p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: '" + MockToolWithoutSymbol.class.getName() + "'\n"
                 + "echo \"${home}\"}",
                 true));
+        r.assertLogContains(toolHome.getAbsolutePath(),
+                r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+    }
+
+    @Issue("JENKINS-61474") @Test public void toolWithoutName() throws Exception {
+        File toolHome = folder.newFolder("mockTools");
+        MockToolWithSymbol misconfiguredTool = new MockToolWithSymbol(null, toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        r.jenkins.getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(misconfiguredTool, tool);
+
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("node {def home = tool \"" + tool.getName() + "\"\n"
+                +"echo \"${home}\"}",
+                true));
+
         r.assertLogContains(toolHome.getAbsolutePath(),
                 r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
