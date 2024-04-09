@@ -4,6 +4,17 @@
 
     This step must be run inside a <code>node</code> context:
 <p><pre>
+# Scripted Syntax
+node {
+    if (fileExists('src/main/resources/index.html')) {
+        echo "File src/main/resources/index.html found!"
+    }
+}
+</pre></p>
+
+With the Declarative Syntax, it must be run in a stage with a defined agent (e.g. different than `agent none`):
+
+<p><pre>
 # Declarative Syntax
 stage ('Check for existence of index.html') {
     agent any # Could be a top-level directive or a stage level directive
@@ -13,17 +24,6 @@ stage ('Check for existence of index.html') {
                 echo "File src/main/resources/index.html found!"
             }
         }
-    }
-}
-</pre></p>
-
-With the Declarative Syntax, it must be run in a stage with a defined agent (e.g. different than `agent none`):
-
-<p><pre>
-# Scripted Syntax
-node {
-    if (fileExists('src/main/resources/index.html')) {
-        echo "File src/main/resources/index.html found!"
     }
 }
 </pre></p>
