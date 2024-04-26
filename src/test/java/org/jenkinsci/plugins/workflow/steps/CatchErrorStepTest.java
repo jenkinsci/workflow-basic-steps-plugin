@@ -118,6 +118,7 @@ public class CatchErrorStepTest {
                 "}", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.UNSTABLE, null, true);
+        r.assertLogContains("Setting overall build result to UNSTABLE", b);
     }
 
     @Test public void invalidBuildResult() throws Exception {
