@@ -248,8 +248,12 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                         Functions.printStackTrace(t, listener.getLogger());
                     }
                     if (buildResult.isWorseThan(Result.SUCCESS)) {
-                        listener.getLogger().println("Setting overall build result to " + buildResult);
-                        context.get(Run.class).setResult(buildResult);
+                        Run<?, ?> build = context.get(Run.class);
+                        Result currentResult = build.getResult();
+                        if (currentResult == null || buildResult.isWorseThan(currentResult)) {
+                            listener.getLogger().println("Setting overall build result to " + buildResult);
+                        } // otherwise WorkflowRun.setResult should be a no-op, so do not log anything
+                        build.setResult(buildResult);
                     }
                     if (stepResult.isWorseThan(Result.SUCCESS)) {
                         context.get(FlowNode.class).addOrReplaceAction(new WarningAction(stepResult).withMessage(message));
