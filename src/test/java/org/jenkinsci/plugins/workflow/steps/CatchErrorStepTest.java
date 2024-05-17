@@ -33,6 +33,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -223,6 +224,21 @@ public class CatchErrorStepTest {
                 "}\n", true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, us.scheduleBuild2(0));
         assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
+    }
+
+    @Test public void abortPreviousWithCatchError() throws Exception {
+        WorkflowJob p = r.createProject(WorkflowJob.class);
+        p.setDefinition(new CpsFlowDefinition("catchError(catchInterruptions: false) {semaphore 'main'}; semaphore 'post'", true));
+        p.setConcurrentBuild(false);
+        p.getProperty(DisableConcurrentBuildsJobProperty.class).setAbortPrevious(true);
+        WorkflowRun b1 = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("main/1", b1);
+        WorkflowRun b2 = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("main/2", b2);
+        r.assertBuildStatus(Result.NOT_BUILT, r.waitForCompletion(b1));
+        SemaphoreStep.success("main/2", null);
+        SemaphoreStep.success("post/1", null);
+        r.assertBuildStatusSuccess(r.waitForCompletion(b2));
     }
 
     public static void assertCatchError(JenkinsRule r, WorkflowRun run, Result buildResult, Result warningActionResult, boolean expectingCatch) throws Exception {
