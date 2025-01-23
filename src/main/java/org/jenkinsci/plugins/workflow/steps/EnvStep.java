@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 public class EnvStep extends Step {
 
@@ -120,7 +120,7 @@ public class EnvStep extends Step {
         }
 
         // TODO JENKINS-27901: need a standard control for this
-        @Override public Step newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+        @Override public Step newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
             String overridesS = formData.getString("overrides");
             List<String> overrides = new ArrayList<>();
             for (String line : overridesS.split("\r?\n")) {
