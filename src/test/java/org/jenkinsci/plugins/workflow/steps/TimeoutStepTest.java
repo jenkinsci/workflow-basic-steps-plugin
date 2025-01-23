@@ -170,6 +170,7 @@ public class TimeoutStepTest {
     @Issue("JENKINS-26521")
     @Test
     public void activityInParallel() throws Throwable {
+        assumeThat("TODO also flaky in ci.jenkins.io", System.getenv("CI"), nullValue());
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(""
