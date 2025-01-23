@@ -306,11 +306,10 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
 
         @Override public Void call() throws RuntimeException {
-            StepExecution.applyAll(TimeoutStepExecution.class, e -> {
+            StepExecution.acceptAll(TimeoutStepExecution.class, e -> {
                 if (id.equals(e.id)) {
                     e.resetTimer();
                 }
-                return null;
             });
             return null;
         }

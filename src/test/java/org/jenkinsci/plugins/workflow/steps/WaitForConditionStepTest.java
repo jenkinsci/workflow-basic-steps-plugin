@@ -147,10 +147,7 @@ public class WaitForConditionStepTest {
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
                 final List<WaitForConditionStep.Execution> executions = new ArrayList<>();
-                StepExecution.applyAll(WaitForConditionStep.Execution.class, execution -> {
-                    executions.add(execution);
-                    return null;
-                }).get();
+                StepExecution.acceptAll(WaitForConditionStep.Execution.class, executions::add).get();
                 assertEquals(1, executions.size());
                 SemaphoreStep.success("wait/1", false);
                 SemaphoreStep.waitForStart("wait/2", b);
