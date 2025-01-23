@@ -149,13 +149,13 @@ public class TimeoutStepTest {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(""
                         + "node {\n"
-                        + "  timeout(time:5, unit:'SECONDS', activity: true) {\n"
+                        + "  timeout(time:10, unit:'SECONDS', activity: true) {\n"
                         + "    echo 'NotHere';\n"
-                        + "    sleep 3;\n"
+                        + "    sleep 6;\n"
                         + "    echo 'NotHereYet';\n"
-                        + "    sleep 3;\n"
+                        + "    sleep 6;\n"
                         + "    echo 'JustHere!';\n"
-                        + "    sleep 10;\n"
+                        + "    sleep 20;\n"
                         + "    echo 'ShouldNot!';\n"
                         + "  }\n"
                         + "}\n", true));
