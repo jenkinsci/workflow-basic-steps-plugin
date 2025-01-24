@@ -118,11 +118,10 @@ public final class WaitForConditionStep extends Step {
         }
 
         private static void retry(final String id, final StepContext context) {
-            StepExecution.applyAll(Execution.class, execution -> {
+            StepExecution.acceptAll(Execution.class, execution -> {
                 if (execution.id.equals(id)) {
                     execution.retry(context);
                 }
-                return null;
             });
         }
 
