@@ -1,5 +1,6 @@
 <div>
-    If selected, return a temporary directory associated with the workspace rather than the workspace itself.
+    If selected, return a temporary directory associated with the current directory path rather than the directory path itself.
+    The return value is different for each current directory. No two directories share the same temporary directory.
     This is an appropriate place to put temporary files which should not clutter a source checkout;
-    local repositories or caches; etc.
+    local repositories or caches; etc. Defaults to false.
 </div>

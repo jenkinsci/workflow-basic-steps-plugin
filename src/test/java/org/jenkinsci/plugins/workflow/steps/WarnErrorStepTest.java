@@ -66,9 +66,9 @@ public class WarnErrorStepTest {
     @Test public void catchesTimeoutsByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "timeout(time: 250, unit: 'MILLISECONDS') {\n" +
+                "timeout(time: 1, unit: 'SECONDS') {\n" +
                 "  warnError('caught error') {\n" +
-                "    sleep 1\n" +
+                "    sleep 5\n" +
                 "  }\n" +
                 "}", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
@@ -78,9 +78,9 @@ public class WarnErrorStepTest {
     @Test public void canAvoidCatchingTimeoutsWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "timeout(time: 250, unit: 'MILLISECONDS') {\n" +
+                "timeout(time: 1, unit: 'SECONDS') {\n" +
                 "  warnError(message: 'caught error', catchInterruptions: false) {\n" +
-                "    sleep 1\n" +
+                "    sleep 5\n" +
                 "  }\n" +
                 "}", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();

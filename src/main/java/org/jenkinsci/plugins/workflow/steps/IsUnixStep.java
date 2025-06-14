@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
 import java.util.Collections;
@@ -61,6 +62,7 @@ public class IsUnixStep extends Step {
             return "isUnix";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Checks if running on a Unix-like node";
         }

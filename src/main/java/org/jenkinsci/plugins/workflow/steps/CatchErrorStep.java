@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
@@ -37,9 +36,11 @@ import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -55,13 +56,14 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     private static final long serialVersionUID = 1L;
 
     private @CheckForNull String message;
-    private @Nonnull String buildResult = Result.FAILURE.toString();
+    private @NonNull String buildResult = Result.FAILURE.toString();
     // This result is actually associated with the step, but this name makes more sense to users.
-    private @Nonnull String stageResult = Result.SUCCESS.toString();
+    private @NonNull String stageResult = Result.SUCCESS.toString();
     private boolean catchInterruptions = true;
 
     @DataBoundConstructor public CatchErrorStep() {}
 
+    @CheckForNull
     @Override
     public String getMessage() {
         return message;
@@ -72,11 +74,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         this.message = Util.fixEmptyAndTrim(message);
     }
 
+    @NonNull
     @Override
     public Result getBuildResultOnError() {
         return Result.fromString(buildResult);
     }
 
+    @NonNull
     public String getBuildResult() {
         return buildResult;
     }
@@ -92,11 +96,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         this.buildResult = buildResult;
     }
 
+    @NonNull
     @Override
     public Result getStepResultOnError() {
         return Result.fromString(stageResult);
     }
 
+    @NonNull
     public String getStageResult() {
         return stageResult;
     }
@@ -151,6 +157,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             return "catchError";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Catch error and set build result to failure";
         }
@@ -160,7 +167,9 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(FlowNode.class, Run.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, FlowNode.class, Run.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
         public ListBoxModel doFillBuildResultItems() {
@@ -239,7 +248,12 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                         Functions.printStackTrace(t, listener.getLogger());
                     }
                     if (buildResult.isWorseThan(Result.SUCCESS)) {
-                        context.get(Run.class).setResult(buildResult);
+                        Run<?, ?> build = context.get(Run.class);
+                        Result currentResult = build.getResult();
+                        if (currentResult == null || buildResult.isWorseThan(currentResult)) {
+                            listener.getLogger().println("Setting overall build result to " + buildResult);
+                        } // otherwise WorkflowRun.setResult should be a no-op, so do not log anything
+                        build.setResult(buildResult);
                     }
                     if (stepResult.isWorseThan(Result.SUCCESS)) {
                         context.get(FlowNode.class).addOrReplaceAction(new WarningAction(stepResult).withMessage(message));
@@ -264,11 +278,13 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             return null;
         }
 
+        @NonNull
         @Override
         public Result getBuildResultOnError() {
             return Result.FAILURE;
         }
 
+        @NonNull
         @Override
         public Result getStepResultOnError() {
             return Result.SUCCESS;

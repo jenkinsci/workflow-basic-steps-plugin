@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -96,18 +97,14 @@ public final class SleepStep extends Step {
             }
             if (end > now) {
                 listener.getLogger().println("Sleeping for " + Util.getTimeSpanString(end - now));
-                task = Timer.get().schedule(new Runnable() {
-                    @Override public void run() {
-                        getContext().onSuccess(null);
-                    }
-                }, end - now, TimeUnit.MILLISECONDS);
+                task = Timer.get().schedule(() -> getContext().onSuccess(null), end - now, TimeUnit.MILLISECONDS);
             } else {
                 listener.getLogger().println("No need to sleep any longer");
                 getContext().onSuccess(null);
             }
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
+        @Override public void stop(@NonNull Throwable cause) throws Exception {
             if (task != null) {
                 task.cancel(false);
             }
@@ -123,7 +120,7 @@ public final class SleepStep extends Step {
             if (end > now) {
                 return "sleeping for another " + Util.getTimeSpanString(end - now);
             } else {
-                return "should have stopped sleeping " + Util.getPastTimeString(now - end);
+                return "should have stopped sleeping " + Util.getTimeSpanString(now - end) + " ago";
             }
         }
 
@@ -135,6 +132,7 @@ public final class SleepStep extends Step {
             return "sleep";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Sleep";
         }

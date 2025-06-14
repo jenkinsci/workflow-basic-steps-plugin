@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.structs.describable.CustomDescribableModel;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 public class EnvStep extends Step {
 
@@ -112,6 +112,7 @@ public class EnvStep extends Step {
             return "withEnv";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Set environment variables";
         }
@@ -121,7 +122,7 @@ public class EnvStep extends Step {
         }
 
         // TODO JENKINS-27901: need a standard control for this
-        @Override public Step newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+        @Override public Step newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
             String overridesS = formData.getString("overrides");
             List<String> overrides = new ArrayList<>();
             for (String line : overridesS.split("\r?\n")) {
@@ -141,14 +142,14 @@ public class EnvStep extends Step {
             Object overrides = namedArgs.get("overrides");
             if (overrides instanceof List) {
                 StringBuilder b = new StringBuilder();
-                for (Object pair : (List) overrides) {
+                for (Object pair : (List<?>) overrides) {
                     if (pair instanceof String) {
                         int idx = ((String) pair).indexOf('=');
                         if (idx > 0) {
                             if (b.length() > 0) {
                                 b.append(", ");
                             }
-                            b.append(((String) pair).substring(0, idx));
+                            b.append(pair.toString(), 0, idx);
                         }
                     }
                 }

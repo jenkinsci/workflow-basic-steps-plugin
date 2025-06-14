@@ -36,11 +36,11 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.Nonnull;
-import javax.mail.Address;
-import javax.mail.Message;
-import javax.mail.Transport;
-import javax.mail.internet.MimeMessage;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import jakarta.mail.Address;
+import jakarta.mail.Message;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.MimeMessage;
 
 /**
  * Simple email sender step.
@@ -73,7 +73,7 @@ public class MailStep extends Step {
     private String mimeType;
 
     @DataBoundConstructor
-    public MailStep(@Nonnull String subject, @Nonnull String body) {
+    public MailStep(@NonNull String subject, @NonNull String body) {
         this.subject = subject;
         this.body = body;
     }
@@ -108,6 +108,7 @@ public class MailStep extends Step {
             return "mail";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Mail";
         }

@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
-import com.google.common.collect.ImmutableSet;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -32,6 +31,8 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import jenkins.model.Jenkins;
@@ -39,8 +40,8 @@ import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -49,21 +50,23 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 public class StashStep extends Step {
 
-    private final @Nonnull String name;
+    private final @NonNull String name;
     private @CheckForNull String includes;
     private @CheckForNull String excludes;
     private boolean useDefaultExcludes = true;
     private boolean allowEmpty = false;
 
-    @DataBoundConstructor public StashStep(@Nonnull String name) {
+    @DataBoundConstructor public StashStep(@NonNull String name) {
         Jenkins.checkGoodName(name);
         this.name = name;
     }
 
+    @NonNull
     public String getName() {
         return name;
     }
 
+    @CheckForNull
     public String getIncludes() {
         return includes;
     }
@@ -72,6 +75,7 @@ public class StashStep extends Step {
         this.includes = Util.fixEmpty(includes);
     }
 
+    @CheckForNull
     public String getExcludes() {
         return excludes;
     }
@@ -125,12 +129,15 @@ public class StashStep extends Step {
             return "stash";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Stash some files to be used later in the build";
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
         @Override public String argumentsToString(Map<String, Object> namedArgs) {

@@ -24,7 +24,6 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
-import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -32,8 +31,10 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -45,13 +46,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class UnstashStep extends Step {
 
-    private final @Nonnull String name;
+    private final @NonNull String name;
 
-    @DataBoundConstructor public UnstashStep(@Nonnull String name) {
+    @DataBoundConstructor public UnstashStep(@NonNull String name) {
         Jenkins.checkGoodName(name);
         this.name = name;
     }
 
+    @NonNull
     public String getName() {
         return name;
     }
@@ -85,12 +87,15 @@ public class UnstashStep extends Step {
             return "unstash";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Restore files previously stashed";
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
+            Set<Class<?>> context = new HashSet<>();
+            Collections.addAll(context, Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
+            return Collections.unmodifiableSet(context);
         }
 
     }

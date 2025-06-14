@@ -12,7 +12,10 @@
     <strong>Note</strong> that the <code>stash</code> and <code>unstash</code> steps are designed for use with small files.
     For large data transfers, use the External Workspace Manager plugin,
     or use an external repository manager such as Nexus or Artifactory.
-    This is because stashed files are archived in a compressed TAR, and with large files this demands considerable on-master
-    resources, particularly CPU time.
+    This is because stashed files are archived in a compressed TAR, and with large files this demands considerable
+    resources on the controller, particularly CPU time.
     There's not a hard stash size limit, but between 5-100 MB you should probably consider alternatives.
+    If you use the Artifact Manager on S3 plugin, or another plugin with a remote atifact manager,
+    you can use this step without affecting controller performance
+    since stashes will be sent directly to S3 from the agent (and similarly for <code>unstash</code>).
 </div>
