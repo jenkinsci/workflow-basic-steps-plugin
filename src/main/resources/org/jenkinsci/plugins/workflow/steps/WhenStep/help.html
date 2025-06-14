@@ -1,0 +1,23 @@
+<p>
+    Conditionally executes a block of code.
+
+    If called from within a <code>stage</code> and the condition is not met, the <code>stage</code> will be tagged as skipped.
+    Example:
+</p>
+<pre><code>stage('stage') {
+    when(shouldSkip()) {
+        sh 'process'
+    }
+}</code></pre>
+<p>
+    The <code>condition</code> argument is designed to mimic the rules of <a href="https://groovy-lang.org/semantics.html#the-groovy-truth">Groovy Truth</a> when possible:
+</p>
+<div>
+    <ul>
+        <li>Non-empty <code>Collections</code> and <code>Arrays</code> are coerced to true.</li>
+        <li>Non-empty <code>Maps</code> are coerced to true.</li>
+        <li>Non-empty <code>Strings</code> are coerced to true.</li>
+        <li>Non-zero <code>Numbers</code> are coerced to true.</li>
+        <li>Non-null object references are coerced to true.</li>
+    </ul>
+</div>
