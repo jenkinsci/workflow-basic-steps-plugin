@@ -75,27 +75,19 @@ public class WhenStepTest {
     }
 
     @Test
-    public void whenStringTrue() throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("stage('no skip') { when('true') { echo('hello world') } }", true));
-        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
-        r.assertLogContains("hello world", b);
-    }
-
-    @Test
-    public void whenStringFalse() throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("stage('skip') { when('false') { echo('hello world') } }", true));
-        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
-        r.assertLogNotContains("hello world", b);
-    }
-
-    @Test
     public void whenStringEmpty() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("stage('skip') { when('') { echo('hello world') } }", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogNotContains("hello world", b);
+    }
+
+    @Test
+    public void whenStringNotEmpty() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("stage('no skip') { when('hello world') { echo('hello world') } }", true));
+        WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+        r.assertLogContains("hello world", b);
     }
 
     @Test

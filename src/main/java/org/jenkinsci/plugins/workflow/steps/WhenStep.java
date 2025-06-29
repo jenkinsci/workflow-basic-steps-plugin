@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.TagsAction;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -68,7 +69,7 @@ public class WhenStep extends Step {
                 this.condition = !((Map) condition).isEmpty();
             } else if (condition instanceof String) {
                 // Strings
-                this.condition = Boolean.parseBoolean((String) condition);
+                this.condition = StringUtils.isNotEmpty((String) condition);
             } else if (condition instanceof Number) {
                 // Numbers
                 this.condition = ((Number) condition).intValue() != 0;
