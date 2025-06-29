@@ -35,7 +35,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 
 public class WhenStepTest {
 
-    @ClassRule 
+    @ClassRule
     public static BuildWatcher buildWatcher = new BuildWatcher();
 
     @Rule
@@ -101,7 +101,7 @@ public class WhenStepTest {
     @Test
     public void whenCollectionNotEmpty() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("stage('skip') { when(['item']) { echo('hello world') } }", true));
+        p.setDefinition(new CpsFlowDefinition("stage('no skip') { when(['item']) { echo('hello world') } }", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("hello world", b);
     }
@@ -118,7 +118,7 @@ public class WhenStepTest {
     public void whenMapNotEmpty() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(
-                new CpsFlowDefinition("stage('skip') { when(['key':'value']) { echo('hello world') } }", true));
+                new CpsFlowDefinition("stage('no skip') { when(['key':'value']) { echo('hello world') } }", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("hello world", b);
     }
@@ -134,7 +134,7 @@ public class WhenStepTest {
     @Test
     public void whenIntegerNonZero() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("stage('skip') { when(1) { echo('hello world') } }", true));
+        p.setDefinition(new CpsFlowDefinition("stage('no skip') { when(1) { echo('hello world') } }", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("hello world", b);
     }
