@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 

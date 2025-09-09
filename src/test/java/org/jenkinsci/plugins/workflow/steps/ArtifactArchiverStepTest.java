@@ -6,7 +6,7 @@ import java.util.Arrays;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.util.VirtualFile;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.workflow.DirectArtifactManagerFactory;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
