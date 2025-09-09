@@ -33,7 +33,7 @@ import java.util.Set;
 
 
 import hudson.model.TaskListener;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public final class FileExistsStep extends Step {
