@@ -36,11 +36,11 @@ import java.util.concurrent.TimeUnit;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.InterruptedBuildAction;
 import jenkins.plugins.git.GitSampleRepoRule;
+import jenkins.plugins.git.junit.jupiter.WithGitSampleRepo;
 import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -49,30 +49,38 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable;
 import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable.Row;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
-import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.TestExtension;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 import org.jvnet.hudson.test.recipes.LocalData;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class TimeoutStepTest {
+@WithGitSampleRepo
+class TimeoutStepTest {
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    @RegisterExtension
+    private final JenkinsSessionExtension sessions = new JenkinsSessionExtension();
 
-    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
+    private GitSampleRepoRule git;
 
-    @Rule public GitSampleRepoRule git = new GitSampleRepoRule();
+    @BeforeEach
+    void beforeEach(GitSampleRepoRule repo) {
+        git = repo;
+    }
 
-    @Test public void configRoundTrip() throws Throwable {
+    @Test
+    void configRoundTrip() throws Throwable {
         sessions.then(j -> {
                 TimeoutStep s1 = new TimeoutStep(3);
                 s1.setUnit(TimeUnit.HOURS);
@@ -85,7 +93,7 @@ public class TimeoutStepTest {
      * The simplest possible timeout step ever.
      */
     @Test
-    public void basic() throws Throwable {
+    void basic() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
@@ -97,7 +105,7 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-34637")
     @Test
-    public void basicWithBlock() throws Throwable {
+    void basicWithBlock() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
@@ -108,20 +116,21 @@ public class TimeoutStepTest {
     }
 
     @Test
-    public void killingParallel() throws Throwable {
+    void killingParallel() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition(""
-                        + "node {\n"
-                        + "  timeout(time:5, unit:'SECONDS') {\n"
-                        + "    parallel(\n"
-                        + "      a: { echo 'ShouldBeHere1'; sleep 10; echo 'NotHere' },\n"
-                        + "      b: { echo 'ShouldBeHere2'; sleep 10; echo 'NotHere' },\n"
-                        + "    );\n"
-                        + "    echo 'NotHere'\n"
-                        + "  }\n"
-                        + "  echo 'NotHere'\n"
-                        + "}\n", true));
+                p.setDefinition(new CpsFlowDefinition("""
+                        node {
+                          timeout(time:5, unit:'SECONDS') {
+                            parallel(
+                              a: { echo 'ShouldBeHere1'; sleep 10; echo 'NotHere' },
+                              b: { echo 'ShouldBeHere2'; sleep 10; echo 'NotHere' },
+                            );
+                            echo 'NotHere'
+                          }
+                          echo 'NotHere'
+                        }
+                        """, true));
                 WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
 
                 // make sure things that are supposed to run do, and things that are NOT supposed to run do not.
@@ -133,8 +142,7 @@ public class TimeoutStepTest {
                 FlowGraphTable t = new FlowGraphTable(b.getExecution());
                 t.build();
                 for (Row r : t.getRows()) {
-                    if (r.getNode() instanceof StepAtomNode) {
-                        StepAtomNode a = (StepAtomNode) r.getNode();
+                    if (r.getNode() instanceof StepAtomNode a) {
                         if (a.getDescriptor().getClass() == SleepStep.DescriptorImpl.class) {
                             assertNotNull(a.getAction(ErrorAction.class));
                         }
@@ -145,22 +153,23 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-26521")
     @Test
-    public void activity() throws Throwable {
-        assumeThat("TODO consistently failing in ci.jenkins.io yet passing locally", System.getenv("CI"), nullValue());
+    void activity() throws Throwable {
+        assumeTrue(System.getenv("CI") == null, "TODO consistently failing in ci.jenkins.io yet passing locally");
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition(""
-                        + "node {\n"
-                        + "  timeout(time:5, unit:'SECONDS', activity: true) {\n"
-                        + "    echo 'NotHere';\n"
-                        + "    sleep 3;\n"
-                        + "    echo 'NotHereYet';\n"
-                        + "    sleep 3;\n"
-                        + "    echo 'JustHere!';\n"
-                        + "    sleep 10;\n"
-                        + "    echo 'ShouldNot!';\n"
-                        + "  }\n"
-                        + "}\n", true));
+                p.setDefinition(new CpsFlowDefinition("""
+                        node {
+                          timeout(time:5, unit:'SECONDS', activity: true) {
+                            echo 'NotHere';
+                            sleep 3;
+                            echo 'NotHereYet';
+                            sleep 3;
+                            echo 'JustHere!';
+                            sleep 10;
+                            echo 'ShouldNot!';
+                          }
+                        }
+                        """, true));
                 WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
                 j.assertLogContains("JustHere!", b);
                 j.assertLogNotContains("ShouldNot!", b);
@@ -169,31 +178,32 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-26521")
     @Test
-    public void activityInParallel() throws Throwable {
-        assumeThat("TODO also flaky in ci.jenkins.io", System.getenv("CI"), nullValue());
+    void activityInParallel() throws Throwable {
+        assumeTrue(System.getenv("CI") == null, "TODO also flaky in ci.jenkins.io");
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition(""
-                        + "node {\n"
-                        + "  parallel(\n"
-                        + "    a: {\n"
-                        + "      timeout(time:5, unit:'SECONDS', activity: true) {\n"
-                        + "        echo 'NotHere';\n"
-                        + "        sleep 3;\n"
-                        + "        echo 'NotHereYet';\n"
-                        + "        sleep 3;\n"
-                        + "        echo 'JustHere!';\n"
-                        + "        sleep 10;\n"
-                        + "        echo 'ShouldNot!';\n"
-                        + "      }\n"
-                        + "    },\n"
-                        + "    b: {\n"
-                        + "      for (int i = 0; i < 5; i++) {\n"
-                        + "        echo 'Other Thread'\n"
-                        + "        sleep 3\n"
-                        + "      }\n"
-                        + "    })\n"
-                        + "}\n", true));
+                p.setDefinition(new CpsFlowDefinition("""
+                        node {
+                          parallel(
+                            a: {
+                              timeout(time:5, unit:'SECONDS', activity: true) {
+                                echo 'NotHere';
+                                sleep 3;
+                                echo 'NotHereYet';
+                                sleep 3;
+                                echo 'JustHere!';
+                                sleep 10;
+                                echo 'ShouldNot!';
+                              }
+                            },
+                            b: {
+                              for (int i = 0; i < 5; i++) {
+                                echo 'Other Thread'
+                                sleep 3
+                              }
+                            })
+                        }
+                        """, true));
                 WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
                 j.assertLogContains("JustHere!", b);
                 j.assertLogNotContains("ShouldNot!", b);
@@ -202,31 +212,32 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-26521")
     @Test
-    public void activityRestart() throws Throwable {
-        assumeThat("TODO also flaky in ci.jenkins.io", System.getenv("CI"), nullValue());
+    void activityRestart() throws Throwable {
+        assumeTrue(System.getenv("CI") == null, "TODO also flaky in ci.jenkins.io");
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "restarted");
-                p.setDefinition(new CpsFlowDefinition(""
-                        + "node {\n"
-                        + "  timeout(time:15, unit:'SECONDS', activity: true) {\n"
-                        + "    echo 'NotHere';\n"
-                        + "    semaphore 'restarted'\n"
-                        + "    echo 'NotHereYet';\n"
-                        + "    sleep 10;\n"
-                        + "    echo 'NotHereYet';\n"
-                        + "    sleep 10;\n"
-                        + "    echo 'JustHere!';\n"
-                        + "    sleep 30;\n"
-                        + "    echo 'ShouldNot!';\n"
-                        + "  }\n"
-                        + "}\n", true));
+                p.setDefinition(new CpsFlowDefinition("""
+                        node {
+                          timeout(time:15, unit:'SECONDS', activity: true) {
+                            echo 'NotHere';
+                            semaphore 'restarted'
+                            echo 'NotHereYet';
+                            sleep 10;
+                            echo 'NotHereYet';
+                            sleep 10;
+                            echo 'JustHere!';
+                            sleep 30;
+                            echo 'ShouldNot!';
+                          }
+                        }
+                        """, true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarted/1", b);
         });
         sessions.then(j -> {
                 WorkflowJob p = j.jenkins.getItemByFullName("restarted", WorkflowJob.class);
                 WorkflowRun b = p.getBuildByNumber(1);
-                assertTrue("took more than 15s to restart?", b.isBuilding());
+                assertTrue(b.isBuilding(), "took more than 15s to restart?");
                 SemaphoreStep.success("restarted/1", null);
                 j.assertBuildStatus(Result.ABORTED, j.waitForCompletion(b));
                 j.assertLogContains("JustHere!", b);
@@ -235,7 +246,7 @@ public class TimeoutStepTest {
     }
 
     @Test
-    public void activityRemote() throws Throwable {
+    void activityRemote() throws Throwable {
         sessions.then(j -> {
             j.createSlave();
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
@@ -254,7 +265,8 @@ public class TimeoutStepTest {
     }
 
     @Issue("JENKINS-54078")
-    @Test public void activityGit() throws Throwable {
+    @Test
+    void activityGit() throws Throwable {
         sessions.then(j -> {
             j.createSlave();
             git.init();
@@ -273,40 +285,42 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-26163")
     @Test
-    public void restarted() throws Throwable {
+    void restarted() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "restarted");
-                p.setDefinition(new CpsFlowDefinition(""
-                        + "node {\n"
-                        + "  timeout(time: 15, unit: 'SECONDS') {\n"
-                        + "    semaphore 'restarted'\n"
-                        + "    sleep 999\n"
-                        + "  }\n"
-                        + "}\n", true));
+                p.setDefinition(new CpsFlowDefinition("""
+                        node {
+                          timeout(time: 15, unit: 'SECONDS') {
+                            semaphore 'restarted'
+                            sleep 999
+                          }
+                        }
+                        """, true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarted/1", b);
         });
         sessions.then(j -> {
                 WorkflowJob p = j.jenkins.getItemByFullName("restarted", WorkflowJob.class);
                 WorkflowRun b = p.getBuildByNumber(1);
-                assertTrue("took more than 15s to restart?", b.isBuilding());
+                assertTrue(b.isBuilding(), "took more than 15s to restart?");
                 SemaphoreStep.success("restarted/1", null);
                 j.assertBuildStatus(Result.ABORTED, j.waitForCompletion(b));
         });
     }
 
     @Test
-    public void timeIsConsumed() throws Throwable {
+    void timeIsConsumed() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "timeIsConsumed");
-                p.setDefinition(new CpsFlowDefinition(""
-                        + "node {\n"
-                        + "  timeout(time: 20, unit: 'SECONDS') {\n"
-                        + "    sleep 10\n"
-                        + "    semaphore 'timeIsConsumed'\n"
-                        + "    sleep 10\n"
-                        + "  }\n"
-                        + "}\n", true));
+                p.setDefinition(new CpsFlowDefinition("""
+                        node {
+                          timeout(time: 20, unit: 'SECONDS') {
+                            sleep 10
+                            semaphore 'timeIsConsumed'
+                            sleep 10
+                          }
+                        }
+                        """, true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("timeIsConsumed/1", b);
         });
@@ -316,7 +330,7 @@ public class TimeoutStepTest {
                 SemaphoreStep.success("timeIsConsumed/1", null);
                 WorkflowRun run = j.waitForCompletion(b);
                 InterruptedBuildAction action = b.getAction(InterruptedBuildAction.class);
-                assumeThat("TODO sometimes flakes", action, notNullValue());
+                assumeTrue(action != null, "TODO sometimes flakes");
                 List<CauseOfInterruption> causes = action.getCauses();
                 assertEquals(1, causes.size());
                 assertEquals(TimeoutStepExecution.ExceededTimeout.class, causes.get(0).getClass());
@@ -325,42 +339,61 @@ public class TimeoutStepTest {
     }
 
     @Issue("JENKINS-39072")
-    @Test public void unresponsiveBody() throws Throwable {
+    @Test
+    void unresponsiveBody() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("timeout(time: 2, unit: 'SECONDS') {unkillable()}", true));
                 j.buildAndAssertStatus(Result.ABORTED, p);
         });
     }
+
+    @SuppressWarnings("unused")
     public static class UnkillableStep extends Step {
-        @DataBoundConstructor public UnkillableStep() {}
-        @Override public StepExecution start(StepContext context) throws Exception {
+
+        @DataBoundConstructor
+        public UnkillableStep() {}
+
+        @Override
+        public StepExecution start(StepContext context) throws Exception {
             return new Execution(context);
         }
+
         private static class Execution extends StepExecution {
+
             private Execution(StepContext context) {
                 super(context);
             }
-            @Override public boolean start() throws Exception {
+
+            @Override
+            public boolean start() throws Exception {
                 return false;
             }
-            @Override public void stop(@NonNull Throwable cause) throws Exception {
+
+            @Override
+            public void stop(@NonNull Throwable cause) throws Exception {
                 getContext().get(TaskListener.class).getLogger().println("ignoring " + cause);
             }
         }
-        @TestExtension({"unresponsiveBody", "gracePeriod", "noImmediateForcibleTerminationOnResume", "nestingDetection"}) public static class DescriptorImpl extends StepDescriptor {
-            @Override public String getFunctionName() {
+
+        @SuppressWarnings("unused")
+        @TestExtension({"unresponsiveBody", "gracePeriod", "noImmediateForcibleTerminationOnResume", "nestingDetection"})
+        public static class DescriptorImpl extends StepDescriptor {
+            @Override
+            public String getFunctionName() {
                 return "unkillable";
             }
-            @Override public Set<? extends Class<?>> getRequiredContext() {
+            @Override
+            public Set<? extends Class<?>> getRequiredContext() {
                 return Collections.singleton(TaskListener.class);
             }
         }
     }
 
-    @Ignore("TODO cannot find any way to solve this case")
+    @Disabled("TODO cannot find any way to solve this case")
     @Issue("JENKINS-39072")
-    @Test public void veryUnresponsiveBody() throws Throwable {
+    @Test
+    void veryUnresponsiveBody() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("timeout(time: 2, unit: 'SECONDS') {while (true) {try {sleep 10} catch (e) {echo(/ignoring ${e}/)}}}", true));
@@ -372,7 +405,8 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-39134")
     @LocalData
-    @Test public void serialForm() throws Throwable {
+    @Test
+    void serialForm() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.jenkins.getItemByFullName("timeout", WorkflowJob.class);
                 WorkflowRun b = p.getBuildByNumber(1);
@@ -382,7 +416,8 @@ public class TimeoutStepTest {
     }
 
     @Issue("JENKINS-54607")
-    @Test public void gracePeriod() throws Throwable {
+    @Test
+    void gracePeriod() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("timeout(time: 15, unit: 'SECONDS') {unkillable()}", true));
@@ -393,7 +428,8 @@ public class TimeoutStepTest {
 
     @Issue("JENKINS-42940")
     @LocalData
-    @Test public void noImmediateForcibleTerminationOnResume() throws Throwable {
+    @Test
+    void noImmediateForcibleTerminationOnResume() throws Throwable {
         /* Source of the @LocalData for reference:
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
@@ -415,7 +451,7 @@ public class TimeoutStepTest {
     }
 
     @Test
-    public void nestingDetection() throws Throwable {
+    void nestingDetection() throws Throwable {
         sessions.then(j -> {
             ScriptApproval.get().approveSignature("method org.jenkinsci.plugins.workflow.steps.FlowInterruptedException isActualInterruption");
             WorkflowJob p = j.createProject(WorkflowJob.class);
@@ -423,13 +459,14 @@ public class TimeoutStepTest {
             // Inside
             p.setDefinition(
                     new CpsFlowDefinition(
-                            "timeout(time: 5, unit: 'SECONDS') {\n"
-                                    + "  try {\n"
-                                    + "    sleep 10\n"
-                                    + "  } catch (e) {\n"
-                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
-                                    + "  }\n"
-                                    + "}",
+                            """
+                                    timeout(time: 5, unit: 'SECONDS') {
+                                      try {
+                                        sleep 10
+                                      } catch (e) {
+                                        echo e.isActualInterruption() ? 'GOOD' : 'BAD'
+                                      }
+                                    }""",
                             true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
@@ -438,13 +475,14 @@ public class TimeoutStepTest {
             // Outside
             p.setDefinition(
                     new CpsFlowDefinition(
-                            "try {\n"
-                                    + "  timeout(time: 5, unit: 'SECONDS') {\n"
-                                    + "    sleep 10\n"
-                                    + "  }\n"
-                                    + "} catch (e) {\n"
-                                    + "  echo e.isActualInterruption() ? 'BAD' : 'GOOD'\n"
-                                    + "}",
+                            """
+                                    try {
+                                      timeout(time: 5, unit: 'SECONDS') {
+                                        sleep 10
+                                      }
+                                    } catch (e) {
+                                      echo e.isActualInterruption() ? 'BAD' : 'GOOD'
+                                    }""",
                             true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
@@ -453,15 +491,16 @@ public class TimeoutStepTest {
             // Between
             p.setDefinition(
                     new CpsFlowDefinition(
-                            "timeout(time: 5, unit: 'SECONDS') {\n"
-                                    + "  try {\n"
-                                    + "    timeout(time: 20, unit: 'SECONDS') {\n"
-                                    + "      sleep 10\n"
-                                    + "    }\n"
-                                    + "  } catch (e) {\n"
-                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
-                                    + "  }\n"
-                                    + "}",
+                            """
+                                    timeout(time: 5, unit: 'SECONDS') {
+                                      try {
+                                        timeout(time: 20, unit: 'SECONDS') {
+                                          sleep 10
+                                        }
+                                      } catch (e) {
+                                        echo e.isActualInterruption() ? 'GOOD' : 'BAD'
+                                      }
+                                    }""",
                             true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
@@ -470,13 +509,14 @@ public class TimeoutStepTest {
             // Inside (unkillable)
             p.setDefinition(
                     new CpsFlowDefinition(
-                            "timeout(time: 5, unit: 'SECONDS') {\n"
-                                    + "  try {\n"
-                                    + "    unkillable()\n"
-                                    + "  } catch (e) {\n"
-                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
-                                    + "  }\n"
-                                    + "}",
+                            """
+                                    timeout(time: 5, unit: 'SECONDS') {
+                                      try {
+                                        unkillable()
+                                      } catch (e) {
+                                        echo e.isActualInterruption() ? 'GOOD' : 'BAD'
+                                      }
+                                    }""",
                             true));
             b = p.scheduleBuild2(0).get();
             j.assertLogContains("GOOD", b);
@@ -485,13 +525,14 @@ public class TimeoutStepTest {
             // Outside (unkillable)
             p.setDefinition(
                     new CpsFlowDefinition(
-                            "try {\n"
-                                    + "  timeout(time: 5, unit: 'SECONDS') {\n"
-                                    + "    unkillable()\n"
-                                    + "  }\n"
-                                    + "} catch (e) {\n"
-                                    + "  echo e.isActualInterruption() ? 'BAD' : 'GOOD'"
-                                    + "}",
+                            """
+                                    try {
+                                      timeout(time: 5, unit: 'SECONDS') {
+                                        unkillable()
+                                      }
+                                    } catch (e) {
+                                      echo e.isActualInterruption() ? 'BAD' : 'GOOD'\
+                                    }""",
                             true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
@@ -500,15 +541,16 @@ public class TimeoutStepTest {
             // Between (unkillable)
             p.setDefinition(
                     new CpsFlowDefinition(
-                            "timeout(time: 5, unit: 'SECONDS') {\n"
-                                    + "  try {\n"
-                                    + "    timeout(time: 20, unit: 'SECONDS') {\n"
-                                    + "      unkillable()\n"
-                                    + "    }\n"
-                                    + "  } catch (e) {\n"
-                                    + "    echo e.isActualInterruption() ? 'GOOD' : 'BAD'\n"
-                                    + "  }\n"
-                                    + "}",
+                            """
+                                    timeout(time: 5, unit: 'SECONDS') {
+                                      try {
+                                        timeout(time: 20, unit: 'SECONDS') {
+                                          unkillable()
+                                        }
+                                      } catch (e) {
+                                        echo e.isActualInterruption() ? 'GOOD' : 'BAD'
+                                      }
+                                    }""",
                             true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);

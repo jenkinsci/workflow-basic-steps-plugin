@@ -45,17 +45,26 @@ import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class ReadWriteFileStepTest {
+@WithJenkins
+class ReadWriteFileStepTest {
 
-    @Rule public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
 
-    @Test public void basics() throws Exception {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
+
+    @Test
+    void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         boolean win = Functions.isWindows();
         p.setDefinition(new CpsFlowDefinition(
@@ -73,16 +82,16 @@ public class ReadWriteFileStepTest {
         assertEquals("f2", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
-	@Test
-	public void shouldTestFileExistsStep() throws Exception
-	{
+    @Test
+    void shouldTestFileExistsStep() throws Exception {
         final WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                "  echo \"test.txt - FileExists: ${fileExists('test.txt')}\" \n" +
-                "  writeFile file: 'test2.txt', text:'content of file' \n" +
-                "  echo \"test2.txt - FileExists: ${fileExists('test2.txt')}\" \n" +
-                "}", true));
+                """
+                        node {
+                          echo "test.txt - FileExists: ${fileExists('test.txt')}"\s
+                          writeFile file: 'test2.txt', text:'content of file'\s
+                          echo "test2.txt - FileExists: ${fileExists('test2.txt')}"\s
+                        }""", true));
 
 		WorkflowRun run = p.scheduleBuild2(0).get();
 		r.assertLogContains("test.txt - FileExists: false", run); 
@@ -92,49 +101,49 @@ public class ReadWriteFileStepTest {
 
     @Issue(("JENKINS-27094"))
     @Test
-    public void readAndwriteFileUsesCorrectEncoding() throws Exception
-    {
+    void readAndWriteFileUsesCorrectEncoding() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                        "  def text = 'HELLO'\n" +
-                        "  writeFile file: 'f1', text: text, encoding: 'utf-32le'\n" +
-                        "  def text2 = readFile file: 'f1', encoding: 'utf-32le'\n" +
-                        "  echo text2\n" +
-                        "}", true));
+                """
+                        node {
+                          def text = 'HELLO'
+                          writeFile file: 'f1', text: text, encoding: 'utf-32le'
+                          def text2 = readFile file: 'f1', encoding: 'utf-32le'
+                          echo text2
+                        }""", true));
         r.assertLogContains("HELLO", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
 
-
-
     @Issue(("JENKINS-27094"))
     @Test
-    public void testKnownCharsetRoundtrip() throws Exception {
+    void testKnownCharsetRoundtrip() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                        "  def text = 'HELLO'\n" +
-                        "  writeFile file: 'f1', text: '¤', encoding: 'iso-8859-1'\n" +
-                        "  def text2 = readFile file: 'f1', encoding: 'iso-8859-15'\n" +
-                        "  echo text2\n" +
-                        "}", true));
+                """
+                        node {
+                          def text = 'HELLO'
+                          writeFile file: 'f1', text: '¤', encoding: 'iso-8859-1'
+                          def text2 = readFile file: 'f1', encoding: 'iso-8859-15'
+                          echo text2
+                        }""", true));
         r.assertLogContains("€", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     @Issue("JENKINS-52313")
     @Test
-    public void testBinaryFileRoundtrip() throws Exception {
+    void testBinaryFileRoundtrip() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                        "  semaphore 'file-created'\n" +
-                        "  def utf8Text = readFile file: 'binary-file', encoding: 'UTF-8'\n" +
-                        "  writeFile file: 'round-trip-utf8', text: utf8Text, encoding: 'UTF-8'\n" +
-                        "  def base64Text = readFile file: 'binary-file', encoding: 'Base64'\n" +
-                        "  writeFile file: 'round-trip-base64', text: base64Text, encoding: 'Base64'\n" +
-                        "  semaphore 'bytes-checked'\n" +
-                        "}", true));
+                """
+                        node {
+                          semaphore 'file-created'
+                          def utf8Text = readFile file: 'binary-file', encoding: 'UTF-8'
+                          writeFile file: 'round-trip-utf8', text: utf8Text, encoding: 'UTF-8'
+                          def base64Text = readFile file: 'binary-file', encoding: 'Base64'
+                          writeFile file: 'round-trip-base64', text: base64Text, encoding: 'Base64'
+                          semaphore 'bytes-checked'
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("file-created/1", b);
         byte[] bytes = {0x48, 0x45, 0x4c, 0x4c, 0x4f, (byte) 0x80, (byte) 0xec, (byte) 0xf4, 0x00, 0x0d, 0x1b};

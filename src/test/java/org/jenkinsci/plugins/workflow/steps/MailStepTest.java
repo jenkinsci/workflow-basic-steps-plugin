@@ -35,25 +35,31 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Assert;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.jvnet.mock_javamail.Mailbox;
 
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
-public class MailStepTest {
+@WithJenkins
+class MailStepTest {
 
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
+
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
 
     @Test
-    public void test_missing_subject() throws Exception {
+    void test_missing_subject() throws Exception {
         WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
         // leave out the subject
         job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', body: 'body');", true));
@@ -63,7 +69,7 @@ public class MailStepTest {
     }
 
     @Test
-    public void test_missing_body() throws Exception {
+    void test_missing_body() throws Exception {
         WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
         // leave out the body
         job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', subject: 'subject');", true));
@@ -73,7 +79,7 @@ public class MailStepTest {
     }
 
     @Test
-    public void test_missing_recipient() throws Exception {
+    void test_missing_recipient() throws Exception {
         WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
         // leave out the subject and body
         job.setDefinition(new CpsFlowDefinition("mail(subject: 'Hello friend', body: 'Missing you!');", true));
@@ -83,7 +89,7 @@ public class MailStepTest {
     }
 
     @Test
-    public void test_send() throws Exception {
+    void test_send() throws Exception {
         Mailbox.clearAll();
 
         WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
@@ -95,15 +101,15 @@ public class MailStepTest {
         assertEquals("Hello friend", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
 
         Mailbox mailbox = Mailbox.get("tom.abcd@jenkins.org");
-        Assert.assertEquals(1, mailbox.getNewMessageCount());
+        assertEquals(1, mailbox.getNewMessageCount());
         Message message = mailbox.get(0);
-        Assert.assertEquals("Hello friend", message.getSubject());
-        Assert.assertEquals("Missing you!", ((MimeMultipart)message.getContent()).getBodyPart(0).getContent().toString());
+        assertEquals("Hello friend", message.getSubject());
+        assertEquals("Missing you!", ((MimeMultipart)message.getContent()).getBodyPart(0).getContent().toString());
 
     }
 
     @Test
-    public void configRoundTrip() throws Exception {
+    void configRoundTrip() throws Exception {
         MailStep step1 = new MailStep("subject", "body");
 
         step1.from = "tom.fennelly@gmail.com";

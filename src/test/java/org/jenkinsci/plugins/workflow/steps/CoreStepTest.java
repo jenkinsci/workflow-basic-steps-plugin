@@ -51,29 +51,37 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.jvnet.mock_javamail.Mailbox;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CoreStepTest {
+@WithJenkins
+class CoreStepTest {
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public JenkinsRule r = new JenkinsRule();
-    private final SnippetizerTester st = new SnippetizerTester(r);
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    private JenkinsRule r;
+    private SnippetizerTester st;
 
-    @Test public void artifactArchiver() throws Exception {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+        st = new SnippetizerTester(r);
+    }
+
+    @Test
+    void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; archiveArtifacts artifacts: 'x.txt', fingerprint: true}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
@@ -86,7 +94,8 @@ public class CoreStepTest {
     }
 
     @Issue("JENKINS-31931")
-    @Test public void artifactArchiverNonexistent() throws Exception {
+    @Test
+    void artifactArchiverNonexistent() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts artifacts: 'nonexistent/', allowEmptyArchive: true}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
@@ -97,7 +106,8 @@ public class CoreStepTest {
         */
     }
 
-    @Test public void fingerprinter() throws Exception {
+    @Test
+    void fingerprinter() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; fingerprint 'x.txt'}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
@@ -106,13 +116,15 @@ public class CoreStepTest {
         assertEquals("[x.txt]", fa.getRecords().keySet().toString());
     }
 
-    @Test public void javadoc() throws Exception {
+    @Test
+    void javadoc() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                  "node {\n"
-                + "    writeFile text: 'hello world', file: 'docs/index.html'\n"
-                + "    step([$class: 'JavadocArchiver', javadocDir: 'docs'])\n"
-                + "}", true));
+                """
+                        node {
+                            writeFile text: 'hello world', file: 'docs/index.html'
+                            step([$class: 'JavadocArchiver', javadocDir: 'docs'])
+                        }""", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         assertEquals("hello world", r.createWebClient().getPage(p, "javadoc/").getWebResponse().getContentAsString());
         List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("step"));
@@ -120,7 +132,8 @@ public class CoreStepTest {
         assertEquals("docs", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
-    @Test public void mailer() throws Exception {
+    @Test
+    void mailer() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         String recipient = "test@nowhere.net";
         p.setDefinition(new CpsFlowDefinition(
@@ -162,17 +175,20 @@ public class CoreStepTest {
         assertEquals(Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
     }
 
-    @Test public void coreStepWithSymbol() throws Exception {
+    @Test
+    void coreStepWithSymbol() throws Exception {
         ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
         aa.setFingerprint(true);
         st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts artifacts: 'some-artifacts', fingerprint: true");
     }
 
-    @Test public void coreStepWithSymbolWithSoleArg() throws Exception {
+    @Test
+    void coreStepWithSymbolWithSoleArg() throws Exception {
         ArtifactArchiver aa = new ArtifactArchiver("some-artifacts");
         st.assertRoundTrip(new CoreStep(aa), "archiveArtifacts 'some-artifacts'");
     }
 
+    @SuppressWarnings("unused")
     public static class BuilderWithEnvironment extends Builder implements SimpleBuildStep {
 
         @DataBoundConstructor
@@ -190,6 +206,7 @@ public class CoreStepTest {
             fail("This method should not get called.");
         }
 
+        @SuppressWarnings("unused")
         @Symbol("buildWithEnvironment")
         @TestExtension("builderWithEnvironment")
         public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -202,24 +219,32 @@ public class CoreStepTest {
 
     @Issue("JENKINS-29144")
     @Test
-    public void builderWithEnvironment() throws Exception {
+    void builderWithEnvironment() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
         r.buildAndAssertSuccess(p);
     }
 
+    @SuppressWarnings("unused")
     public static class BuilderWithWorkspaceRequirement extends Builder implements SimpleBuildStep {
+
         @DataBoundConstructor
         public BuilderWithWorkspaceRequirement() {
         }
-        @Override public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
+
+        @Override
+        public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required, but not provided!");
         }
-        @Override public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+
+        @Override
+        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required and provided.");
         }
+
         // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
         // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @SuppressWarnings("unused")
         @Symbol("builderWithWorkspaceRequirement")
         @TestExtension("builderWithWorkspaceRequirement")
         public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -232,7 +257,7 @@ public class CoreStepTest {
 
     @Issue("JENKINS-46175")
     @Test
-    public void builderWithWorkspaceRequirement() throws Exception {
+    void builderWithWorkspaceRequirement() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         // make sure it runs inside node
         p.setDefinition(new CpsFlowDefinition("node { builderWithWorkspaceRequirement() }", true));
@@ -242,21 +267,31 @@ public class CoreStepTest {
         r.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r.buildAndAssertStatus(Result.FAILURE, p));
     }
 
+    @SuppressWarnings("unused")
     public static class BuilderWithoutWorkspaceRequirement extends Builder implements SimpleBuildStep {
+
         @DataBoundConstructor
         public BuilderWithoutWorkspaceRequirement() {
         }
-        @Override public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
+
+        @Override
+        public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed.");
         }
-        @Override public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+
+        @Override
+        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed, but provided.");
         }
-        @Override public boolean requiresWorkspace() {
+
+        @Override
+        public boolean requiresWorkspace() {
             return false;
         }
+
         // While the @TextExtension supposedly limits this descriptor to the named test method, it still gets picked up
         // via the @Symbol from anywhere. So that needs to be unique across tests.
+        @SuppressWarnings("unused")
         @Symbol("builderWithoutWorkspaceRequirement")
         @TestExtension("builderWithoutWorkspaceRequirement")
         public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -269,7 +304,7 @@ public class CoreStepTest {
 
     @Issue("JENKINS-46175")
     @Test
-    public void builderWithoutWorkspaceRequirement() throws Exception {
+    void builderWithoutWorkspaceRequirement() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         // make sure it runs outside of node
         p.setDefinition(new CpsFlowDefinition("builderWithoutWorkspaceRequirement()", true));
