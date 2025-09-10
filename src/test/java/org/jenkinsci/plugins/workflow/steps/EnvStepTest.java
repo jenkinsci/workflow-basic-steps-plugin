@@ -41,33 +41,38 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.JenkinsSessionRule;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 
 public class EnvStepTest {
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    @RegisterExtension
+    private final JenkinsSessionExtension sessions = new JenkinsSessionExtension();
 
-    @Test public void overriding() throws Throwable {
+    @Test
+    void overriding() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                    "env.CUSTOM = 'initial'\n" +
-                    "env.FOOPATH = node {isUnix() ? '/opt/foos' : 'C:\\\\foos'}\n" +
-                    "env.NULLED = 'outside'\n" +
-                    "node {\n" +
-                    "  withEnv(['CUSTOM=override', 'NOVEL=val', 'BUILD_TAG=custom', 'NULLED=', isUnix() ? 'FOOPATH+BALL=/opt/ball' : 'FOOPATH+BALL=C:\\\\ball']) {\n" +
-                    "    isUnix() ? sh('echo inside CUSTOM=$CUSTOM NOVEL=$NOVEL BUILD_TAG=$BUILD_TAG NULLED=$NULLED FOOPATH=$FOOPATH:') : bat('echo inside CUSTOM=%CUSTOM% NOVEL=%NOVEL% BUILD_TAG=%BUILD_TAG% NULLED=%NULLED% FOOPATH=%FOOPATH%;')\n" +
-                    "    echo \"groovy NULLED=${env.NULLED}\"\n" +
-                    "  }\n" +
-                    "  isUnix() ? sh('echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside') : bat('echo outside CUSTOM=%CUSTOM% NOVEL=%NOVEL% NULLED=outside')\n" +
-                    "}", true));
+                        """
+                                env.CUSTOM = 'initial'
+                                env.FOOPATH = node {isUnix() ? '/opt/foos' : 'C:\\\\foos'}
+                                env.NULLED = 'outside'
+                                node {
+                                  withEnv(['CUSTOM=override', 'NOVEL=val', 'BUILD_TAG=custom', 'NULLED=', isUnix() ? 'FOOPATH+BALL=/opt/ball' : 'FOOPATH+BALL=C:\\\\ball']) {
+                                    isUnix() ? sh('echo inside CUSTOM=$CUSTOM NOVEL=$NOVEL BUILD_TAG=$BUILD_TAG NULLED=$NULLED FOOPATH=$FOOPATH:') : bat('echo inside CUSTOM=%CUSTOM% NOVEL=%NOVEL% BUILD_TAG=%BUILD_TAG% NULLED=%NULLED% FOOPATH=%FOOPATH%;')
+                                    echo "groovy NULLED=${env.NULLED}"
+                                  }
+                                  isUnix() ? sh('echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside') : bat('echo outside CUSTOM=%CUSTOM% NOVEL=%NOVEL% NULLED=outside')
+                                }""", true));
                 WorkflowRun b = j.buildAndAssertSuccess(p);
                 j.assertLogContains(Functions.isWindows() ? "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=C:\\ball;C:\\foos;" : "inside CUSTOM=override NOVEL=val BUILD_TAG=custom NULLED= FOOPATH=/opt/ball:/opt/foos:", b);
                 j.assertLogContains("groovy NULLED=null", b);
@@ -82,15 +87,17 @@ public class EnvStepTest {
         });
     }
 
-    @Test public void parallel() throws Throwable {
+    @Test
+    void parallel() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                    "parallel a: {\n" +
-                    "  node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo a TOOL=$TOOL') : bat('echo a TOOL=%TOOL%')}}\n" +
-                    "}, b: {\n" +
-                    "  node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo b TOOL=$TOOL') : bat('echo b TOOL=%TOOL%')}}\n" +
-                    "}", true));
+                        """
+                                parallel a: {
+                                  node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo a TOOL=$TOOL') : bat('echo a TOOL=%TOOL%')}}
+                                }, b: {
+                                  node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo b TOOL=$TOOL') : bat('echo b TOOL=%TOOL%')}}
+                                }""", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("a/1", b);
                 SemaphoreStep.waitForStart("b/1", b);
@@ -102,22 +109,24 @@ public class EnvStepTest {
         });
     }
 
-    @Test public void restarting() throws Throwable {
+    @Test
+    void restarting() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                    "def show(which) {\n" +
-                    "  echo \"groovy ${which} ${env.TESTVAR}:\"\n" +
-                    "  isUnix() ? sh(\"echo shell ${which} \\$TESTVAR:\") : bat(\"echo shell ${which} %TESTVAR%:\")\n" +
-                    "}\n" +
-                    "node {\n" +
-                    "  withEnv(['TESTVAR=val']) {\n" +
-                    "    show 'before'\n" +
-                    "    semaphore 'restarting'\n" +
-                    "    show 'after'\n" +
-                    "  }\n" +
-                    "  show 'outside'\n" +
-                    "}", true));
+                        """
+                                def show(which) {
+                                  echo "groovy ${which} ${env.TESTVAR}:"
+                                  isUnix() ? sh("echo shell ${which} \\$TESTVAR:") : bat("echo shell ${which} %TESTVAR%:")
+                                }
+                                node {
+                                  withEnv(['TESTVAR=val']) {
+                                    show 'before'
+                                    semaphore 'restarting'
+                                    show 'after'
+                                  }
+                                  show 'outside'
+                                }""", true));
                 WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
                 SemaphoreStep.waitForStart("restarting/1", b);
         });
@@ -133,23 +142,26 @@ public class EnvStepTest {
         });
     }
 
-    @Test public void nested() throws Throwable {
+    @Test
+    void nested() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                    "node {\n" +
-                    "  withEnv(['A=one']) {\n" +
-                    "    withEnv(['B=two']) {\n" +
-                    "      isUnix() ? sh('echo A=$A B=$B') : bat('echo A=%A% B=%B%')\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}", true));
+                        """
+                                node {
+                                  withEnv(['A=one']) {
+                                    withEnv(['B=two']) {
+                                      isUnix() ? sh('echo A=$A B=$B') : bat('echo A=%A% B=%B%')
+                                    }
+                                  }
+                                }""", true));
                 WorkflowRun b = j.buildAndAssertSuccess(p);
                 j.assertLogContains("A=one B=two", b);
         });
     }
 
-    @Test public void configRoundTrip() throws Throwable {
+    @Test
+    void configRoundTrip() throws Throwable {
         sessions.then(j -> {
                 configRoundTrip(Collections.emptyList(), j);
                 configRoundTrip(Collections.singletonList("VAR1=val1"), j);

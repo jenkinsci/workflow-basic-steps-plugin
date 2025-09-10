@@ -28,67 +28,78 @@ import java.io.File;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import hudson.FilePath;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class DeleteDirStepTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    @Rule public JenkinsRule r = new JenkinsRule();
+@WithJenkins
+class DeleteDirStepTest {
 
-    @Test
-    public void testDeleteEmptyWorkspace() throws Exception {
-        String workspace = runAndGetWorkspaceDir(
-                "node {\n" +
-                "  deleteDir()\n" + 
-                "}");
-        File f = new File(workspace);
-        Assert.assertFalse("Workspace directory should no longer exist", f.exists());
+    private JenkinsRule r;
+
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
     }
 
     @Test
-    public void testDeleteTopLevelDir() throws Exception {
+    void testDeleteEmptyWorkspace() throws Exception {
         String workspace = runAndGetWorkspaceDir(
-                "node {\n" +
-                "  writeFile file: 'f1', text: 'some text'\n" +
-                "  writeFile file: 'f2', text: 'some text'\n" +
-                "  writeFile file: '.hidden', text: 'some text'\n" +
-                "  writeFile file: 'sub1/f1', text: 'some text'\n" +
-                "  writeFile file: '.sub2/f2', text: 'some text'\n" +
-                "  writeFile file: '.sub3/.hidden', text: 'some text'\n" +
-                "  echo 'workspace is ---' + pwd() + '---'\n" + 
-                "  deleteDir()\n" + 
-                "}");
+                """
+                        node {
+                          deleteDir()
+                        }""");
         File f = new File(workspace);
-        Assert.assertFalse("Workspace directory should no longer exist", f.exists());
+        assertFalse(f.exists(), "Workspace directory should no longer exist");
     }
 
     @Test
-    public void testDeleteSubFolder() throws Exception {
+    void testDeleteTopLevelDir() throws Exception {
         String workspace = runAndGetWorkspaceDir(
-                "node {\n" +
-                "  writeFile file: 'f1', text: 'some text'\n" +
-                "  writeFile file: 'f2', text: 'some text'\n" +
-                "  writeFile file: '.hidden', text: 'some text'\n" +
-                "  writeFile file: 'sub1/f1', text: 'some text'\n" +
-                "  writeFile file: '.sub2/f2', text: 'some text'\n" +
-                "  writeFile file: '.sub3/.hidden', text: 'some text'\n" +
-                "  echo 'workspace is ---' + pwd() + '---'\n" + 
-                "  dir ('sub1') {\n" +
-                "    deleteDir()\n" +
-                "  }" + 
-                "}");
+                """
+                        node {
+                          writeFile file: 'f1', text: 'some text'
+                          writeFile file: 'f2', text: 'some text'
+                          writeFile file: '.hidden', text: 'some text'
+                          writeFile file: 'sub1/f1', text: 'some text'
+                          writeFile file: '.sub2/f2', text: 'some text'
+                          writeFile file: '.sub3/.hidden', text: 'some text'
+                          echo 'workspace is ---' + pwd() + '---'
+                          deleteDir()
+                        }""");
+        File f = new File(workspace);
+        assertFalse(f.exists(), "Workspace directory should no longer exist");
+    }
+
+    @Test
+    void testDeleteSubFolder() throws Exception {
+        String workspace = runAndGetWorkspaceDir(
+                """
+                        node {
+                          writeFile file: 'f1', text: 'some text'
+                          writeFile file: 'f2', text: 'some text'
+                          writeFile file: '.hidden', text: 'some text'
+                          writeFile file: 'sub1/f1', text: 'some text'
+                          writeFile file: '.sub2/f2', text: 'some text'
+                          writeFile file: '.sub3/.hidden', text: 'some text'
+                          echo 'workspace is ---' + pwd() + '---'
+                          dir ('sub1') {
+                            deleteDir()
+                          }\
+                        }""");
 
         File f = new File(workspace);
-        Assert.assertTrue("Workspace directory should still exist", f.exists());
-        Assert.assertTrue("f1 should still exist", new File(f, "f1").exists());
-        Assert.assertTrue("f1 should still exist", new File(f, "f2").exists());
-        Assert.assertFalse("sub1 should not exist", new File(f, "sub1").exists());
-        Assert.assertTrue(".sub2/f2 should still exist", new File(f, ".sub2/f2").exists());
-        Assert.assertTrue(".sub3/.hidden should still exist", new File(f, ".sub3/.hidden").exists());
+        assertTrue(f.exists(), "Workspace directory should still exist");
+        assertTrue(new File(f, "f1").exists(), "f1 should still exist");
+        assertTrue(new File(f, "f2").exists(), "f1 should still exist");
+        assertFalse(new File(f, "sub1").exists(), "sub1 should not exist");
+        assertTrue(new File(f, ".sub2/f2").exists(), ".sub2/f2 should still exist");
+        assertTrue(new File(f, ".sub3/.hidden").exists(), ".sub3/.hidden should still exist");
     }
 
 
@@ -105,7 +116,7 @@ public class DeleteDirStepTest {
 
         FilePath ws = r.jenkins.getWorkspaceFor(p);
         String workspace = ws.getRemote();
-        Assert.assertNotNull("Unable to locate workspace", workspace);
+        assertNotNull(workspace, "Unable to locate workspace");
         return workspace;
     }
 }

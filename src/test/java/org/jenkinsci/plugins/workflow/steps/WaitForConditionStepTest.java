@@ -29,23 +29,31 @@ import hudson.Util;
 import hudson.model.Result;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.*;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
-import org.jvnet.hudson.test.JenkinsSessionRule;
 
-public class WaitForConditionStepTest {
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 
-    @Test public void simple() throws Throwable {
+class WaitForConditionStepTest {
+
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    @RegisterExtension
+    private final JenkinsSessionExtension sessions = new JenkinsSessionExtension();
+
+    @Test
+    void simple() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; semaphore 'waited'", true));
@@ -62,7 +70,8 @@ public class WaitForConditionStepTest {
         });
     }
 
-    @Test public void initialRecurrence() throws Throwable {
+    @Test
+    void initialRecurrence() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil(initialRecurrencePeriod: 999) {semaphore 'wait'}; semaphore 'waited'", true));
@@ -79,7 +88,8 @@ public class WaitForConditionStepTest {
         });
     }
 
-    @Test public void failure() throws Throwable {
+    @Test
+    void failure() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}", true));
@@ -96,7 +106,8 @@ public class WaitForConditionStepTest {
         });
     }
 
-    @Test public void catchErrors() throws Throwable {
+    @Test
+    void catchErrors() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
@@ -122,7 +133,8 @@ public class WaitForConditionStepTest {
         });
     }
 
-    @Test public void restartDuringBody() throws Throwable {
+    @Test
+    void restartDuringBody() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; echo 'finished waiting'", true));
@@ -140,7 +152,8 @@ public class WaitForConditionStepTest {
         });
     }
 
-    @Test public void restartDuringDelay() throws Throwable {
+    @Test
+    void restartDuringDelay() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil {semaphore 'wait'}; echo 'finished waiting'", true));
@@ -154,9 +167,8 @@ public class WaitForConditionStepTest {
                 final long LONG_TIME = Long.MAX_VALUE / /* > RECURRENCE_PERIOD_BACKOFF */ 10;
                 executions.get(0).recurrencePeriod = LONG_TIME;
                 SemaphoreStep.success("wait/2", false);
-                while (executions.get(0).recurrencePeriod == LONG_TIME) {
-                    Thread.sleep(100);
-                }
+                await().timeout(5, TimeUnit.SECONDS)
+                        .until(() -> executions.get(0).recurrencePeriod != LONG_TIME);
                 j.waitForMessage("Will try again after " + Util.getTimeSpanString(LONG_TIME), b);
                 // timer is now waiting for a long time
         });
@@ -170,7 +182,8 @@ public class WaitForConditionStepTest {
         });
     }
 
-    @Test public void quiet() throws Throwable {
+    @Test
+    void quiet() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("waitUntil(quiet: true) {semaphore 'wait'}; semaphore 'waited'", true));

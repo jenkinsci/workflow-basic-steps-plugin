@@ -20,37 +20,47 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.input.InputAction;
 import org.jenkinsci.plugins.workflow.support.steps.input.InputStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.Assert.*;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Tests {@link RetryStep}.
  */
-public class RetryStepTest {
+@WithJenkins
+class RetryStepTest {
 
-    @ClassRule
-    public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    private JenkinsRule r;
+
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
 
     @Test
-    public void smokes() throws Exception {
+    void smokes() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-            "int i = 0;\n" +
-            "retry(3) {\n" +
-            "    println 'Trying!'\n" +
-            "    if (i++ < 2) error('oops');\n" +
-            "    println 'Done!'\n" +
-            "}\n" +
-            "println 'Over!'"
+                """
+                        int i = 0;
+                        retry(3) {
+                            println 'Trying!'
+                            if (i++ < 2) error('oops');
+                            println 'Done!'
+                        }
+                        println 'Over!'"""
         , true));
 
         QueueTaskFuture<WorkflowRun> f = p.scheduleBuild2(0);
@@ -72,7 +82,7 @@ public class RetryStepTest {
             "Over!",
         }) {
             idx = log.indexOf(msg, idx + 1);
-            assertTrue(msg + " not found", idx != -1);
+            assertTrue(idx != -1, msg + " not found");
         }
 
         idx = 0;
@@ -87,13 +97,13 @@ public class RetryStepTest {
             "[Pipeline] // retry",
         }) {
             idx = log.indexOf(msg, idx + 1);
-            assertTrue(msg + " not found", idx != -1);
+            assertTrue(idx != -1, msg + " not found");
         }
     }
 
     @Issue("JENKINS-41276")
     @Test
-    public void abortShouldNotRetry() throws Exception {
+    void abortShouldNotRetry() throws Exception {
         r.jenkins.setSecurityRealm(r.createDummySecurityRealm());
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
@@ -114,13 +124,15 @@ public class RetryStepTest {
 
     @Issue("JENKINS-44379")
     @Test
-    public void inputAbortShouldNotRetry() throws Exception {
+    void inputAbortShouldNotRetry() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("int count = 0\n" +
-                "retry(3) {\n" +
-                "  echo 'trying '+(count++)\n" +
-                "  input id: 'InputX', message: 'OK?', ok: 'Yes'\n" +
-                "}\n", true));
+        p.setDefinition(new CpsFlowDefinition("""
+                int count = 0
+                retry(3) {
+                  echo 'trying '+(count++)
+                  input id: 'InputX', message: 'OK?', ok: 'Yes'
+                }
+                """, true));
 
         QueueTaskFuture<WorkflowRun> queueTaskFuture = p.scheduleBuild2(0);
         WorkflowRun run = queueTaskFuture.getStartCondition().get();
@@ -146,19 +158,21 @@ public class RetryStepTest {
     }
 
     @Test
-    public void stackTraceOnError() throws Exception {
+    void stackTraceOnError() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(
                 new CpsFlowDefinition(
-                        "def count = 0\n"
-                                + "retry(2) {\n"
-                                + "  count += 1\n"
-                                + "  echo 'Try #' + count\n"
-                                + "  if (count == 1) {\n"
-                                + "    throw new Exception('foo')\n"
-                                + "  }\n"
-                                + "  echo 'Done!'\n"
-                                + "}\n",
+                        """
+                                def count = 0
+                                retry(2) {
+                                  count += 1
+                                  echo 'Try #' + count
+                                  if (count == 1) {
+                                    throw new Exception('foo')
+                                  }
+                                  echo 'Done!'
+                                }
+                                """,
                         true));
 
         WorkflowRun run = r.buildAndAssertSuccess(p);
@@ -172,7 +186,7 @@ public class RetryStepTest {
 
     @Issue("JENKINS-60354")
     @Test
-    public void downstreamBuildFailureShouldRetry() throws Exception {
+    void downstreamBuildFailureShouldRetry() throws Exception {
         WorkflowJob ds = r.createProject(WorkflowJob.class);
         ds.setDefinition(new CpsFlowDefinition("error 'oops!'", true));
         WorkflowJob us = r.createProject(WorkflowJob.class);
@@ -190,18 +204,20 @@ public class RetryStepTest {
 
     @Issue("JENKINS-44379")
     @Test
-    public void shouldNotRetryAfterOuterTimeout() throws Exception {
+    void shouldNotRetryAfterOuterTimeout() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(
                 new CpsFlowDefinition(
-                        "int count = 0\n"
-                                + "timeout(time: 5, unit: 'SECONDS') {\n"
-                                + "  retry(3) {\n"
-                                + "    echo 'try ' + count++\n"
-                                + "    sleep 15\n"
-                                + "    error 'failure'\n"
-                                + "  }\n"
-                                + "}\n",
+                        """
+                                int count = 0
+                                timeout(time: 5, unit: 'SECONDS') {
+                                  retry(3) {
+                                    echo 'try ' + count++
+                                    sleep 15
+                                    error 'failure'
+                                  }
+                                }
+                                """,
                         true));
 
         WorkflowRun run = r.buildAndAssertStatus(Result.ABORTED, p);
@@ -213,18 +229,20 @@ public class RetryStepTest {
 
     @Issue("JENKINS-51454")
     @Test
-    public void shouldRetryAfterInnerTimeout() throws Exception {
+    void shouldRetryAfterInnerTimeout() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(
                 new CpsFlowDefinition(
-                        "int count = 0\n"
-                                + "retry(3) {\n"
-                                + "  timeout(time: 5, unit: 'SECONDS') {\n"
-                                + "    echo 'try ' + count++\n"
-                                + "    sleep 15\n"
-                                + "    error 'failure'\n"
-                                + "  }\n"
-                                + "}\n",
+                        """
+                                int count = 0
+                                retry(3) {
+                                  timeout(time: 5, unit: 'SECONDS') {
+                                    echo 'try ' + count++
+                                    sleep 15
+                                    error 'failure'
+                                  }
+                                }
+                                """,
                         true));
 
         WorkflowRun run = r.buildAndAssertStatus(Result.ABORTED, p);
@@ -235,20 +253,30 @@ public class RetryStepTest {
     }
 
     @Issue("JENKINS-49707")
-    @Test public void conditions() throws Exception {
+    @Test
+    void conditions() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition("MSG")));
         p.setDefinition(new CpsFlowDefinition("int i = 0; retry(count: 2, conditions: [nonfatal()]) {if (i++ == 0) {error MSG} else {echo 'ok'}}", true));
         r.assertBuildStatusSuccess(p.scheduleBuild2(0, new ParametersAction(new StringParameterValue("MSG", "just a warning"))));
         r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0, new ParametersAction(new StringParameterValue("MSG", "fatal error"))));
     }
+
+    @SuppressWarnings("unused")
     public static final class MyCondition extends ErrorCondition {
-        @DataBoundConstructor public MyCondition() {}
-        @Override public boolean test(Throwable error, StepContext context) throws IOException, InterruptedException {
+
+        @DataBoundConstructor
+        public MyCondition() {}
+
+        @Override
+        public boolean test(Throwable error, StepContext context) throws IOException, InterruptedException {
             return !error.getMessage().contains("fatal");
         }
+
+        @SuppressWarnings("unused")
         @Symbol("nonfatal")
-        @TestExtension("conditions") public static final class DescriptorImpl extends ErrorConditionDescriptor {}
+        @TestExtension("conditions")
+        public static final class DescriptorImpl extends ErrorConditionDescriptor {}
     }
 
 }

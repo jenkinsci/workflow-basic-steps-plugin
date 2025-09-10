@@ -36,22 +36,32 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNull;
-import org.junit.Test;
-import org.junit.Rule;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class PwdStepTest {
+@WithJenkins
+class PwdStepTest {
 
-    @Rule public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
 
-    @Test public void basics() throws Exception {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
+
+    @Test
+    void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {echo \"cwd='${pwd()}'\"}", true));
         r.assertLogContains("cwd='" + r.jenkins.getWorkspaceFor(p) + "'", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
-    @Test public void tmp() throws Exception {
+    @Test
+    void tmp() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {echo \"tmp='${pwd tmp: true}'\"}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));

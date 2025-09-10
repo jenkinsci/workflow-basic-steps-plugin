@@ -31,6 +31,7 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolProperty;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import org.hamcrest.Matchers;
@@ -43,27 +44,39 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.ToolInstallations;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class ToolStepTest {
+@WithJenkins
+class ToolStepTest {
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public JenkinsRule r = new JenkinsRule();
-    @Rule public TemporaryFolder folder = new TemporaryFolder();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    private JenkinsRule r;
 
-    @Test public void build() throws Exception {
+    @TempDir
+    private File folder;
+
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
+
+    @Test
+    void build() throws Exception {
         Maven.MavenInstallation tool = ToolInstallations.configureMaven3();
         String name = tool.getName();
         Maven.MavenInstallation.DescriptorImpl desc = r.jenkins.getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
@@ -88,8 +101,9 @@ public class ToolStepTest {
         assertEquals(name, ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
 
-    @Test public void toolWithSymbol() throws Exception {
-        File toolHome = folder.newFolder("mockTools");
+    @Test
+    void toolWithSymbol() throws Exception {
+        File toolHome = newFolder(folder, "mockTools");
         MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
         r.jenkins.getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(tool);
 
@@ -102,8 +116,9 @@ public class ToolStepTest {
                 r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
-    @Test public void toolWithoutSymbol() throws Exception {
-        File toolHome = folder.newFolder("mockTools");
+    @Test
+    void toolWithoutSymbol() throws Exception {
+        File toolHome = newFolder(folder, "mockTools");
         MockToolWithoutSymbol tool = new MockToolWithoutSymbol("mock-tool-without-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
         r.jenkins.getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class).setInstallations(tool);
 
@@ -121,8 +136,10 @@ public class ToolStepTest {
                 r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
-    @Issue("JENKINS-61474") @Test public void toolWithoutName() throws Exception {
-        File toolHome = folder.newFolder("mockTools");
+    @Issue("JENKINS-61474")
+    @Test
+    void toolWithoutName() throws Exception {
+        File toolHome = newFolder(folder, "mockTools");
         MockToolWithSymbol misconfiguredTool = new MockToolWithSymbol(null, toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
         MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
         r.jenkins.getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(misconfiguredTool, tool);
@@ -157,7 +174,8 @@ public class ToolStepTest {
         }
     }
 
-    @Test public void configRoundTrip() throws Exception {
+    @Test
+    void configRoundTrip() throws Exception {
         String name = "My JDK";
         JDK.DescriptorImpl desc = r.jenkins.getDescriptorByType(JDK.DescriptorImpl.class);
         String type = desc.getId();
@@ -171,6 +189,15 @@ public class ToolStepTest {
         if (SymbolLookup.getSymbolValue(desc).isEmpty()) {
             assertEquals(type, s.getType());
         } // else (Jenkins 2.x) StepConfigTester does not make sense since in real life we would not read an existing value (an ID) into a pulldown listing only symbols
+    }
+
+    private static File newFolder(File root, String... subDirs) throws IOException {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + root);
+        }
+        return result;
     }
 
 }
