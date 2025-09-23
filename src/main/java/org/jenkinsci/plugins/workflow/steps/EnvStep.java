@@ -35,7 +35,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import net.sf.json.JSONObject;
+import org.jenkinsci.plugins.structs.describable.CustomDescribableModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest2;
 
@@ -104,7 +106,7 @@ public class EnvStep extends Step {
         }
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension public static class DescriptorImpl extends StepDescriptor implements CustomDescribableModel {
 
         @Override public String getFunctionName() {
             return "withEnv";
@@ -152,11 +154,34 @@ public class EnvStep extends Step {
                     }
                 }
                 return b.toString();
+            } else if (overrides instanceof Map) {
+                return ((Map<?, ?>) overrides).keySet()
+                    .stream()
+                    .filter(e -> e instanceof String)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
             } else {
                 return null;
             }
         }
 
+        @NonNull
+        @Override
+        public Map<String, Object> customInstantiate(@NonNull Map<String, Object> arguments) {
+            Map<String, Object> r = new HashMap<>(arguments);
+            final String key = "overrides";
+            Object overrides = r.get(key);
+            if (overrides instanceof Map) {
+                r.put(key, toKeyValueList((Map<?, ?>) overrides));
+            }
+            return r;
+        }
+
+        private static List<String> toKeyValueList(Map<?, ?> map) {
+            return map.entrySet().stream()
+                .map(m -> (String) m.getKey() + "=" + (m.getValue() == null ? "" : m.getValue().toString()))
+                .collect(Collectors.toList());
+        }
     }
 
 }
