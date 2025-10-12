@@ -33,8 +33,6 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -44,7 +42,8 @@ public final class WriteFileStep extends Step {
     private final String text;
     private String encoding;
 
-    @DataBoundConstructor public WriteFileStep(String file, String text) {
+    @DataBoundConstructor
+    public WriteFileStep(String file, String text) {
         this.file = file;
         this.text = text;
     }
@@ -67,46 +66,53 @@ public final class WriteFileStep extends Step {
      * Base64-encoded string, the decoded binary data can be written to the file by specifying
      * {@code Base64} as the encoding.
      */
-    @DataBoundSetter public void setEncoding(String encoding) {
+    @DataBoundSetter
+    public void setEncoding(String encoding) {
         this.encoding = Util.fixEmptyAndTrim(encoding);
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "writeFile";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Write file to workspace";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(FilePath.class);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
             Object file = namedArgs.get("file");
             return file instanceof String ? (String) file : null;
         }
-
     }
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
-        private transient final WriteFileStep step;
+        private final transient WriteFileStep step;
 
         Execution(WriteFileStep step, StepContext context) {
             super(context);
             this.step = step;
         }
 
-        @Override protected Void run() throws Exception {
+        @Override
+        protected Void run() throws Exception {
             FilePath file = getContext().get(FilePath.class).child(step.file);
             if (ReadFileStep.BASE64_ENCODING.equals(step.encoding)) {
                 try (OutputStream os = file.write()) {
@@ -119,7 +125,5 @@ public final class WriteFileStep extends Step {
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

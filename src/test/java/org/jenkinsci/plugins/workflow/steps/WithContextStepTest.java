@@ -40,6 +40,7 @@ class WithContextStepTest {
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
 
     @BeforeEach
@@ -51,8 +52,12 @@ class WithContextStepTest {
     void pushd() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class, "p");
         ScriptApproval.get().approveSignature("method hudson.FilePath child java.lang.String");
-        p.setDefinition(new CpsFlowDefinition("node {withContext(getContext(hudson.FilePath).child('subdir')) {echo(/simulating dir step in ${pwd()}/)}}", true));
-        r.assertLogContains("simulating dir step in " + r.jenkins.getWorkspaceFor(p).child("subdir").getRemote(), r.buildAndAssertSuccess(p));
+        p.setDefinition(new CpsFlowDefinition(
+                "node {withContext(getContext(hudson.FilePath).child('subdir')) {echo(/simulating dir step in ${pwd()}/)}}",
+                true));
+        r.assertLogContains(
+                "simulating dir step in "
+                        + r.jenkins.getWorkspaceFor(p).child("subdir").getRemote(),
+                r.buildAndAssertSuccess(p));
     }
-
 }

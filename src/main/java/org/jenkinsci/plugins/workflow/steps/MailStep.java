@@ -23,24 +23,22 @@
  */
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
-
-import org.apache.commons.lang3.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.mail.Address;
 import jakarta.mail.Message;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.MimeMessage;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import jenkins.plugins.mailer.tasks.MimeMessageBuilder;
+import org.apache.commons.lang3.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 /**
  * Simple email sender step.
@@ -104,20 +102,24 @@ public class MailStep extends Step {
     @Extension
     public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "mail";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Mail";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
             Object subject = namedArgs.get("subject");
             return subject instanceof String ? (String) subject : null;
         }
@@ -130,7 +132,7 @@ public class MailStep extends Step {
 
         private static final long serialVersionUID = 1L;
 
-        private transient final MailStep step;
+        private final transient MailStep step;
 
         MailStepExecution(MailStep step, StepContext context) {
             super(context);
@@ -146,10 +148,12 @@ public class MailStep extends Step {
 
         private MimeMessage buildMimeMessage() throws Exception {
             if (StringUtils.isBlank(step.subject) || StringUtils.isBlank(step.body)) {
-                throw new AbortException("Email not sent. All mandatory properties must be supplied ('subject', 'body').");
+                throw new AbortException(
+                        "Email not sent. All mandatory properties must be supplied ('subject', 'body').");
             }
 
-            MimeMessageBuilder messageBuilder = new MimeMessageBuilder().setListener(getContext().get(TaskListener.class));
+            MimeMessageBuilder messageBuilder =
+                    new MimeMessageBuilder().setListener(getContext().get(TaskListener.class));
 
             if (step.subject != null) {
                 messageBuilder.setSubject(step.subject);

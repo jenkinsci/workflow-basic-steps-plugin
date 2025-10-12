@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -32,7 +33,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.util.Timer;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -45,11 +45,13 @@ public final class WaitForConditionStep extends Step {
     private long initialRecurrencePeriod = MIN_RECURRENCE_PERIOD;
     private boolean quiet = false;
 
-    @DataBoundConstructor public WaitForConditionStep() {}
+    @DataBoundConstructor
+    public WaitForConditionStep() {}
 
     @DataBoundSetter
     public void setInitialRecurrencePeriod(long initialRecurrencePeriod) {
-        this.initialRecurrencePeriod = Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD));
+        this.initialRecurrencePeriod =
+                Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD));
     }
 
     public long getInitialRecurrencePeriod() {
@@ -61,9 +63,12 @@ public final class WaitForConditionStep extends Step {
         this.quiet = quiet;
     }
 
-    public boolean getQuiet() { return quiet; }
+    public boolean getQuiet() {
+        return quiet;
+    }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(context, initialRecurrencePeriod, this.quiet);
     }
 
@@ -77,6 +82,7 @@ public final class WaitForConditionStep extends Step {
          * @see #retry(String, StepContext)
          */
         private final String id = UUID.randomUUID().toString();
+
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
         private long initialRecurrencePeriod;
         long recurrencePeriod;
@@ -97,23 +103,29 @@ public final class WaitForConditionStep extends Step {
             return this;
         }
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
             return false;
         }
 
-        @Override public void stop(@NonNull Throwable cause) throws Exception {
+        @Override
+        public void stop(@NonNull Throwable cause) throws Exception {
             if (task != null) {
                 task.cancel(false);
             }
             super.stop(cause);
         }
 
-        @Override public void onResume() {
+        @Override
+        public void onResume() {
             recurrencePeriod = initialRecurrencePeriod;
             if (body == null) {
                 // Restarted while waiting for the timer to go off. Rerun now.
-                body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
+                body = getContext()
+                        .newBodyInvoker()
+                        .withCallback(new Callback(id))
+                        .start();
             } // otherwise we are in the middle of the body already, so let it run
         }
 
@@ -130,20 +142,31 @@ public final class WaitForConditionStep extends Step {
             getContext().saveState();
             if (!this.quiet) {
                 try {
-                    perBodyContext.get(TaskListener.class).getLogger().println("Will try again after " + Util.getTimeSpanString(recurrencePeriod));
+                    perBodyContext
+                            .get(TaskListener.class)
+                            .getLogger()
+                            .println("Will try again after " + Util.getTimeSpanString(recurrencePeriod));
                 } catch (Exception x) {
                     getContext().onFailure(x);
                     return;
                 }
             }
-            task = Timer.get().schedule(() -> {
-                task = null;
-                body = getContext().newBodyInvoker().withCallback(new Callback(id)).start();
-            }, recurrencePeriod, TimeUnit.MILLISECONDS);
-            recurrencePeriod = Math.min((long)(recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
+            task = Timer.get()
+                    .schedule(
+                            () -> {
+                                task = null;
+                                body = getContext()
+                                        .newBodyInvoker()
+                                        .withCallback(new Callback(id))
+                                        .start();
+                            },
+                            recurrencePeriod,
+                            TimeUnit.MILLISECONDS);
+            recurrencePeriod = Math.min((long) (recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
         }
 
-        @Override public String getStatus() {
+        @Override
+        public String getStatus() {
             if (body != null) {
                 return "running body";
             } else if (task == null) {
@@ -156,7 +179,6 @@ public final class WaitForConditionStep extends Step {
                 return "waiting to rerun; next recurrence period: " + recurrencePeriod + "ms";
             }
         }
-
     }
 
     private static final class Callback extends BodyExecutionCallback {
@@ -168,7 +190,8 @@ public final class WaitForConditionStep extends Step {
             this.id = id;
         }
 
-        @Override public void onSuccess(final StepContext context, Object result) {
+        @Override
+        public void onSuccess(final StepContext context, Object result) {
             if (!(result instanceof Boolean)) {
                 context.onFailure(new ClassCastException("body return value " + result + " is not boolean"));
                 return;
@@ -180,31 +203,34 @@ public final class WaitForConditionStep extends Step {
             Execution.retry(id, context);
         }
 
-        @Override public void onFailure(StepContext context, Throwable t) {
+        @Override
+        public void onFailure(StepContext context, Throwable t) {
             context.onFailure(t);
         }
-
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "waitUntil";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Wait for condition";
         }
 
-        @Override public boolean takesImplicitBlockArgument() {
+        @Override
+        public boolean takesImplicitBlockArgument() {
             return true;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
-
     }
-
 }

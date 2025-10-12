@@ -24,6 +24,10 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import hudson.model.JDK;
 import hudson.model.Result;
 import hudson.tasks.Maven;
@@ -55,16 +59,13 @@ import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 @WithJenkins
 class ToolStepTest {
 
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
 
     @TempDir
@@ -79,7 +80,8 @@ class ToolStepTest {
     void build() throws Exception {
         Maven.MavenInstallation tool = ToolInstallations.configureMaven3();
         String name = tool.getName();
-        Maven.MavenInstallation.DescriptorImpl desc = r.jenkins.getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
+        Maven.MavenInstallation.DescriptorImpl desc =
+                r.jenkins.getDescriptorByType(Maven.MavenInstallation.DescriptorImpl.class);
 
         // Defensive - Maven doesn't have a symbol before 2.x, and other tools may still not have symbols after that.
         String type = desc.getId();
@@ -91,12 +93,15 @@ class ToolStepTest {
         }
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + name + "', type: '" + type + "'; def settings = readFile($/$home/conf/settings.xml/$).split(); echo settings[-1]}",
+        p.setDefinition(new CpsFlowDefinition(
+                "node {def home = tool name: '" + name + "', type: '" + type
+                        + "'; def settings = readFile($/$home/conf/settings.xml/$).split(); echo settings[-1]}",
                 true));
 
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("</settings>", b);
-        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("tool"));
+        List<FlowNode> coreStepNodes =
+                new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("tool"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertEquals(name, ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
@@ -104,53 +109,62 @@ class ToolStepTest {
     @Test
     void toolWithSymbol() throws Exception {
         File toolHome = newFolder(folder, "mockTools");
-        MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
-        r.jenkins.getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(tool);
+        MockToolWithSymbol tool =
+                new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        r.jenkins
+                .getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class)
+                .setInstallations(tool);
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithSymbol'\n"
-                +"echo \"${home}\"}",
+        p.setDefinition(new CpsFlowDefinition(
+                "node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithSymbol'\n"
+                        + "echo \"${home}\"}",
                 true));
 
-        r.assertLogContains(toolHome.getAbsolutePath(),
-                r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        r.assertLogContains(toolHome.getAbsolutePath(), r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     @Test
     void toolWithoutSymbol() throws Exception {
         File toolHome = newFolder(folder, "mockTools");
-        MockToolWithoutSymbol tool = new MockToolWithoutSymbol("mock-tool-without-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
-        r.jenkins.getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class).setInstallations(tool);
+        MockToolWithoutSymbol tool = new MockToolWithoutSymbol(
+                "mock-tool-without-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        r.jenkins
+                .getDescriptorByType(MockToolWithoutSymbol.MockToolWithoutSymbolDescriptor.class)
+                .setInstallations(tool);
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithoutSymbol'}",
-                true));
+        p.setDefinition(new CpsFlowDefinition(
+                "node {def home = tool name: '" + tool.getName() + "', type: 'mockToolWithoutSymbol'}", true));
 
-        r.assertLogContains("No mockToolWithoutSymbol named mock-tool-without-symbol found",
+        r.assertLogContains(
+                "No mockToolWithoutSymbol named mock-tool-without-symbol found",
                 r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0)));
 
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool name: '" + tool.getName() + "', type: '" + MockToolWithoutSymbol.class.getName() + "'\n"
-                + "echo \"${home}\"}",
+        p.setDefinition(new CpsFlowDefinition(
+                "node {def home = tool name: '" + tool.getName() + "', type: '" + MockToolWithoutSymbol.class.getName()
+                        + "'\n" + "echo \"${home}\"}",
                 true));
-        r.assertLogContains(toolHome.getAbsolutePath(),
-                r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        r.assertLogContains(toolHome.getAbsolutePath(), r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     @Issue("JENKINS-61474")
     @Test
     void toolWithoutName() throws Exception {
         File toolHome = newFolder(folder, "mockTools");
-        MockToolWithSymbol misconfiguredTool = new MockToolWithSymbol(null, toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
-        MockToolWithSymbol tool = new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
-        r.jenkins.getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class).setInstallations(misconfiguredTool, tool);
+        MockToolWithSymbol misconfiguredTool =
+                new MockToolWithSymbol(null, toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        MockToolWithSymbol tool =
+                new MockToolWithSymbol("mock-tool-with-symbol", toolHome.getAbsolutePath(), JenkinsRule.NO_PROPERTIES);
+        r.jenkins
+                .getDescriptorByType(MockToolWithSymbol.MockToolWithSymbolDescriptor.class)
+                .setInstallations(misconfiguredTool, tool);
 
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {def home = tool \"" + tool.getName() + "\"\n"
-                +"echo \"${home}\"}",
-                true));
+        p.setDefinition(new CpsFlowDefinition(
+                "node {def home = tool \"" + tool.getName() + "\"\n" + "echo \"${home}\"}", true));
 
-        r.assertLogContains(toolHome.getAbsolutePath(),
-                r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        r.assertLogContains(toolHome.getAbsolutePath(), r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     public static class MockToolWithSymbol extends ToolInstallation {
@@ -160,8 +174,7 @@ class ToolStepTest {
 
         @TestExtension
         @Symbol("mockToolWithSymbol")
-        public static class MockToolWithSymbolDescriptor extends ToolDescriptor<MockToolWithSymbol> {
-        }
+        public static class MockToolWithSymbolDescriptor extends ToolDescriptor<MockToolWithSymbol> {}
     }
 
     public static class MockToolWithoutSymbol extends ToolInstallation {
@@ -170,8 +183,7 @@ class ToolStepTest {
         }
 
         @TestExtension
-        public static class MockToolWithoutSymbolDescriptor extends ToolDescriptor<MockToolWithoutSymbol> {
-        }
+        public static class MockToolWithoutSymbolDescriptor extends ToolDescriptor<MockToolWithoutSymbol> {}
     }
 
     @Test
@@ -188,7 +200,8 @@ class ToolStepTest {
         assertEquals(name, s.getName());
         if (SymbolLookup.getSymbolValue(desc).isEmpty()) {
             assertEquals(type, s.getType());
-        } // else (Jenkins 2.x) StepConfigTester does not make sense since in real life we would not read an existing value (an ID) into a pulldown listing only symbols
+        } // else (Jenkins 2.x) StepConfigTester does not make sense since in real life we would not read an existing
+        // value (an ID) into a pulldown listing only symbols
     }
 
     private static File newFolder(File root, String... subDirs) throws IOException {
@@ -199,5 +212,4 @@ class ToolStepTest {
         }
         return result;
     }
-
 }

@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.jenkinsci.plugins.workflow.steps.CatchErrorStepTest.assertCatchError;
+
 import hudson.model.Result;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -37,15 +39,14 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-import static org.jenkinsci.plugins.workflow.steps.CatchErrorStepTest.assertCatchError;
-
 @Issue("JENKINS-45579")
 @WithJenkins
 class WarnErrorStepTest {
-    
+
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
 
     @BeforeEach
@@ -60,7 +61,8 @@ class WarnErrorStepTest {
                 """
                         warnError('caught error') {
                           error 'oops'
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.UNSTABLE, Result.UNSTABLE, true);
     }
@@ -72,7 +74,8 @@ class WarnErrorStepTest {
                 """
                         warnError() {
                           error 'oops'
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         r.assertLogContains("A non-empty message is required", b);
     }
@@ -86,7 +89,8 @@ class WarnErrorStepTest {
                           warnError('caught error') {
                             sleep 5
                           }
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
     }
@@ -100,7 +104,8 @@ class WarnErrorStepTest {
                           warnError(message: 'caught error', catchInterruptions: false) {
                             sleep 5
                           }
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, null, false);
     }
@@ -112,7 +117,8 @@ class WarnErrorStepTest {
                 """
                         warnError('caught error') {
                           semaphore 'ready'
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();
@@ -126,7 +132,8 @@ class WarnErrorStepTest {
                 """
                         warnError(message: 'caught error', catchInterruptions: false) {
                           semaphore 'ready'
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();

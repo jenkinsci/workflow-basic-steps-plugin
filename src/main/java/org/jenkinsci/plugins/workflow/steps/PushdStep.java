@@ -33,19 +33,19 @@ public class PushdStep {
     private PushdStep() {}
 
     public static class Execution extends AbstractStepExecutionImpl {
-        
+
         private Execution() {
             throw new AssertionError("only deserialized");
         }
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             throw new AssertionError("only deserialized");
         }
 
-        @Override public void onResume() {}
+        @Override
+        public void onResume() {}
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

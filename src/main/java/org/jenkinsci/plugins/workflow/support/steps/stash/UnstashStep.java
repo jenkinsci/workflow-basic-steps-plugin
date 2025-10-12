@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -34,7 +35,6 @@ import hudson.model.TaskListener;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.flow.StashManager;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -48,7 +48,8 @@ public class UnstashStep extends Step {
 
     private final @NonNull String name;
 
-    @DataBoundConstructor public UnstashStep(@NonNull String name) {
+    @DataBoundConstructor
+    public UnstashStep(@NonNull String name) {
         Jenkins.checkGoodName(name);
         this.name = name;
     }
@@ -58,7 +59,8 @@ public class UnstashStep extends Step {
         return name;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(name, context);
     }
 
@@ -66,38 +68,46 @@ public class UnstashStep extends Step {
 
         private static final long serialVersionUID = 1L;
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String name;
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient String name;
 
         Execution(String name, StepContext context) {
             super(context);
             this.name = name;
         }
 
-        @Override protected Void run() throws Exception {
-            StashManager.unstash(getContext().get(Run.class), name, getContext().get(FilePath.class), getContext().get(Launcher.class), getContext().get(EnvVars.class), getContext().get(TaskListener.class));
+        @Override
+        protected Void run() throws Exception {
+            StashManager.unstash(
+                    getContext().get(Run.class),
+                    name,
+                    getContext().get(FilePath.class),
+                    getContext().get(Launcher.class),
+                    getContext().get(EnvVars.class),
+                    getContext().get(TaskListener.class));
             return null;
         }
-
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "unstash";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Restore files previously stashed";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             Set<Class<?>> context = new HashSet<>();
             Collections.addAll(context, Run.class, FilePath.class, Launcher.class, EnvVars.class, TaskListener.class);
             return Collections.unmodifiableSet(context);
         }
-
     }
-
 }

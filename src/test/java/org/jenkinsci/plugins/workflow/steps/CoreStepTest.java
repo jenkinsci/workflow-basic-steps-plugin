@@ -24,6 +24,10 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -35,10 +39,9 @@ import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.tasks.Fingerprinter;
+import jakarta.mail.internet.InternetAddress;
 import java.io.IOException;
 import java.util.List;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.mail.internet.InternetAddress;
 import jenkins.plugins.mailer.tasks.i18n.Messages;
 import jenkins.tasks.SimpleBuildStep;
 import org.hamcrest.Matchers;
@@ -62,15 +65,13 @@ import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.jvnet.mock_javamail.Mailbox;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 @WithJenkins
 class CoreStepTest {
 
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
     private SnippetizerTester st;
 
@@ -83,7 +84,9 @@ class CoreStepTest {
     @Test
     void artifactArchiver() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {writeFile text: '', file: 'x.txt'; archiveArtifacts artifacts: 'x.txt', fingerprint: true}", true));
+        p.setDefinition(new CpsFlowDefinition(
+                "node {writeFile text: '', file: 'x.txt'; archiveArtifacts artifacts: 'x.txt', fingerprint: true}",
+                true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         List<WorkflowRun.Artifact> artifacts = b.getArtifacts();
         assertEquals(1, artifacts.size());
@@ -97,7 +100,8 @@ class CoreStepTest {
     @Test
     void artifactArchiverNonexistent() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts artifacts: 'nonexistent/', allowEmptyArchive: true}", true));
+        p.setDefinition(new CpsFlowDefinition(
+                "node {archiveArtifacts artifacts: 'nonexistent/', allowEmptyArchive: true}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         p.setDefinition(new CpsFlowDefinition("node {archiveArtifacts 'nonexistent/'}", true));
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
@@ -124,10 +128,14 @@ class CoreStepTest {
                         node {
                             writeFile text: 'hello world', file: 'docs/index.html'
                             step([$class: 'JavadocArchiver', javadocDir: 'docs'])
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
-        assertEquals("hello world", r.createWebClient().getPage(p, "javadoc/").getWebResponse().getContentAsString());
-        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("step"));
+        assertEquals(
+                "hello world",
+                r.createWebClient().getPage(p, "javadoc/").getWebResponse().getContentAsString());
+        List<FlowNode> coreStepNodes =
+                new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("step"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertEquals("docs", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
@@ -137,42 +145,53 @@ class CoreStepTest {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         String recipient = "test@nowhere.net";
         p.setDefinition(new CpsFlowDefinition(
-                  "node {\n"
-                + "    writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'\n"
-                + "    junit 'r.xml'\n"
-                + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}", true));
+                "node {\n"
+                        + "    writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'\n"
+                        + "    junit 'r.xml'\n"
+                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
+                        + "}",
+                true));
         Mailbox inbox = Mailbox.get(new InternetAddress(recipient));
         inbox.clear();
         WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
-        assertEquals(/* MailSender.createUnstableMail/getSubject */Messages.MailSender_UnstableMail_Subject() + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
+        assertEquals(
+                /* MailSender.createUnstableMail/getSubject */ Messages.MailSender_UnstableMail_Subject() + " "
+                        + b.getFullDisplayName(),
+                inbox.get(0).getSubject());
         p.setDefinition(new CpsFlowDefinition(
-                  "node {\n"
-                + "    catchError {error 'oops'}\n"
-                + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}", true));
+                "node {\n"
+                        + "    catchError {error 'oops'}\n"
+                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
+                        + "}",
+                true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
-        assertEquals(Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
+        assertEquals(
+                Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(),
+                inbox.get(0).getSubject());
         p.setDefinition(new CpsFlowDefinition(
-                  "node {\n"
-                + "    catchError {echo 'ok'}\n"
-                + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}", true));
+                "node {\n"
+                        + "    catchError {echo 'ok'}\n"
+                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
+                        + "}",
+                true));
         inbox.clear();
         b = r.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
         assertEquals(0, inbox.size());
         p.setDefinition(new CpsFlowDefinition(
-                  "node {\n"
-                + "    try {error 'oops'} catch (e) {echo \"caught ${e}\"; currentBuild.result = 'FAILURE'}\n"
-                + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                + "}", true));
+                "node {\n"
+                        + "    try {error 'oops'} catch (e) {echo \"caught ${e}\"; currentBuild.result = 'FAILURE'}\n"
+                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
+                        + "}",
+                true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
-        assertEquals(Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
+        assertEquals(
+                Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(),
+                inbox.get(0).getSubject());
     }
 
     @Test
@@ -192,17 +211,27 @@ class CoreStepTest {
     public static class BuilderWithEnvironment extends Builder implements SimpleBuildStep {
 
         @DataBoundConstructor
-        public BuilderWithEnvironment() {
-        }
+        public BuilderWithEnvironment() {}
 
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(
+                @NonNull Run<?, ?> run,
+                @NonNull FilePath workspace,
+                @NonNull EnvVars env,
+                @NonNull Launcher launcher,
+                @NonNull TaskListener listener)
+                throws InterruptedException, IOException {
             assertNull(env.get("BUILD_ID"));
             assertEquals("JENKINS-29144", env.get("TICKET"));
         }
 
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(
+                @NonNull Run<?, ?> run,
+                @NonNull FilePath workspace,
+                @NonNull Launcher launcher,
+                @NonNull TaskListener listener)
+                throws InterruptedException, IOException {
             fail("This method should not get called.");
         }
 
@@ -221,7 +250,8 @@ class CoreStepTest {
     @Test
     void builderWithEnvironment() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
+        p.setDefinition(new CpsFlowDefinition(
+                "node { withEnv(['TICKET=JENKINS-29144', 'BUILD_ID=']) { buildWithEnvironment() } }", true));
         r.buildAndAssertSuccess(p);
     }
 
@@ -229,16 +259,22 @@ class CoreStepTest {
     public static class BuilderWithWorkspaceRequirement extends Builder implements SimpleBuildStep {
 
         @DataBoundConstructor
-        public BuilderWithWorkspaceRequirement() {
-        }
+        public BuilderWithWorkspaceRequirement() {}
 
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener)
+                throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required, but not provided!");
         }
 
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(
+                @NonNull Run<?, ?> run,
+                @NonNull FilePath workspace,
+                @NonNull EnvVars env,
+                @NonNull Launcher launcher,
+                @NonNull TaskListener listener)
+                throws InterruptedException, IOException {
             listener.getLogger().println("workspace context required and provided.");
         }
 
@@ -264,23 +300,30 @@ class CoreStepTest {
         r.assertLogContains("workspace context required and provided.", r.buildAndAssertSuccess(p));
         // and fails outside of one
         p.setDefinition(new CpsFlowDefinition("builderWithWorkspaceRequirement()", true));
-        r.assertLogContains(MissingContextVariableException.class.getCanonicalName(), r.buildAndAssertStatus(Result.FAILURE, p));
+        r.assertLogContains(
+                MissingContextVariableException.class.getCanonicalName(), r.buildAndAssertStatus(Result.FAILURE, p));
     }
 
     @SuppressWarnings("unused")
     public static class BuilderWithoutWorkspaceRequirement extends Builder implements SimpleBuildStep {
 
         @DataBoundConstructor
-        public BuilderWithoutWorkspaceRequirement() {
-        }
+        public BuilderWithoutWorkspaceRequirement() {}
 
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(@NonNull Run<?, ?> run, @NonNull EnvVars env, @NonNull TaskListener listener)
+                throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed.");
         }
 
         @Override
-        public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+        public void perform(
+                @NonNull Run<?, ?> run,
+                @NonNull FilePath workspace,
+                @NonNull EnvVars env,
+                @NonNull Launcher launcher,
+                @NonNull TaskListener listener)
+                throws InterruptedException, IOException {
             listener.getLogger().println("workspace context not needed, but provided.");
         }
 
@@ -313,5 +356,4 @@ class CoreStepTest {
         p.setDefinition(new CpsFlowDefinition("node { builderWithoutWorkspaceRequirement() }", true));
         r.assertLogContains("workspace context not needed, but provided.", r.buildAndAssertSuccess(p));
     }
-
 }

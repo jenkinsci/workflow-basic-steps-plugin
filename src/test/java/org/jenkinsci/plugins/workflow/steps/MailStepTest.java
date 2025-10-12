@@ -23,10 +23,13 @@
  */
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import hudson.model.Result;
-import java.util.List;
 import jakarta.mail.Message;
 import jakarta.mail.internet.MimeMultipart;
+import java.util.List;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -35,10 +38,6 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -64,7 +63,8 @@ class MailStepTest {
         // leave out the subject
         job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', body: 'body');", true));
 
-        WorkflowRun run = r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
+        WorkflowRun run =
+                r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
         r.assertLogContains("Email not sent. All mandatory properties must be supplied ('subject', 'body').", run);
     }
 
@@ -74,7 +74,8 @@ class MailStepTest {
         // leave out the body
         job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', subject: 'subject');", true));
 
-        WorkflowRun run = r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
+        WorkflowRun run =
+                r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
         r.assertLogContains("Email not sent. All mandatory properties must be supplied ('subject', 'body').", run);
     }
 
@@ -84,7 +85,8 @@ class MailStepTest {
         // leave out the subject and body
         job.setDefinition(new CpsFlowDefinition("mail(subject: 'Hello friend', body: 'Missing you!');", true));
 
-        WorkflowRun run = r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
+        WorkflowRun run =
+                r.assertBuildStatus(Result.FAILURE, job.scheduleBuild2(0).get());
         r.assertLogContains("Email not sent. No recipients of any kind specified ('to', 'cc', 'bcc').", run);
     }
 
@@ -93,10 +95,12 @@ class MailStepTest {
         Mailbox.clearAll();
 
         WorkflowJob job = r.jenkins.createProject(WorkflowJob.class, "workflow");
-        job.setDefinition(new CpsFlowDefinition("mail(to: 'tom.abcd@jenkins.org', subject: 'Hello friend', body: 'Missing you!');", true));
+        job.setDefinition(new CpsFlowDefinition(
+                "mail(to: 'tom.abcd@jenkins.org', subject: 'Hello friend', body: 'Missing you!');", true));
 
         WorkflowRun b = r.assertBuildStatusSuccess(job.scheduleBuild2(0));
-        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("mail"));
+        List<FlowNode> coreStepNodes =
+                new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("mail"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertEquals("Hello friend", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
 
@@ -104,8 +108,12 @@ class MailStepTest {
         assertEquals(1, mailbox.getNewMessageCount());
         Message message = mailbox.get(0);
         assertEquals("Hello friend", message.getSubject());
-        assertEquals("Missing you!", ((MimeMultipart)message.getContent()).getBodyPart(0).getContent().toString());
-
+        assertEquals(
+                "Missing you!",
+                ((MimeMultipart) message.getContent())
+                        .getBodyPart(0)
+                        .getContent()
+                        .toString());
     }
 
     @Test
@@ -123,5 +131,4 @@ class MailStepTest {
         MailStep step2 = new StepConfigTester(r).configRoundTrip(step1);
         r.assertEqualDataBoundBeans(step1, step2);
     }
-
 }

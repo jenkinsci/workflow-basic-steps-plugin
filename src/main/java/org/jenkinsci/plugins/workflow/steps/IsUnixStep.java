@@ -36,9 +36,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class IsUnixStep extends Step {
 
-    @DataBoundConstructor public IsUnixStep() {}
+    @DataBoundConstructor
+    public IsUnixStep() {}
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(context);
     }
 
@@ -48,29 +50,31 @@ public class IsUnixStep extends Step {
             super(context);
         }
 
-        @Override protected Boolean run() throws Exception {
+        @Override
+        protected Boolean run() throws Exception {
             return getContext().get(Launcher.class).isUnix();
         }
 
         private static final long serialVersionUID = 1L;
-
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "isUnix";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Checks if running on a Unix-like node";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(Launcher.class);
         }
-
     }
-
 }

@@ -38,51 +38,56 @@ public class GetContextStep extends Step {
 
     public final Class<?> type;
 
-    @DataBoundConstructor public GetContextStep(Class<?> type) {
+    @DataBoundConstructor
+    public GetContextStep(Class<?> type) {
         this.type = type;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(type, context);
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "getContext";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Get contextual object from internal APIs";
         }
 
-        @Override public boolean isAdvanced() {
+        @Override
+        public boolean isAdvanced() {
             return true;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.emptySet(); // depends on the instance
         }
-
     }
 
     public static class Execution extends SynchronousStepExecution<Object> {
 
         private static final long serialVersionUID = 1;
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final Class<?> type;
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient Class<?> type;
 
         Execution(Class<?> type, StepContext context) {
             super(context);
             this.type = type;
         }
 
-        @Override protected Object run() throws Exception {
+        @Override
+        protected Object run() throws Exception {
             return getContext().get(type);
         }
-
     }
-
 }

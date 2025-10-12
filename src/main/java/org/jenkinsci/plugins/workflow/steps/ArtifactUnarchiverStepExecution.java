@@ -6,9 +6,6 @@ import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.httpclient.RobustHTTPClient;
-import jenkins.model.ArtifactManager;
-import jenkins.util.VirtualFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -17,11 +14,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import jenkins.model.ArtifactManager;
+import jenkins.util.VirtualFile;
 
 public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepExecution<List<FilePath>> {
 
-    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final Map<String,String> mapping;
+    @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+    private final transient Map<String, String> mapping;
 
     ArtifactUnarchiverStepExecution(Map<String, String> mapping, StepContext context) throws Exception {
         super(context);
@@ -66,7 +65,8 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
         return files;
     }
 
-    private FilePath copy(VirtualFile src, FilePath dst, TaskListener listener) throws IOException, InterruptedException {
+    private FilePath copy(VirtualFile src, FilePath dst, TaskListener listener)
+            throws IOException, InterruptedException {
         URL u = src.toExternalURL();
         if (u != null) {
             new RobustHTTPClient().copyFromRemotely(dst, u, listener);
@@ -83,12 +83,11 @@ public class ArtifactUnarchiverStepExecution extends SynchronousNonBlockingStepE
      */
     private String getFileName(String s) {
         int idx = s.lastIndexOf('/');
-        if (idx>=0) s=s.substring(idx+1);
+        if (idx >= 0) s = s.substring(idx + 1);
         idx = s.lastIndexOf('\\');
-        if (idx>=0) s=s.substring(idx+1);
+        if (idx >= 0) s = s.substring(idx + 1);
         return s;
     }
 
     private static final long serialVersionUID = 1L;
-
 }

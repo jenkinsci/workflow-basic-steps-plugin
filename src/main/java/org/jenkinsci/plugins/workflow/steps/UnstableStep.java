@@ -63,7 +63,7 @@ public class UnstableStep extends Step {
 
     private static class UnstableStepExecution extends SynchronousStepExecution<Void> {
         private static final long serialVersionUID = 1L;
-        private transient final UnstableStep step;
+        private final transient UnstableStep step;
 
         private UnstableStepExecution(UnstableStep step, StepContext context) {
             super(context);
@@ -72,7 +72,9 @@ public class UnstableStep extends Step {
 
         @Override
         protected Void run() throws Exception {
-            getContext().get(FlowNode.class).addOrReplaceAction(new WarningAction(Result.UNSTABLE).withMessage(step.message));
+            getContext()
+                    .get(FlowNode.class)
+                    .addOrReplaceAction(new WarningAction(Result.UNSTABLE).withMessage(step.message));
             getContext().get(Run.class).setResult(Result.UNSTABLE);
             getContext().get(TaskListener.class).getLogger().append("WARNING: ").println(step.message);
             return null;

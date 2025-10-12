@@ -28,9 +28,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.TaskListener;
-import org.kohsuke.stapler.DataBoundConstructor;
 import java.util.Collections;
 import java.util.Set;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * A simple echo back statement.
@@ -74,22 +74,21 @@ public class EchoStep extends Step {
     }
 
     public static class Execution extends SynchronousStepExecution<Void> {
-        
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String message;
+
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient String message;
 
         Execution(String message, StepContext context) {
             super(context);
             this.message = message;
         }
 
-        @Override protected Void run() throws Exception {
+        @Override
+        protected Void run() throws Exception {
             getContext().get(TaskListener.class).getLogger().println(message);
             return null;
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

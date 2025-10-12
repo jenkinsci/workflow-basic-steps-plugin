@@ -14,12 +14,12 @@ import org.jenkinsci.plugins.workflow.flow.ErrorCondition;
  * @author Kohsuke Kawaguchi
  */
 public class RetryStepExecution extends AbstractStepExecutionImpl {
-    
-    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final int count;
 
-    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final @CheckForNull List<ErrorCondition> conditions;
+    @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+    private final transient int count;
+
+    @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+    private final transient @CheckForNull List<ErrorCondition> conditions;
 
     RetryStepExecution(int count, StepContext context, List<ErrorCondition> conditions) {
         super(context);
@@ -30,13 +30,12 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
-        context.newBodyInvoker()
-            .withCallback(new Callback(count, conditions))
-            .start();
-        return false;   // execution is asynchronous
+        context.newBodyInvoker().withCallback(new Callback(count, conditions)).start();
+        return false; // execution is asynchronous
     }
 
-    @Override public void onResume() {}
+    @Override
+    public void onResume() {}
 
     private static class Callback extends BodyExecutionCallback {
 
@@ -90,7 +89,8 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
 
         private boolean matchesConditions(Throwable t, StepContext context) throws IOException, InterruptedException {
             if (conditions == null || conditions.isEmpty()) {
-                return !(t instanceof FlowInterruptedException) || !((FlowInterruptedException) t).isActualInterruption();
+                return !(t instanceof FlowInterruptedException)
+                        || !((FlowInterruptedException) t).isActualInterruption();
             }
             for (ErrorCondition ec : conditions) {
                 if (ec.test(t, context)) {

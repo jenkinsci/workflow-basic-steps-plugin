@@ -24,10 +24,10 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import hudson.model.Result;
-import java.io.Serializable;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.Result;
+import java.io.Serializable;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 
 public interface CatchExecutionOptions extends Serializable {
@@ -36,16 +36,18 @@ public interface CatchExecutionOptions extends Serializable {
      *
      * If {@link #getStepResultOnError} (by adding a {@link WarningAction})
      */
-    @CheckForNull String getMessage();
+    @CheckForNull
+    String getMessage();
 
     /**
      * The result that will be used for setting the build result if an error is caught.
      *
-     * Return {@link Result#SUCCESS} to leave the build result unchanged. If {@link #isCatchInterruptions} 
+     * Return {@link Result#SUCCESS} to leave the build result unchanged. If {@link #isCatchInterruptions}
      * returns {@code true}, then if a {@link FlowInterruptedException} is caught, its result will be used
      * instead of this value.
      */
-    @NonNull Result getBuildResultOnError();
+    @NonNull
+    Result getBuildResultOnError();
 
     /**
      * The result that will be used for annotating the with {@link WarningAction}) if an error is caught.
@@ -54,7 +56,8 @@ public interface CatchExecutionOptions extends Serializable {
      * returns {@code true}, then if a {@link FlowInterruptedException} is caught, its result will be used
      * instead of this value.
      */
-    @NonNull Result getStepResultOnError();
+    @NonNull
+    Result getStepResultOnError();
 
     /**
      * Whether {@link FlowInterruptedException} should be caught and handled by the step or rethrown.

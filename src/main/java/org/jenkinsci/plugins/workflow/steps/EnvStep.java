@@ -47,7 +47,8 @@ public class EnvStep extends Step {
      */
     private final List<String> overrides;
 
-    @DataBoundConstructor public EnvStep(List<String> overrides) {
+    @DataBoundConstructor
+    public EnvStep(List<String> overrides) {
         for (String pair : overrides) {
             if (pair.indexOf('=') == -1) {
                 throw new IllegalArgumentException(pair);
@@ -55,72 +56,83 @@ public class EnvStep extends Step {
         }
         this.overrides = new ArrayList<>(overrides);
     }
-    
+
     public List<String> getOverrides() {
         return overrides;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(overrides, context);
     }
-    
+
     public static class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
-        
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final List<String> overrides;
+
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient List<String> overrides;
 
         Execution(List<String> overrides, StepContext context) {
             super(context);
             this.overrides = overrides;
         }
-        
-        @Override public boolean start() throws Exception {
+
+        @Override
+        public boolean start() throws Exception {
             Map<String, String> overridesM = new HashMap<>();
             for (String pair : overrides) {
                 int split = pair.indexOf('=');
                 assert split != -1;
                 overridesM.put(pair.substring(0, split), pair.substring(split + 1));
             }
-            getContext().newBodyInvoker().
-                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), EnvironmentExpander.constant(overridesM))).
-                withCallback(BodyExecutionCallback.wrap(getContext())).
-                start();
+            getContext()
+                    .newBodyInvoker()
+                    .withContext(EnvironmentExpander.merge(
+                            getContext().get(EnvironmentExpander.class), EnvironmentExpander.constant(overridesM)))
+                    .withCallback(BodyExecutionCallback.wrap(getContext()))
+                    .start();
             return false;
         }
-        
-        @Override public void onResume() {}
 
+        @Override
+        public void onResume() {}
     }
 
-    @SuppressFBWarnings(value="UWF_UNWRITTEN_FIELD", justification="no longer used")
+    @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "no longer used")
     @Deprecated // kept only for serial compatibility
     private static final class ExpanderImpl extends EnvironmentExpander {
         private static final long serialVersionUID = 1;
-        private Map<String,String> overrides;
-        @Override public void expand(EnvVars env) throws IOException, InterruptedException {
+        private Map<String, String> overrides;
+
+        @Override
+        public void expand(EnvVars env) throws IOException, InterruptedException {
             env.overrideAll(overrides);
         }
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "withEnv";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Set environment variables";
         }
 
-        @Override public boolean takesImplicitBlockArgument() {
+        @Override
+        public boolean takesImplicitBlockArgument() {
             return true;
         }
 
         // TODO JENKINS-27901: need a standard control for this
-        @Override public Step newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
+        @Override
+        public Step newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
             String overridesS = formData.getString("overrides");
             List<String> overrides = new ArrayList<>();
             for (String line : overridesS.split("\r?\n")) {
@@ -132,11 +144,13 @@ public class EnvStep extends Step {
             return new EnvStep(overrides);
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.emptySet();
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
             Object overrides = namedArgs.get("overrides");
             if (overrides instanceof List) {
                 StringBuilder b = new StringBuilder();
@@ -156,7 +170,5 @@ public class EnvStep extends Step {
                 return null;
             }
         }
-
     }
-
 }

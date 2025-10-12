@@ -36,7 +36,8 @@ public class ArtifactArchiverStep extends Step {
         return excludes;
     }
 
-    @DataBoundSetter public void setExcludes(String excludes) {
+    @DataBoundSetter
+    public void setExcludes(String excludes) {
         this.excludes = Util.fixEmptyAndTrim(excludes);
     }
 
@@ -74,6 +75,5 @@ public class ArtifactArchiverStep extends Step {
             Collections.addAll(context, FilePath.class, Run.class, Launcher.class, TaskListener.class);
             return Collections.unmodifiableSet(context);
         }
-
     }
 }
