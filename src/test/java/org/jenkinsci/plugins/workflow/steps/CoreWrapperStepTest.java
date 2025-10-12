@@ -47,6 +47,7 @@ import hudson.tasks.BuildWrapperDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,26 +69,29 @@ import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.TestExtension;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class CoreWrapperStepTest {
+class CoreWrapperStepTest {
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public JenkinsSessionRule sessions = new JenkinsSessionRule();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    @RegisterExtension
+    private final JenkinsSessionExtension sessions = new JenkinsSessionExtension();
 
-    @Test public void useWrapper() throws Throwable {
+    @Test
+    void useWrapper() throws Throwable {
         sessions.then(j -> {
                 new SnippetizerTester(j).assertRoundTrip(new CoreWrapperStep(new MockWrapper()), "mock {\n    // some block\n}");
                 Map<String,String> slaveEnv = new HashMap<>();
@@ -117,33 +121,48 @@ public class CoreWrapperStepTest {
                 j.assertLogNotContains("CoreWrapperStep", b);
         });
     }
+
     public static class MockWrapper extends SimpleBuildWrapper {
-        @DataBoundConstructor public MockWrapper() {}
-        @Override public void setUp(Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
-            assertNotNull(initialEnvironment.toString(), initialEnvironment.get("PATH"));
+
+        @DataBoundConstructor
+        public MockWrapper() {}
+
+        @Override
+        public void setUp(Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
+            assertNotNull(initialEnvironment.get("PATH"), initialEnvironment.toString());
             context.env("EXTRA", "${HOME}/extra");
             context.env("PATH+EXTRA", "${EXTRA}/bin");
             context.setDisposer(new DisposerImpl());
         }
+
         private static final class DisposerImpl extends Disposer {
+            @Serial
             private static final long serialVersionUID = 1;
-            @Override public void tearDown(Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
+            @Override
+            public void tearDown(Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("ran DisposerImpl");
             }
         }
+
+        @SuppressWarnings("unused")
         @Symbol("mock")
-        @TestExtension("useWrapper") public static class DescriptorImpl extends BuildWrapperDescriptor {
+        @TestExtension("useWrapper")
+        public static class DescriptorImpl extends BuildWrapperDescriptor {
             @NonNull
-            @Override public String getDisplayName() {
+            @Override
+            public String getDisplayName() {
                 return "MockWrapper";
             }
-            @Override public boolean isApplicable(AbstractProject<?,?> item) {
+
+            @Override
+            public boolean isApplicable(AbstractProject<?,?> item) {
                 return true;
             }
         }
     }
 
-    @Test public void envStickiness() throws Throwable {
+    @Test
+    void envStickiness() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
@@ -173,25 +192,38 @@ public class CoreWrapperStepTest {
                 j.assertLogContains("shell outside edited", b);
         });
     }
+
     public static class OneVarWrapper extends SimpleBuildWrapper {
-        @DataBoundConstructor public OneVarWrapper() {}
-        @Override public void setUp(Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
+
+        @DataBoundConstructor
+        public OneVarWrapper() {}
+
+        @Override
+        public void setUp(Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println("received " + initialEnvironment.get("TESTVAR"));
             context.env("TESTVAR", "wrapped");
         }
-        @TestExtension("envStickiness") public static class DescriptorImpl extends BuildWrapperDescriptor {
+
+        @SuppressWarnings("unused")
+        @TestExtension("envStickiness")
+        public static class DescriptorImpl extends BuildWrapperDescriptor {
+
             @NonNull
-            @Override public String getDisplayName() {
+            @Override
+            public String getDisplayName() {
                 return "OneVarWrapper";
             }
-            @Override public boolean isApplicable(AbstractProject<?,?> item) {
+
+            @Override
+            public boolean isApplicable(AbstractProject<?,?> item) {
                 return true;
             }
         }
     }
 
     @Issue("JENKINS-27392")
-    @Test public void loggerDecorator() throws Throwable {
+    @Test
+    void loggerDecorator() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition("node {echo 'outside #1'; wrap([$class: 'WrapperWithLogger']) {echo 'inside the block'}; echo 'outside #2'}", true));
@@ -201,16 +233,26 @@ public class CoreWrapperStepTest {
                 j.assertLogContains("INSIDE THE BLOCK", b);
         });
     }
+
     public static class WrapperWithLogger extends SimpleBuildWrapper {
-        @DataBoundConstructor public WrapperWithLogger() {}
-        @Override public void setUp(SimpleBuildWrapper.Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {}
-        @Override public ConsoleLogFilter createLoggerDecorator(@NonNull Run<?,?> build) {
+
+        @DataBoundConstructor
+        public WrapperWithLogger() {}
+
+        @Override
+        public void setUp(SimpleBuildWrapper.Context context, Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {}
+
+        @Override
+        public ConsoleLogFilter createLoggerDecorator(@NonNull Run<?,?> build) {
             return new UpcaseFilter();
         }
+
         private static class UpcaseFilter extends ConsoleLogFilter implements Serializable {
+            @Serial
             private static final long serialVersionUID = 1;
-            @SuppressWarnings("rawtypes") // inherited
-            @Override public OutputStream decorateLogger(AbstractBuild _ignore, final OutputStream logger) throws IOException, InterruptedException {
+
+            @Override
+            public OutputStream decorateLogger(AbstractBuild _ignore, final OutputStream logger) throws IOException, InterruptedException {
                 return new LineTransformationOutputStream() {
                     @Override protected void eol(byte[] b, int len) throws IOException {
                         logger.write(new String(b, 0, len).toUpperCase(Locale.ROOT).getBytes());
@@ -218,25 +260,34 @@ public class CoreWrapperStepTest {
                 };
             }
         }
-        @TestExtension("loggerDecorator") public static class DescriptorImpl extends BuildWrapperDescriptor {
+
+        @SuppressWarnings("unused")
+        @TestExtension("loggerDecorator")
+        public static class DescriptorImpl extends BuildWrapperDescriptor {
+
             @NonNull
-            @Override public String getDisplayName() {
+            @Override
+            public String getDisplayName() {
                 return "WrapperWithLogger";
             }
-            @Override public boolean isApplicable(AbstractProject<?,?> item) {
+
+            @Override
+            public boolean isApplicable(AbstractProject<?,?> item) {
                 return true;
             }
         }
     }
 
     @Issue("JENKINS-45101")
-    @Test public void argumentsToString() throws Throwable {
+    @Test
+    void argumentsToString() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                    "node {\n" +
-                     "    wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {}\n" +
-                     "}", true));
+                        """
+                                node {
+                                    wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {}
+                                }""", true));
                 WorkflowRun b = j.buildAndAssertSuccess(p);
                 List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(
                         b.getExecution(),
@@ -256,29 +307,36 @@ public class CoreWrapperStepTest {
      * @param env variables to override in {@link Computer#getEnvironment}; null values will get unset even if defined in the test environment
      * @see <a href="https://github.com/jenkinsci/jenkins/pull/1553/files#r23784822">explanation in core PR 1553</a>
      */
-    public static Slave createSpecialEnvSlave(JenkinsRule rule, String nodeName, @CheckForNull String labels, Map<String,String> env) throws Exception {
+    private static Slave createSpecialEnvSlave(JenkinsRule rule, String nodeName, @CheckForNull String labels, Map<String,String> env) throws Exception {
         File remoteFS = new File(rule.jenkins.getRootDir(), "agent-work-dirs/" + nodeName);
         SpecialEnvSlave slave = new SpecialEnvSlave(remoteFS, rule.createComputerLauncher(/* yes null */null), nodeName, labels != null ? labels : "", env);
         rule.jenkins.addNode(slave);
         return slave;
     }
+
     private static class SpecialEnvSlave extends Slave {
         private final Map<String,String> env;
+
         SpecialEnvSlave(File remoteFS, ComputerLauncher launcher, String nodeName, @NonNull String labels, Map<String,String> env) throws Descriptor.FormException, IOException {
             super(nodeName, nodeName, remoteFS.getAbsolutePath(), 1, Node.Mode.NORMAL, labels, launcher, RetentionStrategy.NOOP, Collections.emptyList());
             this.env = env;
         }
-        @Override public Computer createComputer() {
+        @Override
+        public Computer createComputer() {
             return new SpecialEnvComputer(this, env);
         }
     }
+
     private static class SpecialEnvComputer extends SlaveComputer {
         private final Map<String,String> env;
+
         SpecialEnvComputer(SpecialEnvSlave slave, Map<String,String> env) {
             super(slave);
             this.env = env;
         }
-        @Override public EnvVars getEnvironment() throws IOException, InterruptedException {
+
+        @Override
+        public EnvVars getEnvironment() throws IOException, InterruptedException {
             EnvVars env2 = super.getEnvironment();
             env2.overrideAll(env);
             return env2;
@@ -286,33 +344,46 @@ public class CoreWrapperStepTest {
     }
 
     public static final class WrapperWithWorkspaceRequirement extends SimpleBuildWrapper {
-        @DataBoundConstructor public WrapperWithWorkspaceRequirement() { }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+        @DataBoundConstructor
+        public WrapperWithWorkspaceRequirement() { }
+
+        @Override
+        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required and provided.");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+
+        @Override
+        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context required but not provided!");
             context.setDisposer(new DisposerWithWorkspaceRequirement());
         }
+
         public static final class DisposerWithWorkspaceRequirement extends Disposer {
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
+
+            @Override
+            public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required and provided.");
             }
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
+
+            @Override
+            public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context required but not provided!");
             }
         }
+
+        @SuppressWarnings("unused")
         @Symbol("wrapperWithWorkspaceRequirement")
         @TestExtension("wrapperWithWorkspaceRequirement")
         public static class DescriptorImpl extends BuildWrapperDescriptor {
-            @Override public boolean isApplicable(AbstractProject<?, ?> project) { return true; }
+            @Override
+            public boolean isApplicable(AbstractProject<?, ?> project) { return true; }
         }
     }
 
     @Issue("JENKINS-46175")
     @Test
-    public void wrapperWithWorkspaceRequirement() throws Throwable {
+    void wrapperWithWorkspaceRequirement() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 // make sure it works inside a node
@@ -332,34 +403,50 @@ public class CoreWrapperStepTest {
     }
 
     public static final class WrapperWithoutWorkspaceRequirement extends SimpleBuildWrapper {
-        @DataBoundConstructor public WrapperWithoutWorkspaceRequirement() { }
-        @Override public boolean requiresWorkspace() { return false; }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+
+        @DataBoundConstructor
+        public WrapperWithoutWorkspaceRequirement() { }
+
+        @Override
+        public boolean requiresWorkspace() { return false; }
+
+        @Override
+        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed, but provided.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
-        @Override public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
+
+        @Override
+        public void setUp(@NonNull Context context, @NonNull Run<?, ?> build, @NonNull TaskListener listener, @NonNull EnvVars initialEnvironment) throws IOException, InterruptedException {
             listener.getLogger().println(">>> workspace context not needed.");
             context.setDisposer(new DisposerWithoutWorkspaceRequirement());
         }
+
         public static final class DisposerWithoutWorkspaceRequirement extends Disposer {
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
+
+            @Override
+            public void tearDown(@NonNull Run<?, ?> build, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed, but provided.");
             }
-            @Override public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
+
+            @Override
+            public void tearDown(@NonNull Run<?, ?> build, @NonNull TaskListener listener) throws IOException, InterruptedException {
                 listener.getLogger().println("<<< workspace context not needed.");
             }
         }
+
+        @SuppressWarnings("unused")
         @Symbol("wrapperWithoutWorkspaceRequirement")
         @TestExtension("wrapperWithoutWorkspaceRequirement")
         public static class DescriptorImpl extends BuildWrapperDescriptor {
-            @Override public boolean isApplicable(AbstractProject<?, ?> project) { return true; }
+            @Override
+            public boolean isApplicable(AbstractProject<?, ?> project) { return true; }
         }
     }
 
     @Issue("JENKINS-46175")
     @Test
-    public void wrapperWithoutWorkspaceRequirement() throws Throwable {
+    void wrapperWithoutWorkspaceRequirement() throws Throwable {
         sessions.then(j -> {
                 WorkflowJob p = j.createProject(WorkflowJob.class, "p");
                 // make sure it works outside of a node

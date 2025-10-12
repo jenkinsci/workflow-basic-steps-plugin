@@ -26,15 +26,23 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.junit.Test;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class IsUnixStepTest {
+@WithJenkins
+class IsUnixStepTest {
 
-    @Rule public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
 
-    @Test public void basics() throws Exception {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
+
+    @Test
+    void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}; node {xsh 'echo hello world'}", true));
         r.assertLogContains("hello world", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));

@@ -35,12 +35,13 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.Rule;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.jvnet.hudson.test.recipes.LocalData;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,17 +49,28 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-public class CatchErrorStepTest {
-    @ClassRule public static BuildWatcher w = new BuildWatcher();
-    @Rule public JenkinsRule r = new JenkinsRule();
+@WithJenkins
+class CatchErrorStepTest {
+    
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+    private JenkinsRule r;
 
-    @Test public void specialStatus() throws Exception {
+    @BeforeEach
+    void beforeEach(JenkinsRule rule) {
+        r = rule;
+    }
+
+    @Test
+    void specialStatus() throws Exception {
         User.getById("smrt", true);
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError {\n" +
-                "  semaphore 'specialStatus'\n" +
-                "}", true));
+                """
+                        catchError {
+                          semaphore 'specialStatus'
+                        }""", true));
         SemaphoreStep.failure("specialStatus/1", new FlowInterruptedException(Result.UNSTABLE, new CauseOfInterruption.UserInterruption("smrt")));
         WorkflowRun b = p.scheduleBuild2(0).get();
         r.assertLogContains("smrt", r.assertBuildStatus(Result.UNSTABLE, b));
@@ -70,7 +82,8 @@ public class CatchErrorStepTest {
     }
 
     @LocalData
-    @Test public void serialFormWhenBuildResultOptionDidNotExist() throws Exception {
+    @Test
+    void serialFormWhenBuildResultOptionDidNotExist() throws Exception {
         // Local data created using workflow-basic-steps 2.15 with the following Pipeline:
         /*
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
@@ -91,7 +104,8 @@ public class CatchErrorStepTest {
     }
 
     @LocalData
-    @Test public void serialFormWhenTypeOfBuildResultFieldWasResult() throws Exception {
+    @Test
+    void serialFormWhenTypeOfBuildResultFieldWasResult() throws Exception {
         // Local data created using workflow-basic-steps 2.16 with the following Pipeline:
         /*
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
@@ -111,101 +125,119 @@ public class CatchErrorStepTest {
         r.assertLogContains("execution continued", b);
     }
 
-    @Test public void customBuildResult() throws Exception {
+    @Test
+    void customBuildResult() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(message: 'caught error', buildResult: 'unstable') {\n" +
-                "  error 'oops'\n" +
-                "}", true));
+                """
+                        catchError(message: 'caught error', buildResult: 'unstable') {
+                          error 'oops'
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.UNSTABLE, null, true);
         r.assertLogContains("Setting overall build result to UNSTABLE", b);
     }
 
-    @Test public void invalidBuildResult() throws Exception {
+    @Test
+    void invalidBuildResult() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(buildResult: 'typo') {\n" +
-                "  error 'oops'\n" +
-                "}", true));
+                """
+                        catchError(buildResult: 'typo') {
+                          error 'oops'
+                        }""", true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         r.assertLogContains("buildResult is invalid: typo", b);
     }
 
     @Issue("JENKINS-45579")
-    @Test public void customStageResult() throws Exception {
+    @Test
+    void customStageResult() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(message: 'caught error', stageResult: 'failure') {\n" +
-                "  error 'oops'\n" +
-                "}", true));
+                """
+                        catchError(message: 'caught error', stageResult: 'failure') {
+                          error 'oops'
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
     }
 
-    @Test public void invalidStageResult() throws Exception {
+    @Test
+    void invalidStageResult() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(stageResult: 'typo') {\n" +
-                "  error 'oops'\n" +
-                "}", true));
+                """
+                        catchError(stageResult: 'typo') {
+                          error 'oops'
+                        }""", true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         r.assertLogContains("stageResult is invalid: typo", b);
     }
 
     @Issue("JENKINS-45579")
-    @Test public void stepResultOnly() throws Exception {
+    @Test
+    void stepResultOnly() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(message: 'caught error', buildResult: 'success', stageResult: 'unstable') {\n" +
-                "  error 'oops'\n" +
-                "}", true));
+                """
+                        catchError(message: 'caught error', buildResult: 'success', stageResult: 'unstable') {
+                          error 'oops'
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.SUCCESS, Result.UNSTABLE, true);
     }
 
-    @Test public void catchesInterruptionsByDefault() throws Exception {
+    @Test
+    void catchesInterruptionsByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "import jenkins.model.CauseOfInterruption\n" +
-                "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
-                "catchError(message: 'caught error') {\n" +
-                "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
-                "}", false));
+                """
+                        import jenkins.model.CauseOfInterruption
+                        import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+                        catchError(message: 'caught error') {
+                          throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])
+                        }""", false));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
     }
 
-    @Test public void canAvoidCatchingInterruptionsWithOption() throws Exception {
+    @Test
+    void canAvoidCatchingInterruptionsWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "import jenkins.model.CauseOfInterruption\n" +
-                "import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException\n" +
-                "catchError(message: 'caught error', catchInterruptions: false) {\n" +
-                "  throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])\n" +
-                "}", false));
+                """
+                        import jenkins.model.CauseOfInterruption
+                        import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+                        catchError(message: 'caught error', catchInterruptions: false) {
+                          throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])
+                        }""", false));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, null, false);
     }
 
-    @Test public void catchesAttemptsToStopBuildByDefault() throws Exception {
+    @Test
+    void catchesAttemptsToStopBuildByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(message: 'caught error') {\n" +
-                "  semaphore 'ready'\n" +
-                "}", true));
+                """
+                        catchError(message: 'caught error') {
+                          semaphore 'ready'
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();
         assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
     }
 
-    @Test public void canAvoidCatchingAttemptsToStopBuildWithOption() throws Exception {
+    @Test
+    void canAvoidCatchingAttemptsToStopBuildWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
-                "catchError(message: 'caught error', catchInterruptions: false) {\n" +
-                "  semaphore 'ready'\n" +
-                "}", true));
+                """
+                        catchError(message: 'caught error', catchInterruptions: false) {
+                          semaphore 'ready'
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();
@@ -213,20 +245,22 @@ public class CatchErrorStepTest {
     }
 
     @Issue("JENKINS-60354")
-    @Test public void catchesDownstreamBuildFailureEvenWhenNotCatchingInterruptions() throws Exception {
+    @Test
+    void catchesDownstreamBuildFailureEvenWhenNotCatchingInterruptions() throws Exception {
         WorkflowJob ds = r.createProject(WorkflowJob.class);
         ds.setDefinition(new CpsFlowDefinition("error 'oops!'", true));
         WorkflowJob us = r.createProject(WorkflowJob.class);
         us.setDefinition(new CpsFlowDefinition(
                 "int count = 1\n" +
                 "catchError(message: 'caught error', catchInterruptions: false) {\n" +
-                "  build(job: '"+ds.getName()+"')\n" +
+                "  build(job: '" + ds.getName() + "')\n" +
                 "}\n", true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, us.scheduleBuild2(0));
         assertCatchError(r, b, Result.FAILURE, Result.FAILURE, true);
     }
 
-    @Test public void abortPreviousWithCatchError() throws Exception {
+    @Test
+    void abortPreviousWithCatchError() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
         p.setDefinition(new CpsFlowDefinition("catchError(catchInterruptions: false) {semaphore 'main'}; semaphore 'post'", true));
         p.setConcurrentBuild(false);
