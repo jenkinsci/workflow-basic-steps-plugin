@@ -107,10 +107,9 @@ class WaitForConditionStepTest {
             // j.assertLogContains(message, j.assertBuildStatus(Result.FAILURE, j.waitForCompletion(b)));
             j.waitForCompletion(b);
             j.assertBuildStatus(Result.FAILURE, b);
-            j.waitForMessage(
-                    message,
-                    b); // TODO observed to flake on windows-8-2.32.3: see two `semaphore`s and a “Will try again after
-            // 0.25 sec” but no such message
+            // TODO observed to flake on windows-8-2.32.3:
+            // see two `semaphore`s and a "Will try again after 0.25 sec" but no such message
+            j.waitForMessage(message, b);
         });
     }
 
@@ -183,9 +182,8 @@ class WaitForConditionStepTest {
         });
         sessions.then(j -> {
             WorkflowRun b = j.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
-            SemaphoreStep.waitForStart(
-                    "wait/3",
-                    b); // TODO pending https://github.com/jenkinsci/workflow-cps-plugin/pull/141 this will flake out
+            // TODO pending https://github.com/jenkinsci/workflow-cps-plugin/pull/141 this will flake out
+            SemaphoreStep.waitForStart("wait/3", b);
             SemaphoreStep.success("wait/3", false);
             SemaphoreStep.waitForStart("wait/4", b);
             SemaphoreStep.success("wait/4", true);

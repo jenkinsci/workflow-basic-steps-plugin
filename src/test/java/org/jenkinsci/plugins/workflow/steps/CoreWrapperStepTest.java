@@ -201,9 +201,8 @@ class CoreWrapperStepTest {
             j.assertLogContains("received initial", b);
             j.assertLogContains("groovy before wrapped", b);
             j.assertLogContains("shell before wrapped", b);
-            // Any custom values set via EnvActionImpl.setProperty will be “frozen” for the duration of the
-            // CoreWrapperStep,
-            // because they are always overridden by contextual values.
+            // Any custom values set via EnvActionImpl.setProperty will be "frozen"
+            // for the duration of the CoreWrapperStep, because they are always overridden by contextual values.
             j.assertLogContains("groovy after wrapped", b);
             j.assertLogContains("shell after wrapped", b);
             j.assertLogContains("groovy outside edited", b);

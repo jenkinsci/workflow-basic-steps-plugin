@@ -172,8 +172,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 getContext().onFailure(death);
                 */
                 final ListenableFuture<List<StepExecution>> currentExecutions = exec.getCurrentExecutions(true);
-                // TODO would use Futures.addCallback but this is still @Beta in Guava 19 and the Pipeline copy is in
-                // workflow-support on which we have no dep
+                // TODO would use Futures.addCallback but this is still @Beta in Guava 19
+                // and the Pipeline copy is in workflow-support on which we have no dep
                 currentExecutions.addListener(
                         () -> {
                             assert currentExecutions.isDone();
@@ -405,9 +405,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 } else {
                     resetTimer.call();
                 }
-                schedule(timeout
-                        / 2); // less than the full timeout, to give some grace period, but in the same ballpark to
-                // avoid overhead
+                // less than the full timeout, to give some grace period,
+                // but in the same ballpark to avoid overhead
+                schedule(timeout / 2);
             } else {
                 // Idle at the moment, but check well before the timeout expires in case new output appears.
                 schedule(timeout / 10);
