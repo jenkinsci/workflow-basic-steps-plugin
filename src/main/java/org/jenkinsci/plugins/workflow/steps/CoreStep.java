@@ -137,8 +137,8 @@ public final class CoreStep extends Step {
         }
 
         public Collection<? extends Descriptor<?>> getApplicableDescriptors() {
-            // Jenkins.instance.getDescriptorList(SimpleBuildStep) is empty, presumably because that itself is not a
-            // Describable.
+            // Jenkins.instance.getDescriptorList(SimpleBuildStep) is empty,
+            // presumably because that itself is not a Describable.
             List<Descriptor<?>> r = new ArrayList<>();
             populate(r, Builder.class);
             populate(r, Publisher.class);
