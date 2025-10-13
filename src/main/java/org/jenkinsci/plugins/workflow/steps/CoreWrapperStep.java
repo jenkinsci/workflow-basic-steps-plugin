@@ -245,8 +245,8 @@ public class CoreWrapperStep extends Step {
             return true;
         }
 
-        // getPropertyType("delegate").getApplicableDescriptors() does not work, because extension lists do not work on
-        // subtypes.
+        // getPropertyType("delegate").getApplicableDescriptors() does not work,
+        // because extension lists do not work on subtypes.
         public Collection<BuildWrapperDescriptor> getApplicableDescriptors() {
             Collection<BuildWrapperDescriptor> r = new ArrayList<>();
             for (BuildWrapperDescriptor d : Jenkins.get().getExtensionList(BuildWrapperDescriptor.class)) {
