@@ -106,10 +106,19 @@ class CoreWrapperStepTest {
             createSpecialEnvSlave(j, "slave", "", slaveEnv);
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                    "node('slave') {mock {semaphore 'restarting'; echo \"groovy PATH=${env.PATH}:\"; "
-                            + (Functions.isWindows()
-                                    ? "bat 'echo shell PATH=%PATH%:'}}"
-                                    : "sh 'echo shell PATH=$PATH:'}}"),
+                    """
+                    node('slave') {
+                      mock {
+                        semaphore 'restarting'
+                        echo "groovy PATH=${env.PATH}:"
+                        if (isUnix()) {
+                          sh 'echo shell PATH=$PATH:'
+                        } else {
+                          bat 'echo shell PATH=%PATH%:'
+                        }
+                      }
+                    }
+                    """,
                     true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarting/1", b);
@@ -182,27 +191,33 @@ class CoreWrapperStepTest {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                    "def show(which) {\n" + "  echo \"groovy ${which} ${env.TESTVAR}\"\n"
-                            + (Functions.isWindows()
-                                    ? "bat \"echo shell ${which} %TESTVAR%\"\n"
-                                    : "  sh \"echo shell ${which} \\$TESTVAR\"\n")
-                            + "}\n"
-                            + "env.TESTVAR = 'initial'\n"
-                            + "node {\n"
-                            + "  wrap([$class: 'OneVarWrapper']) {\n"
-                            + "    show 'before'\n"
-                            + "    env.TESTVAR = 'edited'\n"
-                            + "    show 'after'\n"
-                            + "  }\n"
-                            + "  show 'outside'\n"
-                            + "}",
+                    """
+                    def show(which) {
+                      echo "groovy ${which} ${env.TESTVAR}"
+                      if (isUnix()) {
+                        sh "echo shell ${which} \\$TESTVAR"
+                      } else {
+                        bat "echo shell ${which} %TESTVAR%"
+                      }
+                    }
+                    env.TESTVAR = 'initial'
+                    node {
+                      wrap([$class: 'OneVarWrapper']) {
+                        show 'before'
+                        env.TESTVAR = 'edited'
+                        show 'after'
+                      }
+                      show 'outside'
+                    }
+                    """,
                     true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             j.assertLogContains("received initial", b);
             j.assertLogContains("groovy before wrapped", b);
             j.assertLogContains("shell before wrapped", b);
             // Any custom values set via EnvActionImpl.setProperty will be "frozen"
-            // for the duration of the CoreWrapperStep, because they are always overridden by contextual values.
+            // for the duration of the CoreWrapperStep,
+            // because they are always overridden by contextual values.
             j.assertLogContains("groovy after wrapped", b);
             j.assertLogContains("shell after wrapped", b);
             j.assertLogContains("groovy outside edited", b);
@@ -337,8 +352,8 @@ class CoreWrapperStepTest {
         });
     }
 
-    // TODO add @LocalData serialForm test proving compatibility with executions dating back to workflow 1.4.3 on
-    // 1.580.1
+    // TODO add @LocalData serialForm test proving compatibility with executions
+    // dating back to workflow 1.4.3 on 1.580.1
 
     // TODO add to jenkins-test-harness
     /**

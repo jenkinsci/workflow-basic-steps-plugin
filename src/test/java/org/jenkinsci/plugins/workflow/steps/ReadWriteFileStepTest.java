@@ -29,7 +29,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import hudson.Functions;
 import hudson.model.TopLevelItem;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -63,14 +62,24 @@ class ReadWriteFileStepTest {
     @Test
     void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        boolean win = Functions.isWindows();
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n" + (win ? "  bat 'echo hello > f1'\n" : "  sh 'echo hello > f1'\n")
-                        + "  def text = readFile 'f1'\n"
-                        + "  text = text.toUpperCase()\n"
-                        + "  writeFile file: 'f2', text: text\n"
-                        + (win ? "  bat 'type f2'\n" : "  sh 'cat f2'\n")
-                        + "}",
+                """
+                node {
+                  if (isUnix()) {
+                    sh 'echo hello > f1'
+                  } else {
+                    bat 'echo hello > f1'
+                  }
+                  def text = readFile 'f1'
+                  text = text.toUpperCase()
+                  writeFile file: 'f2', text: text
+                  if (isUnix()) {
+                    sh 'cat f2'
+                  } else {
+                    bat 'type f2'
+                  }
+                }
+                """,
                 true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("HELLO", b);

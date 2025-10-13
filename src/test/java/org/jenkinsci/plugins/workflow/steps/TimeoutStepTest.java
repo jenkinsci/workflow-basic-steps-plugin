@@ -30,8 +30,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.Functions;
+import hudson.model.ParametersDefinitionProperty;
 import hudson.model.Result;
+import hudson.model.StringParameterDefinition;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import java.util.Collections;
@@ -259,13 +260,17 @@ class TimeoutStepTest {
             j.createSlave();
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                    "" + "node('!master') {\n"
-                            + "  timeout(time:5, unit:'SECONDS', activity: true) {\n"
-                            + (Functions.isWindows()
-                                    ? "   bat '@echo off & echo NotHere && ping -n 3 127.0.0.1 >NUL && echo NotHereYet && ping -n 3 127.0.0.1 >NUL && echo JustHere && ping -n 20 127.0.0.1 >NUL && echo ShouldNot'\n"
-                                    : "   sh 'set +x; echo NotHere; sleep 3; echo NotHereYet; sleep 3; echo JustHere; sleep 10; echo ShouldNot'\n")
-                            + "  }\n"
-                            + "}\n",
+                    """
+                    node('!master') {
+                      timeout(time:5, unit:'SECONDS', activity: true) {
+                        if (isUnix()) {
+                          sh 'set +x; echo NotHere; sleep 3; echo NotHereYet; sleep 3; echo JustHere; sleep 20; echo ShouldNot'
+                        } else {
+                          bat '@echo off & echo NotHere && ping -n 3 127.0.0.1 >NUL && echo NotHereYet && ping -n 3 127.0.0.1 >NUL && echo JustHere && ping -n 20 127.0.0.1 >NUL && echo ShouldNot'
+                        }
+                      }
+                    }
+                    """,
                     true));
             WorkflowRun b = j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0));
             j.assertLogContains("JustHere", b);
@@ -282,12 +287,15 @@ class TimeoutStepTest {
             git.write("file", "content");
             git.git("commit", "--all", "--message=init");
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition("GIT", git.toString())));
             p.setDefinition(new CpsFlowDefinition(
-                    "" + "node('!master') {\n"
-                            + "  timeout(time: 5, unit: 'MINUTES', activity: true) {\n"
-                            + "    git($/"
-                            + git + "/$)\n" + "  }\n"
-                            + "}\n",
+                    """
+                    node('!master') {
+                      timeout(time: 5, unit: 'MINUTES', activity: true) {
+                        git GIT
+                      }
+                    }
+                    """,
                     true));
             j.buildAndAssertSuccess(p);
         });

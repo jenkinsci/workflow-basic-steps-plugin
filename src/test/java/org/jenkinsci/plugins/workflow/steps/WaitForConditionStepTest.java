@@ -118,20 +118,22 @@ class WaitForConditionStepTest {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
-                    "node {\n" + "  waitUntil {\n"
-                            + "    try {\n"
-                            + "      readFile 'flag'\n"
-                            + "      true\n"
-                            +
-                            // Note that catching a specific type verifies JENKINS-26164:
-                            "    } catch (FileNotFoundException | java.nio.file.NoSuchFileException x) {\n"
-                            + "      // x.printStackTrace()\n"
-                            + "      semaphore 'wait'\n"
-                            + "      false\n"
-                            + "    }\n"
-                            + "  }\n"
-                            + "}\n"
-                            + "echo 'finished waiting'",
+                    """
+                    node {
+                      waitUntil {
+                        try {
+                          readFile 'flag'
+                          true
+                        // Note that catching a specific type verifies JENKINS-26164:
+                        } catch (FileNotFoundException | java.nio.file.NoSuchFileException x) {
+                          // x.printStackTrace()
+                          semaphore 'wait'
+                          false
+                        }
+                      }
+                    }
+                    echo 'finished waiting'
+                    """,
                     true));
             WorkflowRun b = p.scheduleBuild2(0).waitForStart();
             SemaphoreStep.waitForStart("wait/1", b);
@@ -208,8 +210,8 @@ class WaitForConditionStepTest {
         });
     }
 
-    // TODO add @LocalData serialForm test proving compatibility with executions dating back to workflow 1.4.3 on
-    // 1.580.1
+    // TODO add @LocalData serialForm test proving compatibility with executions
+    // dating back to workflow 1.4.3 on 1.580.1
     // (same for RetryStep)
 
 }

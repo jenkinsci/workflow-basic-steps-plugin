@@ -200,8 +200,10 @@ class ToolStepTest {
         assertEquals(name, s.getName());
         if (SymbolLookup.getSymbolValue(desc).isEmpty()) {
             assertEquals(type, s.getType());
-        } // else (Jenkins 2.x) StepConfigTester does not make sense since in real life we would not read an existing
-        // value (an ID) into a pulldown listing only symbols
+        }
+        // else (Jenkins 2.x) StepConfigTester does not make sense
+        // since in real life we would not read an existing value (an ID)
+        // into a pulldown listing only symbols
     }
 
     private static File newFolder(File root, String... subDirs) throws IOException {

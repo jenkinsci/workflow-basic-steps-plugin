@@ -45,14 +45,14 @@ public final class ReadFileStep extends Step {
 
     @DataBoundConstructor
     public ReadFileStep(String file) {
-        // Normally pointless to verify that this is a relative path, since shell steps can anyway read and write files
-        // anywhere on the agent.
-        // Could be necessary in case a plugin installs a {@link LauncherDecorator} which keeps commands inside some
-        // kind of jail.
-        // In that case we would need some API to determine that such a jail is in effect and this validation must be
-        // enforced.
-        // But just checking the path is anyway not sufficient (due to crafted symlinks); would need to check the final
-        // resulting path.
+        // Normally pointless to verify that this is a relative path,
+        // since shell steps can anyway read and write files anywhere on the agent.
+        // Could be necessary in case a plugin installs a {@link LauncherDecorator}
+        // which keeps commands inside some kind of jail.
+        // In that case we would need some API to determine that such a jail is in effect
+        // and this validation must be enforced.
+        // But just checking the path is anyway not sufficient (due to crafted symlinks);
+        // would need to check the final resulting path.
         // Same for WriteFileStep, PushdStep, FileExistsStep.
         this.file = file;
     }

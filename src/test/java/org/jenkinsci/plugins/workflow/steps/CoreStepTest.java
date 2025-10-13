@@ -143,27 +143,29 @@ class CoreStepTest {
     @Test
     void mailer() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        String recipient = "test@nowhere.net";
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n"
-                        + "    writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'\n"
-                        + "    junit 'r.xml'\n"
-                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                        + "}",
+                """
+                node {
+                    writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'
+                    junit 'r.xml'
+                    step([$class: 'Mailer', recipients: 'test@nowhere.net'])
+                }
+                """,
                 true));
+        String recipient = "test@nowhere.net";
         Mailbox inbox = Mailbox.get(new InternetAddress(recipient));
         inbox.clear();
         WorkflowRun b = r.assertBuildStatus(Result.UNSTABLE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
-        assertEquals(
-                /* MailSender.createUnstableMail/getSubject */ Messages.MailSender_UnstableMail_Subject() + " "
-                        + b.getFullDisplayName(),
-                inbox.get(0).getSubject());
+        var subj = Messages.MailSender_UnstableMail_Subject(); // MailSender.createUnstableMail/getSubject
+        assertEquals(subj + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n"
-                        + "    catchError {error 'oops'}\n"
-                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                        + "}",
+                """
+                node {
+                    catchError {error 'oops'}
+                    step([$class: 'Mailer', recipients: 'test@nowhere.net'])
+                }
+                """,
                 true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
