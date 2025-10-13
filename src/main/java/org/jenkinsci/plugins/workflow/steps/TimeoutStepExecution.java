@@ -180,8 +180,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                             try {
                                 FlowNode outer = getContext().get(FlowNode.class); // timeout
                                 for (StepExecution exec1 : currentExecutions.get()) {
-                                    FlowNode inner =
-                                            exec1.getContext().get(FlowNode.class); // some deadbeat step, perhaps
+                                    // some deadbeat step, perhaps
+                                    FlowNode inner = exec1.getContext().get(FlowNode.class);
                                     LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
                                     scanner.setup(inner);
                                     for (FlowNode enclosing : scanner) {

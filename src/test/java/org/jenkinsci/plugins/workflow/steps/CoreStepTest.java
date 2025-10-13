@@ -174,19 +174,23 @@ class CoreStepTest {
                 Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(),
                 inbox.get(0).getSubject());
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n"
-                        + "    catchError {echo 'ok'}\n"
-                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                        + "}",
+                """
+                node {
+                    catchError {echo 'ok'}
+                    step([$class: 'Mailer', recipients: 'test@nowhere.net'])
+                }
+                """,
                 true));
         inbox.clear();
         b = r.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
         assertEquals(0, inbox.size());
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n"
-                        + "    try {error 'oops'} catch (e) {echo \"caught ${e}\"; currentBuild.result = 'FAILURE'}\n"
-                        + "    step([$class: 'Mailer', recipients: '" + recipient + "'])\n"
-                        + "}",
+                """
+                node {
+                    try {error 'oops'} catch (e) {echo "caught ${e}"; currentBuild.result = 'FAILURE'}
+                    step([$class: 'Mailer', recipients: 'test@nowhere.net'])
+                }
+                """,
                 true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
