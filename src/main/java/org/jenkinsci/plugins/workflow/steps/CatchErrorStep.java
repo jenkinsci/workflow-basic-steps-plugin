@@ -135,8 +135,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         ObjectInputStream.GetField fields = ois.readFields();
         message = (String) fields.get("message", null);
         catchInterruptions = fields.get("catchInterruptions", true);
-        // Previously, the types of buildResult and stageResult were Result rather than String, so we handle either
-        // type.
+        // Previously, the types of buildResult and stageResult were Result rather than String,
+        // so we handle either type.
         Object serializedBuildResult = fields.get("buildResult", "FAILURE");
         if (serializedBuildResult instanceof Result) {
             buildResult = ((Result) serializedBuildResult).toString();
