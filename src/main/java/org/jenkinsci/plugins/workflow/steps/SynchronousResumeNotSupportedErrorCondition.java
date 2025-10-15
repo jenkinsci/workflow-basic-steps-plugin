@@ -35,19 +35,21 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public final class SynchronousResumeNotSupportedErrorCondition extends ErrorCondition {
 
-    @DataBoundConstructor public SynchronousResumeNotSupportedErrorCondition() {}
+    @DataBoundConstructor
+    public SynchronousResumeNotSupportedErrorCondition() {}
 
-    @Override public boolean test(Throwable error, StepContext context) throws IOException, InterruptedException {
+    @Override
+    public boolean test(Throwable error, StepContext context) throws IOException, InterruptedException {
         return error instanceof SynchronousResumeNotSupportedException;
     }
 
     @Symbol("nonresumable")
-    @Extension public static final class DescriptorImpl extends ErrorConditionDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends ErrorConditionDescriptor {
 
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Non-resumable steps";
         }
-
     }
-
 }

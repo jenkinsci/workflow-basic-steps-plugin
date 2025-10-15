@@ -28,11 +28,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.model.TaskListener;
 import java.util.Collections;
 import java.util.Set;
-
-
-import hudson.model.TaskListener;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -40,7 +38,8 @@ public final class FileExistsStep extends Step {
 
     private final String file;
 
-    @DataBoundConstructor public FileExistsStep(String file) {
+    @DataBoundConstructor
+    public FileExistsStep(String file) {
         this.file = file;
     }
 
@@ -48,47 +47,50 @@ public final class FileExistsStep extends Step {
         return file;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(file, context);
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "fileExists";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Verify if file exists in workspace";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(FilePath.class);
         }
-
     }
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String file;
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient String file;
 
         Execution(String file, StepContext context) {
             super(context);
             this.file = file;
         }
 
-        @Override protected Boolean run() throws Exception {
+        @Override
+        protected Boolean run() throws Exception {
             if (StringUtils.isEmpty(file)) {
                 getContext().get(TaskListener.class).getLogger().println(Messages.FileExistsStep_EmptyString());
                 return getContext().get(FilePath.class).child("").exists();
             }
-        	return getContext().get(FilePath.class).child(file).exists();
+            return getContext().get(FilePath.class).child(file).exists();
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

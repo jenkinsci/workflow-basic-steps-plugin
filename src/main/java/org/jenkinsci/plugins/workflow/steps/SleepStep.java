@@ -47,11 +47,13 @@ public final class SleepStep extends Step {
 
     private TimeUnit unit = TimeUnit.SECONDS;
 
-    @DataBoundConstructor public SleepStep(int time) {
+    @DataBoundConstructor
+    public SleepStep(int time) {
         this.time = time;
     }
 
-    @DataBoundSetter public void setUnit(TimeUnit unit) {
+    @DataBoundSetter
+    public void setUnit(TimeUnit unit) {
         this.unit = unit;
     }
 
@@ -63,7 +65,8 @@ public final class SleepStep extends Step {
         return unit;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
 
@@ -71,7 +74,7 @@ public final class SleepStep extends Step {
 
         private static final long serialVersionUID = 1L;
 
-        private transient final SleepStep step;
+        private final transient SleepStep step;
         private long end;
         private transient volatile ScheduledFuture<?> task;
 
@@ -80,7 +83,8 @@ public final class SleepStep extends Step {
             this.step = step;
         }
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             long now = System.currentTimeMillis();
             end = now + step.unit.toMillis(step.time);
             setupTimer(now);
@@ -104,18 +108,21 @@ public final class SleepStep extends Step {
             }
         }
 
-        @Override public void stop(@NonNull Throwable cause) throws Exception {
+        @Override
+        public void stop(@NonNull Throwable cause) throws Exception {
             if (task != null) {
                 task.cancel(false);
             }
             super.stop(cause);
         }
 
-        @Override public void onResume() {
+        @Override
+        public void onResume() {
             setupTimer(System.currentTimeMillis());
         }
 
-        @Override public String getStatus() {
+        @Override
+        public String getStatus() {
             long now = System.currentTimeMillis();
             if (end > now) {
                 return "sleeping for another " + Util.getTimeSpanString(end - now);
@@ -123,17 +130,19 @@ public final class SleepStep extends Step {
                 return "should have stopped sleeping " + Util.getTimeSpanString(now - end) + " ago";
             }
         }
-
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "sleep";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Sleep";
         }
 
@@ -145,7 +154,8 @@ public final class SleepStep extends Step {
             return r;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
 

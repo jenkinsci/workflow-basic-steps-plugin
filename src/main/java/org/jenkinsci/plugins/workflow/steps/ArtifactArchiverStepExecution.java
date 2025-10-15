@@ -6,13 +6,10 @@ import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-
 import jenkins.MasterToSlaveFileCallable;
 import jenkins.util.BuildListenerAdapter;
 
@@ -21,7 +18,7 @@ import jenkins.util.BuildListenerAdapter;
  */
 public class ArtifactArchiverStepExecution extends SynchronousNonBlockingStepExecution<Void> {
 
-    private transient final ArtifactArchiverStep step;
+    private final transient ArtifactArchiverStep step;
 
     ArtifactArchiverStepExecution(ArtifactArchiverStep step, StepContext context) {
         super(context);
@@ -36,29 +33,44 @@ public class ArtifactArchiverStepExecution extends SynchronousNonBlockingStepExe
         if (listener != null) {
             listener.getLogger().println(Messages.ArtifactArchiverStepExecution_Deprecated());
         }
-        Map<String,String> files = ws.act(new ListFiles(step.getIncludes(), step.getExcludes()));
+        Map<String, String> files = ws.act(new ListFiles(step.getIncludes(), step.getExcludes()));
         if (files.isEmpty()) {
             if (step.getExcludes() != null && !step.getExcludes().equals("")) {
-                listener.getLogger().println(Messages.ArtifactArchiverStepExecution_NoFilesWithExcludes(step.getIncludes(), step.getExcludes()));
+                listener.getLogger()
+                        .println(Messages.ArtifactArchiverStepExecution_NoFilesWithExcludes(
+                                step.getIncludes(), step.getExcludes()));
             } else {
                 listener.getLogger().println(Messages.ArtifactArchiverStepExecution_NoFiles(step.getIncludes()));
             }
         } else {
-            getContext().get(Run.class).pickArtifactManager().archive(ws, getContext().get(Launcher.class), new BuildListenerAdapter(getContext().get(TaskListener.class)), files);
+            getContext()
+                    .get(Run.class)
+                    .pickArtifactManager()
+                    .archive(
+                            ws,
+                            getContext().get(Launcher.class),
+                            new BuildListenerAdapter(getContext().get(TaskListener.class)),
+                            files);
         }
         return null;
     }
 
-    private static final class ListFiles extends MasterToSlaveFileCallable<Map<String,String>> {
+    private static final class ListFiles extends MasterToSlaveFileCallable<Map<String, String>> {
         private static final long serialVersionUID = 1;
         private final String includes, excludes;
+
         ListFiles(String includes, String excludes) {
             this.includes = includes;
             this.excludes = excludes;
         }
-        @Override public Map<String,String> invoke(File basedir, VirtualChannel channel) throws IOException, InterruptedException {
-            Map<String,String> r = new HashMap<>();
-            for (String f : Util.createFileSet(basedir, includes, excludes).getDirectoryScanner().getIncludedFiles()) {
+
+        @Override
+        public Map<String, String> invoke(File basedir, VirtualChannel channel)
+                throws IOException, InterruptedException {
+            Map<String, String> r = new HashMap<>();
+            for (String f : Util.createFileSet(basedir, includes, excludes)
+                    .getDirectoryScanner()
+                    .getIncludedFiles()) {
                 f = f.replace(File.separatorChar, '/');
                 r.put(f, f);
             }
@@ -67,5 +79,4 @@ public class ArtifactArchiverStepExecution extends SynchronousNonBlockingStepExe
     }
 
     private static final long serialVersionUID = 1L;
-
 }

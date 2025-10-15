@@ -28,13 +28,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
-
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Set;
-
-
 import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -46,11 +43,16 @@ public final class ReadFileStep extends Step {
     private final String file;
     private String encoding;
 
-    @DataBoundConstructor public ReadFileStep(String file) {
-        // Normally pointless to verify that this is a relative path, since shell steps can anyway read and write files anywhere on the agent.
-        // Could be necessary in case a plugin installs a {@link LauncherDecorator} which keeps commands inside some kind of jail.
-        // In that case we would need some API to determine that such a jail is in effect and this validation must be enforced.
-        // But just checking the path is anyway not sufficient (due to crafted symlinks); would need to check the final resulting path.
+    @DataBoundConstructor
+    public ReadFileStep(String file) {
+        // Normally pointless to verify that this is a relative path,
+        // since shell steps can anyway read and write files anywhere on the agent.
+        // Could be necessary in case a plugin installs a {@link LauncherDecorator}
+        // which keeps commands inside some kind of jail.
+        // In that case we would need some API to determine that such a jail is in effect
+        // and this validation must be enforced.
+        // But just checking the path is anyway not sufficient (due to crafted symlinks);
+        // would need to check the final resulting path.
         // Same for WriteFileStep, PushdStep, FileExistsStep.
         this.file = file;
     }
@@ -68,42 +70,49 @@ public final class ReadFileStep extends Step {
      * whitespace-only, then the platform default encoding will be used. Binary resources can be
      * loaded as a Base64-encoded string by specifying {@code Base64} as the encoding.
      */
-    @DataBoundSetter public void setEncoding(String encoding) {
+    @DataBoundSetter
+    public void setEncoding(String encoding) {
         this.encoding = Util.fixEmptyAndTrim(encoding);
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "readFile";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Read file from workspace";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(FilePath.class);
         }
-
     }
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<String> {
 
-        private transient final ReadFileStep step;
+        private final transient ReadFileStep step;
 
         Execution(ReadFileStep step, StepContext context) {
             super(context);
             this.step = step;
         }
 
-        @Override protected String run() throws Exception {
-            try (InputStream is = getContext().get(FilePath.class).child(step.file).read()) {
+        @Override
+        protected String run() throws Exception {
+            try (InputStream is =
+                    getContext().get(FilePath.class).child(step.file).read()) {
                 if (BASE64_ENCODING.equals(step.encoding)) {
                     return Base64.getEncoder().encodeToString(IOUtils.toByteArray(is));
                 } else {
@@ -113,7 +122,5 @@ public final class ReadFileStep extends Step {
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

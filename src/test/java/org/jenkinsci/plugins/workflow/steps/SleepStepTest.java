@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
@@ -32,8 +34,6 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
@@ -45,26 +45,29 @@ class SleepStepTest {
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     @RegisterExtension
     private final JenkinsSessionExtension sessions = new JenkinsSessionExtension();
 
     @Test
     void sleepAndRestart() throws Throwable {
         sessions.then(j -> {
-                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("semaphore 'start'; sleep 10", true));
-                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-                SemaphoreStep.waitForStart("start/1", b);
-                SemaphoreStep.success("start/1", null);
-                ((CpsFlowExecution) b.getExecution()).waitForSuspension();
-                List<FlowNode> heads = b.getExecution().getCurrentHeads();
-                assertEquals(1, heads.size());
-                assertEquals(j.jenkins.getDescriptorByType(SleepStep.DescriptorImpl.class), ((StepAtomNode) heads.get(0)).getDescriptor());
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("semaphore 'start'; sleep 10", true));
+            WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+            SemaphoreStep.waitForStart("start/1", b);
+            SemaphoreStep.success("start/1", null);
+            ((CpsFlowExecution) b.getExecution()).waitForSuspension();
+            List<FlowNode> heads = b.getExecution().getCurrentHeads();
+            assertEquals(1, heads.size());
+            assertEquals(
+                    j.jenkins.getDescriptorByType(SleepStep.DescriptorImpl.class),
+                    ((StepAtomNode) heads.get(0)).getDescriptor());
         });
         sessions.then(j -> {
-                WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
-                WorkflowRun b = p.getLastBuild();
-                j.assertBuildStatusSuccess(j.waitForCompletion(b));
+            WorkflowJob p = j.jenkins.getItemByFullName("p", WorkflowJob.class);
+            WorkflowRun b = p.getLastBuild();
+            j.assertBuildStatusSuccess(j.waitForCompletion(b));
         });
     }
 
@@ -72,10 +75,9 @@ class SleepStepTest {
     @Test
     void sleepInsideNode() throws Throwable {
         sessions.then(j -> {
-                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node {sleep 1}", true));
-                j.buildAndAssertSuccess(p);
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node {sleep 1}", true));
+            j.buildAndAssertSuccess(p);
         });
     }
-
 }

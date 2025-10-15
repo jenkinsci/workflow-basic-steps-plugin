@@ -4,13 +4,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 /**
  * Executes the body with a timeout, which will kill the body.
@@ -54,7 +53,7 @@ public class TimeoutStep extends Step implements Serializable {
 
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
+        return (DescriptorImpl) super.getDescriptor();
     }
 
     @Override

@@ -29,7 +29,6 @@ import hudson.Extension;
 import hudson.FilePath;
 import java.util.Collections;
 import java.util.Set;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -37,10 +36,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public final class DeleteDirStep extends Step {
 
-
-    @DataBoundConstructor 
-    public DeleteDirStep() {
-    }
+    @DataBoundConstructor
+    public DeleteDirStep() {}
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
@@ -65,7 +62,6 @@ public final class DeleteDirStep extends Step {
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(FilePath.class);
         }
-
     }
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
@@ -81,7 +77,5 @@ public final class DeleteDirStep extends Step {
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

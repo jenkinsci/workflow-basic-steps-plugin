@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +37,6 @@ import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -50,6 +50,7 @@ class EchoStepTest {
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
 
     @BeforeEach
@@ -77,5 +78,4 @@ class EchoStepTest {
         assertTrue(m.find(), "message printed once");
         assertFalse(m.find(), "message not printed twice");
     }
-
 }

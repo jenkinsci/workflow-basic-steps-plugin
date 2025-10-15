@@ -24,6 +24,9 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import hudson.slaves.WorkspaceList;
 import java.util.List;
 import org.hamcrest.Matchers;
@@ -34,10 +37,6 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.graphanalysis.NodeStepTypePredicate;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -57,7 +56,8 @@ class PwdStepTest {
     void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node {echo \"cwd='${pwd()}'\"}", true));
-        r.assertLogContains("cwd='" + r.jenkins.getWorkspaceFor(p) + "'", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
+        r.assertLogContains(
+                "cwd='" + r.jenkins.getWorkspaceFor(p) + "'", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
     @Test
@@ -66,9 +66,9 @@ class PwdStepTest {
         p.setDefinition(new CpsFlowDefinition("node {echo \"tmp='${pwd tmp: true}'\"}", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("tmp='" + WorkspaceList.tempDir(r.jenkins.getWorkspaceFor(p)) + "'", b);
-        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("pwd"));
+        List<FlowNode> coreStepNodes =
+                new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("pwd"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertNull(ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }
-
 }

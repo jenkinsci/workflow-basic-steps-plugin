@@ -24,9 +24,12 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.stash;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -45,18 +48,15 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @WithJenkins
 class StashTest {
 
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
-    
+
     @BeforeEach
     void beforeEach(JenkinsRule rule) {
         r = rule;
@@ -81,10 +81,13 @@ class StashTest {
                           writeFile file: 'at-top', text: 'ignored'
                           stash name: 'from-top', includes: 'elsewhere/', excludes: '**/other'
                           semaphore 'ending'
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ending/1", b);
-        assertEquals("{from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}}", StashManager.stashesOf(b).toString());
+        assertEquals(
+                "{from-top={elsewhere/fname=whatever}, whatever={fname=whatever, other=more}}",
+                StashManager.stashesOf(b).toString());
         SemaphoreStep.success("ending/1", null);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("got fname: whatever other: more", b);
@@ -111,7 +114,8 @@ class StashTest {
                             unstash('no-gitignore')
                             echo "gitignore does not exist? ${fileExists '.gitignore'}"
                           }
-                        }""", true));
+                        }""",
+                true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("gitignore exists? true", b);
         r.assertLogContains("gitignore does not exist? false", b);
@@ -127,8 +131,8 @@ class StashTest {
                           stash name: 'whatever', allowEmpty: true
                           semaphore 'ending'
                         }
-                        """
-                        , true));
+                        """,
+                true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ending/1", b);
         assertEquals("{whatever={}}", StashManager.stashesOf(b).toString());
@@ -137,7 +141,8 @@ class StashTest {
         r.assertLogContains("Stashed 0 file(s)", b);
         await().timeout(5, TimeUnit.SECONDS)
                 .until(() -> StashManager.stashesOf(b).isEmpty());
-        List<FlowNode> coreStepNodes = new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("stash"));
+        List<FlowNode> coreStepNodes =
+                new DepthFirstScanner().filteredNodes(b.getExecution(), new NodeStepTypePredicate("stash"));
         assertThat(coreStepNodes, Matchers.hasSize(1));
         assertEquals("whatever", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
     }

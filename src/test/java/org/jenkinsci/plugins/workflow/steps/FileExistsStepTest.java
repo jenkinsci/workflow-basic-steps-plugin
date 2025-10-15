@@ -13,6 +13,7 @@ class FileExistsStepTest {
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     @RegisterExtension
     private final JenkinsSessionExtension sessions = new JenkinsSessionExtension();
 
@@ -20,18 +21,18 @@ class FileExistsStepTest {
     @Test
     void emptyStringWarning() throws Throwable {
         sessions.then(j -> {
-                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node { fileExists('') }", true));
-                j.assertLogContains(Messages.FileExistsStep_EmptyString(), j.buildAndAssertSuccess(p));
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node { fileExists('') }", true));
+            j.assertLogContains(Messages.FileExistsStep_EmptyString(), j.buildAndAssertSuccess(p));
         });
     }
 
     @Test
     void nullStringWarning() throws Throwable {
         sessions.then(j -> {
-                WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-                p.setDefinition(new CpsFlowDefinition("node { fileExists(null) }", true));
-                j.assertLogContains(Messages.FileExistsStep_EmptyString(), j.buildAndAssertSuccess(p));
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node { fileExists(null) }", true));
+            j.assertLogContains(Messages.FileExistsStep_EmptyString(), j.buildAndAssertSuccess(p));
         });
     }
 }

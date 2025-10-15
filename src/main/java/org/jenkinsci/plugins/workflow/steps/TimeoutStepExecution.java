@@ -2,6 +2,8 @@ package org.jenkinsci.plugins.workflow.steps;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Main;
 import hudson.Util;
@@ -25,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.CauseOfInterruption;
 import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.SystemProperties;
@@ -39,10 +39,11 @@ import org.jenkinsci.plugins.workflow.graphanalysis.LinearBlockHoppingScanner;
 public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     private static final Logger LOGGER = Logger.getLogger(TimeoutStepExecution.class.getName());
-    private static final long GRACE_PERIOD = Main.isUnitTest ? /* 5s */5_000 : /* 1m */60_000;
+    private static final long GRACE_PERIOD = Main.isUnitTest ? /* 5s */ 5_000 : /* 1m */ 60_000;
 
-    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
-    public static /* not final */ boolean forceInterruption = SystemProperties.getBoolean(TimeoutStepExecution.class.getName() + ".forceInterruption");
+    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL")
+    public static /* not final */ boolean forceInterruption =
+            SystemProperties.getBoolean(TimeoutStepExecution.class.getName() + ".forceInterruption");
 
     private BodyExecution body;
     private transient ScheduledFuture<?> killer;
@@ -74,21 +75,16 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     @Override
     public boolean start() throws Exception {
         StepContext context = getContext();
-        BodyInvoker bodyInvoker = context.newBodyInvoker()
-                .withCallback(new Callback());
+        BodyInvoker bodyInvoker = context.newBodyInvoker().withCallback(new Callback());
 
         if (activity) {
-            bodyInvoker = bodyInvoker.withContext(
-                    BodyInvoker.mergeConsoleLogFilters(
-                            context.get(ConsoleLogFilter.class),
-                            new ConsoleLogFilterImpl2(id, timeout)
-                    )
-            );
+            bodyInvoker = bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(
+                    context.get(ConsoleLogFilter.class), new ConsoleLogFilterImpl2(id, timeout)));
         }
 
         body = bodyInvoker.start();
         resetTimer();
-        return false;   // execution is asynchronous
+        return false; // execution is asynchronous
     }
 
     @Override
@@ -129,14 +125,17 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         if (delay > 0) {
             if (!forcible && !resettingKiller) {
                 if (activity) {
-                    listener().getLogger().println("Timeout set to expire after " + Util.getTimeSpanString(delay) + " without activity");
+                    listener()
+                            .getLogger()
+                            .println("Timeout set to expire after " + Util.getTimeSpanString(delay)
+                                    + " without activity");
                 } else {
                     listener().getLogger().println("Timeout set to expire in " + Util.getTimeSpanString(delay));
                 }
             }
             killer = Timer.get().schedule(this::cancel, delay, TimeUnit.MILLISECONDS);
         } else {
-            listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(- delay) + " ago");
+            listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(-delay) + " ago");
             cancel();
         }
     }
@@ -158,7 +157,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         String nodeId = flowNode != null ? flowNode.getId() : null;
         if (forcible) {
             if (!killer.isCancelled()) {
-                listener().getLogger().println("Body did not finish within grace period; terminating with extreme prejudice");
+                listener()
+                        .getLogger()
+                        .println("Body did not finish within grace period; terminating with extreme prejudice");
                 FlowExecution exec;
                 try {
                     exec = getContext().get(FlowExecution.class);
@@ -171,26 +172,30 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 getContext().onFailure(death);
                 */
                 final ListenableFuture<List<StepExecution>> currentExecutions = exec.getCurrentExecutions(true);
-                // TODO would use Futures.addCallback but this is still @Beta in Guava 19 and the Pipeline copy is in workflow-support on which we have no dep
-                currentExecutions.addListener(() -> {
-                    assert currentExecutions.isDone();
-                    try {
-                        FlowNode outer = getContext().get(FlowNode.class); // timeout
-                        for (StepExecution exec1 : currentExecutions.get()) {
-                            FlowNode inner = exec1.getContext().get(FlowNode.class); // some deadbeat step, perhaps
-                            LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
-                            scanner.setup(inner);
-                            for (FlowNode enclosing : scanner) {
-                                if (enclosing.equals(outer)) {
-                                    exec1.getContext().onFailure(death);
-                                    break;
+                // TODO would use Futures.addCallback but this is still @Beta in Guava 19
+                // and the Pipeline copy is in workflow-support on which we have no dep
+                currentExecutions.addListener(
+                        () -> {
+                            assert currentExecutions.isDone();
+                            try {
+                                FlowNode outer = getContext().get(FlowNode.class); // timeout
+                                for (StepExecution exec1 : currentExecutions.get()) {
+                                    // some deadbeat step, perhaps
+                                    FlowNode inner = exec1.getContext().get(FlowNode.class);
+                                    LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
+                                    scanner.setup(inner);
+                                    for (FlowNode enclosing : scanner) {
+                                        if (enclosing.equals(outer)) {
+                                            exec1.getContext().onFailure(death);
+                                            break;
+                                        }
+                                    }
                                 }
+                            } catch (IOException | InterruptedException | ExecutionException x) {
+                                LOGGER.log(Level.WARNING, null, x);
                             }
-                        }
-                    } catch (IOException | InterruptedException | ExecutionException x) {
-                        LOGGER.log(Level.WARNING, null, x);
-                    }
-                }, MoreExecutors.newDirectExecutorService());
+                        },
+                        MoreExecutors.newDirectExecutorService());
             }
         } else {
             listener().getLogger().println("Cancelling nested steps due to timeout");
@@ -201,7 +206,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    @Override public String getStatus() {
+    @Override
+    public String getStatus() {
         if (killer == null) {
             return "killer task nowhere to be found";
         } else if (killer.isCancelled()) {
@@ -224,8 +230,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
     private class Callback extends BodyExecutionCallback.TailCall {
 
-        @Override protected void finished(StepContext context) throws Exception {
-            if (killer!=null) {
+        @Override
+        protected void finished(StepContext context) throws Exception {
+            if (killer != null) {
                 killer.cancel(true);
                 killer = null;
             }
@@ -260,7 +267,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
 
         private static final long serialVersionUID = 1L;
-
     }
 
     /**
@@ -305,7 +311,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             this.id = id;
         }
 
-        @Override public Void call() throws RuntimeException {
+        @Override
+        public Void call() throws RuntimeException {
             StepExecution.acceptAll(TimeoutStepExecution.class, e -> {
                 if (id.equals(e.id)) {
                     e.resetTimer();
@@ -313,7 +320,6 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
             });
             return null;
         }
-
     }
 
     private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
@@ -367,13 +373,20 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final long timeout;
         private final @CheckForNull Channel channel;
         private final @NonNull String id;
-        Tick(AtomicBoolean active, Reference<?> stream, long timeout, @CheckForNull Channel channel, @NonNull String id) {
+
+        Tick(
+                AtomicBoolean active,
+                Reference<?> stream,
+                long timeout,
+                @CheckForNull Channel channel,
+                @NonNull String id) {
             this.active = active;
             this.stream = stream;
             this.timeout = timeout;
             this.channel = channel;
             this.id = id;
         }
+
         @Override
         public void run() {
             if (stream.get() == null) {
@@ -392,12 +405,15 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 } else {
                     resetTimer.call();
                 }
-                schedule(timeout / 2); // less than the full timeout, to give some grace period, but in the same ballpark to avoid overhead
+                // less than the full timeout, to give some grace period,
+                // but in the same ballpark to avoid overhead
+                schedule(timeout / 2);
             } else {
                 // Idle at the moment, but check well before the timeout expires in case new output appears.
                 schedule(timeout / 10);
             }
         }
+
         private void schedule(long delay) {
             LOGGER.fine(() -> "scheduling tick for " + Util.getTimeSpanString(delay));
             Timer.get().schedule(this, delay, TimeUnit.MILLISECONDS);
@@ -414,7 +430,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     @Deprecated
     private class ResetCallbackImpl implements ResetCallback {
         private static final long serialVersionUID = 1L;
-        @Override public void logWritten() {
+
+        @Override
+        public void logWritten() {
             resetTimer();
         }
     }

@@ -106,7 +106,8 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
             return "Catch error and set build and stage result to unstable";
         }
 
-        @Override public boolean takesImplicitBlockArgument() {
+        @Override
+        public boolean takesImplicitBlockArgument() {
             return true;
         }
 

@@ -42,7 +42,7 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Kohsuke Kawaguchi
  */
 public class RetryStep extends Step {
-    
+
     private final int count;
     private List<ErrorCondition> conditions;
 
@@ -59,13 +59,14 @@ public class RetryStep extends Step {
         return conditions;
     }
 
-    @DataBoundSetter public void setConditions(List<ErrorCondition> conditions) {
+    @DataBoundSetter
+    public void setConditions(List<ErrorCondition> conditions) {
         this.conditions = conditions;
     }
 
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
+        return (DescriptorImpl) super.getDescriptor();
     }
 
     @Override
@@ -106,7 +107,5 @@ public class RetryStep extends Step {
                 return FormValidation.ok();
             }
         }
-
     }
-
 }

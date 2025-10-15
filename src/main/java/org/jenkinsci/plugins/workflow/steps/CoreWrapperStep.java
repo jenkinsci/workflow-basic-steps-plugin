@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -40,7 +41,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -56,7 +56,8 @@ public class CoreWrapperStep extends Step {
 
     private final SimpleBuildWrapper delegate;
 
-    @DataBoundConstructor public CoreWrapperStep(SimpleBuildWrapper delegate) {
+    @DataBoundConstructor
+    public CoreWrapperStep(SimpleBuildWrapper delegate) {
         this.delegate = delegate;
     }
 
@@ -64,7 +65,8 @@ public class CoreWrapperStep extends Step {
         return delegate;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution2(delegate, context);
     }
 
@@ -74,24 +76,25 @@ public class CoreWrapperStep extends Step {
 
         private static final long serialVersionUID = 1;
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             throw new AssertionError();
         }
-
     }
 
     private static final class Execution2 extends GeneralNonBlockingStepExecution {
 
         private static final long serialVersionUID = 1;
 
-        private transient final SimpleBuildWrapper delegate;
+        private final transient SimpleBuildWrapper delegate;
 
         Execution2(SimpleBuildWrapper delegate, StepContext context) {
             super(context);
             this.delegate = delegate;
         }
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             run(this::doStart);
             return false;
         }
@@ -124,16 +127,20 @@ public class CoreWrapperStep extends Step {
                 }
             }
             BodyInvoker bodyInvoker = context.newBodyInvoker();
-            Map<String,String> overrides = c.getEnv();
+            Map<String, String> overrides = c.getEnv();
             if (!overrides.isEmpty()) {
-                bodyInvoker.withContext(EnvironmentExpander.merge(context.get(EnvironmentExpander.class), new ExpanderImpl(overrides)));
+                bodyInvoker.withContext(
+                        EnvironmentExpander.merge(context.get(EnvironmentExpander.class), new ExpanderImpl(overrides)));
             }
             ConsoleLogFilter filter = delegate.createLoggerDecorator(run);
             if (filter != null) {
-                bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), filter));
+                bodyInvoker.withContext(
+                        BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), filter));
             }
             SimpleBuildWrapper.Disposer disposer = c.getDisposer();
-            bodyInvoker.withCallback(disposer != null ? new Callback2(disposer) : BodyExecutionCallback.wrap(context)).start();
+            bodyInvoker
+                    .withCallback(disposer != null ? new Callback2(disposer) : BodyExecutionCallback.wrap(context))
+                    .start();
         }
 
         private final class Callback2 extends TailCall {
@@ -146,21 +153,23 @@ public class CoreWrapperStep extends Step {
                 this.disposer = disposer;
             }
 
-            @Override protected void finished(StepContext context) throws Exception {
+            @Override
+            protected void finished(StepContext context) throws Exception {
                 new Callback(disposer).finished(context);
             }
-
         }
-
     }
 
     private static final class ExpanderImpl extends EnvironmentExpander {
         private static final long serialVersionUID = 1;
-        private final Map<String,String> overrides;
-        ExpanderImpl(Map<String,String> overrides) {
+        private final Map<String, String> overrides;
+
+        ExpanderImpl(Map<String, String> overrides) {
             this.overrides = /* ensure serializability*/ new HashMap<>(overrides);
         }
-        @Override public void expand(EnvVars env) throws IOException, InterruptedException {
+
+        @Override
+        public void expand(EnvVars env) throws IOException, InterruptedException {
             // Distinct from EnvironmentExpander.constant since we are also expanding variables.
             env.overrideExpandingAll(overrides);
         }
@@ -176,8 +185,9 @@ public class CoreWrapperStep extends Step {
             this.disposer = disposer;
         }
 
-        @Override protected void finished(StepContext context) throws Exception {
-            final Run<?,?> run = context.get(Run.class);
+        @Override
+        protected void finished(StepContext context) throws Exception {
+            final Run<?, ?> run = context.get(Run.class);
             assert run != null;
             final TaskListener listener = context.get(TaskListener.class);
             assert listener != null;
@@ -209,29 +219,34 @@ public class CoreWrapperStep extends Step {
                 disposer.tearDown(run, listener);
             }
         }
-
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "wrap";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "General Build Wrapper";
         }
 
-        @Override public boolean takesImplicitBlockArgument() {
+        @Override
+        public boolean takesImplicitBlockArgument() {
             return true;
         }
 
-        @Override public boolean isMetaStep() {
+        @Override
+        public boolean isMetaStep() {
             return true;
         }
 
-        // getPropertyType("delegate").getApplicableDescriptors() does not work, because extension lists do not work on subtypes.
+        // getPropertyType("delegate").getApplicableDescriptors() does not work,
+        // because extension lists do not work on subtypes.
         public Collection<BuildWrapperDescriptor> getApplicableDescriptors() {
             Collection<BuildWrapperDescriptor> r = new ArrayList<>();
             for (BuildWrapperDescriptor d : Jenkins.get().getExtensionList(BuildWrapperDescriptor.class)) {
@@ -242,17 +257,18 @@ public class CoreWrapperStep extends Step {
             return r;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             Set<Class<?>> context = new HashSet<>();
             Collections.addAll(context, Run.class, TaskListener.class, EnvVars.class);
             return Collections.unmodifiableSet(context);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
-            Map<String, Object> delegateArguments = CoreStep.DescriptorImpl.delegateArguments(namedArgs.get("delegate"));
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
+            Map<String, Object> delegateArguments =
+                    CoreStep.DescriptorImpl.delegateArguments(namedArgs.get("delegate"));
             return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
         }
-
     }
-
 }

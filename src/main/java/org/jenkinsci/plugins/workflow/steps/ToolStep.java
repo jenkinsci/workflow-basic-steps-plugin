@@ -40,13 +40,11 @@ import hudson.util.ListBoxModel;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
-
+import java.util.Set;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-
-import java.util.Set;
 
 /**
  * Binds a {@link ToolInstallation} to a variable.
@@ -58,7 +56,8 @@ public final class ToolStep extends Step {
     /** {@link ToolDescriptor#getId}, optional for disambiguation. */
     private @CheckForNull String type;
 
-    @DataBoundConstructor public ToolStep(String name) {
+    @DataBoundConstructor
+    public ToolStep(String name) {
         this.name = name;
     }
 
@@ -71,22 +70,27 @@ public final class ToolStep extends Step {
         return type;
     }
 
-    @DataBoundSetter public void setType(String type) {
+    @DataBoundSetter
+    public void setType(String type) {
         this.type = Util.fixEmpty(type);
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(this, context);
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "tool";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Use a tool from a predefined Tool Installation";
         }
 
@@ -112,7 +116,9 @@ public final class ToolStep extends Step {
             ListBoxModel r = new ListBoxModel();
 
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type) && !SymbolLookup.getSymbolValue(desc).contains(type)) {
+                if (type != null
+                        && !desc.getId().equals(type)
+                        && !SymbolLookup.getSymbolValue(desc).contains(type)) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
@@ -122,42 +128,50 @@ public final class ToolStep extends Step {
             return r;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             Set<Class<?>> context = new HashSet<>();
             Collections.addAll(context, TaskListener.class, EnvVars.class, Node.class);
             return Collections.unmodifiableSet(context);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
             Object name = namedArgs.get("name");
             return name instanceof String ? (String) name : null;
         }
-
     }
 
     public static final class Execution extends SynchronousNonBlockingStepExecution<String> {
 
-        private transient final ToolStep step;
+        private final transient ToolStep step;
 
         Execution(ToolStep step, StepContext context) {
             super(context);
             this.step = step;
         }
 
-        @Override protected String run() throws Exception {
+        @Override
+        protected String run() throws Exception {
             String name = step.getName();
             String type = step.getType();
             for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-                if (type != null && !desc.getId().equals(type) && !SymbolLookup.getSymbolValue(desc).contains(type)) {
+                if (type != null
+                        && !desc.getId().equals(type)
+                        && !SymbolLookup.getSymbolValue(desc).contains(type)) {
                     continue;
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
                     if (name.equals(tool.getName())) {
                         if (tool instanceof NodeSpecific) {
-                            tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(getContext().get(Node.class), getContext().get(TaskListener.class));
+                            tool = (ToolInstallation) ((NodeSpecific<?>) tool)
+                                    .forNode(
+                                            getContext().get(Node.class),
+                                            getContext().get(TaskListener.class));
                         }
                         if (tool instanceof EnvironmentSpecific) {
-                            tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(getContext().get(EnvVars.class));
+                            tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool)
+                                    .forEnvironment(getContext().get(EnvVars.class));
                         }
 
                         return tool.getHome();
@@ -168,7 +182,5 @@ public final class ToolStep extends Step {
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

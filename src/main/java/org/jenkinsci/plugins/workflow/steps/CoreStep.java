@@ -27,7 +27,6 @@ package org.jenkinsci.plugins.workflow.steps;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -60,28 +59,31 @@ public final class CoreStep extends Step {
 
     public final SimpleBuildStep delegate;
 
-    @DataBoundConstructor public CoreStep(SimpleBuildStep delegate) {
+    @DataBoundConstructor
+    public CoreStep(SimpleBuildStep delegate) {
         this.delegate = delegate;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(delegate, context);
     }
 
     private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final SimpleBuildStep delegate;
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient SimpleBuildStep delegate;
 
         Execution(SimpleBuildStep delegate, StepContext context) {
             super(context);
             this.delegate = delegate;
         }
 
-        @Override protected Void run() throws Exception {
+        @Override
+        protected Void run() throws Exception {
             final StepContext ctx = this.getContext();
             final FilePath workspace = ctx.get(FilePath.class);
-            final Run<?,?> run = Objects.requireNonNull(ctx.get(Run.class));
+            final Run<?, ?> run = Objects.requireNonNull(ctx.get(Run.class));
             final Launcher launcher = ctx.get(Launcher.class);
             final TaskListener listener = Objects.requireNonNull(ctx.get(TaskListener.class));
             final EnvVars env = Objects.requireNonNull(ctx.get(EnvVars.class));
@@ -106,23 +108,26 @@ public final class CoreStep extends Step {
         }
 
         @NonNull
-        @Override public String getStatus() {
+        @Override
+        public String getStatus() {
             String supe = super.getStatus();
             return delegate != null ? delegate.getClass().getName() + ": " + supe : supe;
         }
 
         private static final long serialVersionUID = 1L;
-
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "step";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "General Build Step";
         }
 
@@ -132,13 +137,15 @@ public final class CoreStep extends Step {
         }
 
         public Collection<? extends Descriptor<?>> getApplicableDescriptors() {
-            // Jenkins.instance.getDescriptorList(SimpleBuildStep) is empty, presumably because that itself is not a Describable.
+            // Jenkins.instance.getDescriptorList(SimpleBuildStep) is empty,
+            // presumably because that itself is not a Describable.
             List<Descriptor<?>> r = new ArrayList<>();
             populate(r, Builder.class);
             populate(r, Publisher.class);
             return r;
         }
-        private <T extends Describable<T>,D extends Descriptor<T>> void populate(List<Descriptor<?>> r, Class<T> c) {
+
+        private <T extends Describable<T>, D extends Descriptor<T>> void populate(List<Descriptor<?>> r, Class<T> c) {
             for (Descriptor<?> d : Jenkins.get().getDescriptorList(c)) {
                 if (SimpleBuildStep.class.isAssignableFrom(d.clazz)) {
                     r.add(d);
@@ -146,13 +153,15 @@ public final class CoreStep extends Step {
             }
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             Set<Class<?>> context = new HashSet<>();
             Collections.addAll(context, Run.class, EnvVars.class, TaskListener.class);
             return Collections.unmodifiableSet(context);
         }
 
-        @Override public String argumentsToString(Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(Map<String, Object> namedArgs) {
             Map<String, Object> delegateArguments = delegateArguments(namedArgs.get("delegate"));
             return delegateArguments != null ? super.argumentsToString(delegateArguments) : null;
         }
@@ -173,7 +182,5 @@ public final class CoreStep extends Step {
                 return null;
             }
         }
-
     }
-
 }

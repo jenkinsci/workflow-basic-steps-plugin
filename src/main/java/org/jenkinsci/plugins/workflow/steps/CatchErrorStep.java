@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.Extension;
@@ -39,8 +41,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -48,7 +48,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 /**
  * Runs a block.
- * By default, if that block fails, marks the build as failed, but continues execution. Can be customized to print a 
+ * By default, if that block fails, marks the build as failed, but continues execution. Can be customized to print a
  * message when the block fails, to set a different build result, to annotate the step with {@link WarningAction} for
  * advanced visualizations, or to rethrow {@link FlowInterruptedException} rather than continuing execution.
  */
@@ -61,7 +61,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     private @NonNull String stageResult = Result.SUCCESS.toString();
     private boolean catchInterruptions = true;
 
-    @DataBoundConstructor public CatchErrorStep() {}
+    @DataBoundConstructor
+    public CatchErrorStep() {}
 
     @CheckForNull
     @Override
@@ -91,7 +92,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             buildResult = Result.SUCCESS.toString();
         }
         if (!buildResult.equalsIgnoreCase(Result.fromString(buildResult).toString())) {
-            throw new IllegalArgumentException("buildResult is invalid: " + buildResult + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
+            throw new IllegalArgumentException("buildResult is invalid: " + buildResult
+                    + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
         }
         this.buildResult = buildResult;
     }
@@ -113,7 +115,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             stageResult = Result.SUCCESS.toString();
         }
         if (!stageResult.equalsIgnoreCase(Result.fromString(stageResult).toString())) {
-            throw new IllegalArgumentException("stageResult is invalid: " + stageResult + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
+            throw new IllegalArgumentException("stageResult is invalid: " + stageResult
+                    + ". Valid options are SUCCESS, UNSTABLE, FAILURE, NOT_BUILT and ABORTED.");
         }
         this.stageResult = stageResult;
     }
@@ -132,7 +135,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         ObjectInputStream.GetField fields = ois.readFields();
         message = (String) fields.get("message", null);
         catchInterruptions = fields.get("catchInterruptions", true);
-        // Previously, the types of buildResult and stageResult were Result rather than String, so we handle either type.
+        // Previously, the types of buildResult and stageResult were Result rather than String,
+        // so we handle either type.
         Object serializedBuildResult = fields.get("buildResult", "FAILURE");
         if (serializedBuildResult instanceof Result) {
             buildResult = ((Result) serializedBuildResult).toString();
@@ -147,26 +151,32 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         }
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(context, this);
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "catchError";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Catch error and set build result to failure";
         }
 
-        @Override public boolean takesImplicitBlockArgument() {
+        @Override
+        public boolean takesImplicitBlockArgument() {
             return true;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             Set<Class<?>> context = new HashSet<>();
             Collections.addAll(context, FlowNode.class, Run.class, TaskListener.class);
             return Collections.unmodifiableSet(context);
@@ -174,7 +184,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
 
         public ListBoxModel doFillBuildResultItems() {
             ListBoxModel r = new ListBoxModel();
-            for (Result result : Arrays.asList(Result.SUCCESS, Result.UNSTABLE, Result.FAILURE, Result.NOT_BUILT, Result.ABORTED)) {
+            for (Result result :
+                    Arrays.asList(Result.SUCCESS, Result.UNSTABLE, Result.FAILURE, Result.NOT_BUILT, Result.ABORTED)) {
                 r.add(result.toString());
             }
             return r;
@@ -183,27 +194,28 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         public ListBoxModel doFillStageResultItems() {
             return doFillBuildResultItems();
         }
-
     }
 
     public static final class Execution extends AbstractStepExecutionImpl {
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used at startup, serialized in Callback")
-        private transient final CatchExecutionOptions options;
+        @SuppressFBWarnings(
+                value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
+                justification = "Only used at startup, serialized in Callback")
+        private final transient CatchExecutionOptions options;
 
         Execution(StepContext context, CatchExecutionOptions options) {
             super(context);
             this.options = options;
         }
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             StepContext context = getContext();
-            context.newBodyInvoker()
-                    .withCallback(new Callback(options))
-                    .start();
+            context.newBodyInvoker().withCallback(new Callback(options)).start();
             return false;
         }
 
-        @Override public void onResume() {}
+        @Override
+        public void onResume() {}
 
         private static final class Callback extends BodyExecutionCallback {
             private static final long serialVersionUID = -5448044884830236797L;
@@ -220,13 +232,17 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                 return this;
             }
 
-            @Override public void onSuccess(StepContext context, Object result) {
+            @Override
+            public void onSuccess(StepContext context, Object result) {
                 context.onSuccess(null); // we do not pass up a result, since onFailure cannot
             }
 
-            @Override public void onFailure(StepContext context, Throwable t) {
+            @Override
+            public void onFailure(StepContext context, Throwable t) {
                 try {
-                    if (!options.isCatchInterruptions() && t instanceof FlowInterruptedException && ((FlowInterruptedException)t).isActualInterruption()) {
+                    if (!options.isCatchInterruptions()
+                            && t instanceof FlowInterruptedException
+                            && ((FlowInterruptedException) t).isActualInterruption()) {
                         context.onFailure(t);
                         return;
                     }
@@ -256,18 +272,17 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                         build.setResult(buildResult);
                     }
                     if (stepResult.isWorseThan(Result.SUCCESS)) {
-                        context.get(FlowNode.class).addOrReplaceAction(new WarningAction(stepResult).withMessage(message));
+                        context.get(FlowNode.class)
+                                .addOrReplaceAction(new WarningAction(stepResult).withMessage(message));
                     }
                     context.onSuccess(null);
                 } catch (Exception x) {
                     context.onFailure(x);
                 }
             }
-
         }
 
         private static final long serialVersionUID = 1L;
-
     }
 
     private static final CatchExecutionOptions DEFAULT_OPTIONS = new CatchExecutionOptions() {

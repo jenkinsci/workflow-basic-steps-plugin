@@ -44,8 +44,8 @@ class IsUnixStepTest {
     @Test
     void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}; node {xsh 'echo hello world'}", true));
+        p.setDefinition(new CpsFlowDefinition(
+                "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}; node {xsh 'echo hello world'}", true));
         r.assertLogContains("hello world", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
-
 }

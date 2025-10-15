@@ -40,44 +40,51 @@ public class WithContextStep extends Step {
 
     public final Object context;
 
-    @DataBoundConstructor public WithContextStep(Object context) {
+    @DataBoundConstructor
+    public WithContextStep(Object context) {
         this.context = context;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(this.context, context);
     }
 
-    @Extension public static class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "withContext";
         }
 
-        @Override public boolean takesImplicitBlockArgument() {
+        @Override
+        public boolean takesImplicitBlockArgument() {
             return true;
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Use contextual object from internal APIs within a block";
         }
 
-        @Override public boolean isAdvanced() {
+        @Override
+        public boolean isAdvanced() {
             return true;
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.emptySet();
         }
-
     }
 
     public static class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
         private transient Object obj;
 
         Execution(Object obj, StepContext context) {
@@ -85,21 +92,25 @@ public class WithContextStep extends Step {
             this.obj = obj;
         }
 
-        @Override public boolean start() throws Exception {
+        @Override
+        public boolean start() throws Exception {
             StepContext context = getContext();
             if (obj instanceof ConsoleLogFilter) {
                 obj = BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), (ConsoleLogFilter) obj);
             } else if (obj instanceof LauncherDecorator) {
-                obj = BodyInvoker.mergeLauncherDecorators(context.get(LauncherDecorator.class), (LauncherDecorator) obj);
+                obj = BodyInvoker.mergeLauncherDecorators(
+                        context.get(LauncherDecorator.class), (LauncherDecorator) obj);
             } else if (obj instanceof EnvironmentExpander) {
                 obj = EnvironmentExpander.merge(context.get(EnvironmentExpander.class), (EnvironmentExpander) obj);
             }
-            context.newBodyInvoker().withContext(obj).withCallback(BodyExecutionCallback.wrap(context)).start();
+            context.newBodyInvoker()
+                    .withContext(obj)
+                    .withCallback(BodyExecutionCallback.wrap(context))
+                    .start();
             return false;
         }
 
-        @Override public void onResume() {}
-
+        @Override
+        public void onResume() {}
     }
-
 }

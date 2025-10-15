@@ -24,6 +24,10 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+
 import hudson.model.Result;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -40,10 +44,6 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-
 @Issue("JENKINS-45579")
 @WithJenkins
 class UnstableStepTest {
@@ -51,6 +51,7 @@ class UnstableStepTest {
     @SuppressWarnings("unused")
     @RegisterExtension
     private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
+
     private JenkinsRule r;
 
     @BeforeEach
@@ -77,8 +78,8 @@ class UnstableStepTest {
     private void assertWarning(WorkflowRun run, String expectedMessage) throws Exception {
         r.assertLogContains("WARNING: " + expectedMessage, run);
         FlowExecution exec = run.getExecution();
-        FlowNode warningNode = new DepthFirstScanner().findFirstMatch(exec,
-                node -> node.getPersistentAction(WarningAction.class) != null);
+        FlowNode warningNode = new DepthFirstScanner()
+                .findFirstMatch(exec, node -> node.getPersistentAction(WarningAction.class) != null);
         assertThat(warningNode, notNullValue());
         WarningAction warning = warningNode.getPersistentAction(WarningAction.class);
         assertThat(warning, notNullValue());

@@ -52,52 +52,60 @@ public class PwdStep extends Step {
 
     private boolean tmp;
 
-    @DataBoundConstructor public PwdStep() {}
+    @DataBoundConstructor
+    public PwdStep() {}
 
     public boolean isTmp() {
         return tmp;
     }
 
-    @DataBoundSetter public void setTmp(boolean tmp) {
+    @DataBoundSetter
+    public void setTmp(boolean tmp) {
         this.tmp = tmp;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(tmp, context);
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "pwd";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Determine current directory";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(FilePath.class);
         }
 
-        @Override public String argumentsToString(@NonNull Map<String, Object> namedArgs) {
+        @Override
+        public String argumentsToString(@NonNull Map<String, Object> namedArgs) {
             return null; // "true" is not a reasonable description
         }
-
     }
 
     public static class Execution extends SynchronousStepExecution<String> {
-        
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final boolean tmp;
+
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient boolean tmp;
 
         Execution(boolean tmp, StepContext context) {
             super(context);
             this.tmp = tmp;
         }
 
-        @Override protected String run() throws Exception {
+        @Override
+        protected String run() throws Exception {
             FilePath cwd = getContext().get(FilePath.class);
             Objects.requireNonNull(cwd);
             if (tmp) {
@@ -110,7 +118,5 @@ public class PwdStep extends Step {
         }
 
         private static final long serialVersionUID = 1L;
-
     }
-
 }

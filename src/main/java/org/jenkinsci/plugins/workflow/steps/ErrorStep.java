@@ -36,7 +36,8 @@ public final class ErrorStep extends Step {
 
     private final String message;
 
-    @DataBoundConstructor public ErrorStep(String message) {
+    @DataBoundConstructor
+    public ErrorStep(String message) {
         this.message = message;
     }
 
@@ -44,7 +45,8 @@ public final class ErrorStep extends Step {
         return message;
     }
 
-    @Override public StepExecution start(StepContext context) throws Exception {
+    @Override
+    public StepExecution start(StepContext context) throws Exception {
         return new Execution(message, context);
     }
 
@@ -52,35 +54,37 @@ public final class ErrorStep extends Step {
 
         private static final long serialVersionUID = 1L;
 
-        @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-        private transient final String message;
+        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
+        private final transient String message;
 
         Execution(String message, StepContext context) {
             super(context);
             this.message = message;
         }
 
-        @Override protected Void run() throws Exception {
+        @Override
+        protected Void run() throws Exception {
             throw new AbortException(message);
         }
-
     }
 
-    @Extension public static final class DescriptorImpl extends StepDescriptor {
+    @Extension
+    public static final class DescriptorImpl extends StepDescriptor {
 
-        @Override public String getFunctionName() {
+        @Override
+        public String getFunctionName() {
             return "error";
         }
 
         @NonNull
-        @Override public String getDisplayName() {
+        @Override
+        public String getDisplayName() {
             return "Error signal";
         }
 
-        @Override public Set<? extends Class<?>> getRequiredContext() {
+        @Override
+        public Set<? extends Class<?>> getRequiredContext() {
             return Collections.emptySet();
         }
-
     }
-
 }

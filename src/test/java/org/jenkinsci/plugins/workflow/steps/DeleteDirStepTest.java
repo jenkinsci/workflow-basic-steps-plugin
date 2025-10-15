@@ -24,18 +24,16 @@
 
 package org.jenkinsci.plugins.workflow.steps;
 
-import java.io.File;
+import static org.junit.jupiter.api.Assertions.*;
 
+import hudson.FilePath;
+import java.io.File;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import hudson.FilePath;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @WithJenkins
 class DeleteDirStepTest {
@@ -101,7 +99,6 @@ class DeleteDirStepTest {
         assertTrue(new File(f, ".sub2/f2").exists(), ".sub2/f2 should still exist");
         assertTrue(new File(f, ".sub3/.hidden").exists(), ".sub3/.hidden should still exist");
     }
-
 
     /**
      * Runs the given flow and returns the workspace used.
