@@ -41,15 +41,13 @@ class ArtifactArchiverStepTest {
     void archive() throws Exception {
         // job setup
         WorkflowJob foo = r.jenkins.createProject(WorkflowJob.class, "foo");
-        foo.setDefinition(new CpsFlowDefinition(
-                """
+        foo.setDefinition(new CpsFlowDefinition("""
                 node {
                     writeFile text: 'hello world', file: 'msg'
                     archive 'm*'
                     unarchive(mapping:['msg':'msg.out'])
                     archive 'msg.out'
-                }""",
-                true));
+                }""", true));
 
         // get the build going, and wait until workflow pauses
         WorkflowRun b = r.assertBuildStatusSuccess(foo.scheduleBuild2(0).get());
@@ -78,8 +76,7 @@ class ArtifactArchiverStepTest {
     @Test
     void unarchiveDir() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node {
                     writeFile text: 'one', file: 'a/1'; writeFile text: 'two', file: 'a/b/2'
                     archive 'a/'
@@ -88,8 +85,7 @@ class ArtifactArchiverStepTest {
                     echo "${readFile 'a/1'}/${readFile 'a/b/2'}"
                     }
                 }
-                """,
-                true));
+                """, true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
         VirtualFile archivedFile = b.getArtifactManager().root().child("a/b/2");
         assertTrue(archivedFile.exists());
@@ -106,8 +102,7 @@ class ArtifactArchiverStepTest {
         r.createSlave("remote1", null, null);
         r.createSlave("remote2", null, null);
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node('remote1') {
                   writeFile file: 'x', text: 'contents'
                   archiveArtifacts 'x'
@@ -116,8 +111,7 @@ class ArtifactArchiverStepTest {
                   unarchive mapping: [x: 'x']
                   echo "loaded ${readFile('x')}"
                 }
-                """,
-                true));
+                """, true));
         DirectArtifactManagerFactory.whileBlockingOpen(() -> {
             r.assertLogContains("loaded contents", r.buildAndAssertSuccess(p));
             return null;

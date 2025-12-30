@@ -66,8 +66,7 @@ class StashTest {
     @Test
     void smokes() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           writeFile file: 'subdir/fname', text: 'whatever'
                           writeFile file: 'subdir/other', text: 'more'
@@ -81,8 +80,7 @@ class StashTest {
                           writeFile file: 'at-top', text: 'ignored'
                           stash name: 'from-top', includes: 'elsewhere/', excludes: '**/other'
                           semaphore 'ending'
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ending/1", b);
         assertEquals(
@@ -99,8 +97,7 @@ class StashTest {
     @Test
     void testDefaultExcludes() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           writeFile file: 'subdir/.gitignore', text: 'whatever'
                           writeFile file: 'subdir/otherfile', text: 'whatever'
@@ -114,8 +111,7 @@ class StashTest {
                             unstash('no-gitignore')
                             echo "gitignore does not exist? ${fileExists '.gitignore'}"
                           }
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("gitignore exists? true", b);
         r.assertLogContains("gitignore does not exist? false", b);
@@ -125,14 +121,12 @@ class StashTest {
     @Test
     void testAllowEmpty() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           stash name: 'whatever', allowEmpty: true
                           semaphore 'ending'
                         }
-                        """,
-                true));
+                        """, true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ending/1", b);
         assertEquals("{whatever={}}", StashManager.stashesOf(b).toString());

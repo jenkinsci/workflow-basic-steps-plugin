@@ -57,12 +57,10 @@ class WarnErrorStepTest {
     @Test
     void smokes() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         warnError('caught error') {
                           error 'oops'
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.UNSTABLE, Result.UNSTABLE, true);
     }
@@ -70,12 +68,10 @@ class WarnErrorStepTest {
     @Test
     void requiresMessage() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         warnError() {
                           error 'oops'
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
         r.assertLogContains("A non-empty message is required", b);
     }
@@ -83,14 +79,12 @@ class WarnErrorStepTest {
     @Test
     void catchesTimeoutsByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         timeout(time: 1, unit: 'SECONDS') {
                           warnError('caught error') {
                             sleep 5
                           }
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
     }
@@ -98,14 +92,12 @@ class WarnErrorStepTest {
     @Test
     void canAvoidCatchingTimeoutsWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         timeout(time: 1, unit: 'SECONDS') {
                           warnError(message: 'caught error', catchInterruptions: false) {
                             sleep 5
                           }
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, null, false);
     }
@@ -113,12 +105,10 @@ class WarnErrorStepTest {
     @Test
     void catchesAttemptsToStopBuildByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         warnError('caught error') {
                           semaphore 'ready'
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();
@@ -128,12 +118,10 @@ class WarnErrorStepTest {
     @Test
     void canAvoidCatchingAttemptsToStopBuildWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         warnError(message: 'caught error', catchInterruptions: false) {
                           semaphore 'ready'
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();

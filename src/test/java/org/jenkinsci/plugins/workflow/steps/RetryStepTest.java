@@ -53,16 +53,14 @@ class RetryStepTest {
     @Test
     void smokes() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         int i = 0;
                         retry(3) {
                             println 'Trying!'
                             if (i++ < 2) error('oops');
                             println 'Done!'
                         }
-                        println 'Over!'""",
-                true));
+                        println 'Over!'""", true));
 
         QueueTaskFuture<WorkflowRun> f = p.scheduleBuild2(0);
         WorkflowRun b = r.assertBuildStatusSuccess(f);
@@ -119,15 +117,13 @@ class RetryStepTest {
     @Test
     void inputAbortShouldNotRetry() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 int count = 0
                 retry(3) {
                   echo 'trying '+(count++)
                   input id: 'InputX', message: 'OK?', ok: 'Yes'
                 }
-                """,
-                true));
+                """, true));
 
         QueueTaskFuture<WorkflowRun> queueTaskFuture = p.scheduleBuild2(0);
         WorkflowRun run = queueTaskFuture.getStartCondition().get();
@@ -156,8 +152,7 @@ class RetryStepTest {
     @Test
     void stackTraceOnError() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                                 def count = 0
                                 retry(2) {
                                   count += 1
@@ -167,8 +162,7 @@ class RetryStepTest {
                                   }
                                   echo 'Done!'
                                 }
-                                """,
-                true));
+                                """, true));
 
         WorkflowRun run = r.buildAndAssertSuccess(p);
         r.assertLogContains("Try #1", run);
@@ -185,15 +179,13 @@ class RetryStepTest {
         WorkflowJob ds = r.createProject(WorkflowJob.class, "ds");
         ds.setDefinition(new CpsFlowDefinition("error 'oops!'", true));
         WorkflowJob us = r.createProject(WorkflowJob.class, "us");
-        us.setDefinition(new CpsFlowDefinition(
-                """
+        us.setDefinition(new CpsFlowDefinition("""
                 int count = 1
                 retry(3) {
                   echo "trying ${count++}"
                   build 'ds'
                 }
-                """,
-                true));
+                """, true));
         WorkflowRun b = r.assertBuildStatus(Result.FAILURE, us.scheduleBuild2(0));
         r.assertLogContains("trying 1", b);
         r.assertLogContains("trying 2", b);
@@ -204,8 +196,7 @@ class RetryStepTest {
     @Test
     void shouldNotRetryAfterOuterTimeout() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                                 int count = 0
                                 timeout(time: 5, unit: 'SECONDS') {
                                   retry(3) {
@@ -214,8 +205,7 @@ class RetryStepTest {
                                     error 'failure'
                                   }
                                 }
-                                """,
-                true));
+                                """, true));
 
         WorkflowRun run = r.buildAndAssertStatus(Result.ABORTED, p);
         r.assertLogContains("Timeout has been exceeded", run);
@@ -228,8 +218,7 @@ class RetryStepTest {
     @Test
     void shouldRetryAfterInnerTimeout() throws Exception {
         WorkflowJob p = r.createProject(WorkflowJob.class);
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                                 int count = 0
                                 retry(3) {
                                   timeout(time: 5, unit: 'SECONDS') {
@@ -238,8 +227,7 @@ class RetryStepTest {
                                     error 'failure'
                                   }
                                 }
-                                """,
-                true));
+                                """, true));
 
         WorkflowRun run = r.buildAndAssertStatus(Result.ABORTED, p);
         r.assertLogContains("Timeout has been exceeded", run);

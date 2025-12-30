@@ -62,8 +62,7 @@ class ReadWriteFileStepTest {
     @Test
     void basics() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node {
                   if (isUnix()) {
                     sh 'echo hello > f1'
@@ -79,8 +78,7 @@ class ReadWriteFileStepTest {
                     bat 'type f2'
                   }
                 }
-                """,
-                true));
+                """, true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         r.assertLogContains("HELLO", b);
         List<FlowNode> coreStepNodes =
@@ -92,14 +90,12 @@ class ReadWriteFileStepTest {
     @Test
     void shouldTestFileExistsStep() throws Exception {
         final WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           echo "test.txt - FileExists: ${fileExists('test.txt')}"\s
                           writeFile file: 'test2.txt', text:'content of file'\s
                           echo "test2.txt - FileExists: ${fileExists('test2.txt')}"\s
-                        }""",
-                true));
+                        }""", true));
 
         WorkflowRun run = p.scheduleBuild2(0).get();
         r.assertLogContains("test.txt - FileExists: false", run);
@@ -111,15 +107,13 @@ class ReadWriteFileStepTest {
     @Test
     void readAndWriteFileUsesCorrectEncoding() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           def text = 'HELLO'
                           writeFile file: 'f1', text: text, encoding: 'utf-32le'
                           def text2 = readFile file: 'f1', encoding: 'utf-32le'
                           echo text2
-                        }""",
-                true));
+                        }""", true));
         r.assertLogContains("HELLO", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
@@ -127,15 +121,13 @@ class ReadWriteFileStepTest {
     @Test
     void testKnownCharsetRoundtrip() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           def text = 'HELLO'
                           writeFile file: 'f1', text: '¤', encoding: 'iso-8859-1'
                           def text2 = readFile file: 'f1', encoding: 'iso-8859-15'
                           echo text2
-                        }""",
-                true));
+                        }""", true));
         r.assertLogContains("€", r.assertBuildStatusSuccess(p.scheduleBuild2(0)));
     }
 
@@ -143,8 +135,7 @@ class ReadWriteFileStepTest {
     @Test
     void testBinaryFileRoundtrip() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                           semaphore 'file-created'
                           def utf8Text = readFile file: 'binary-file', encoding: 'UTF-8'
@@ -152,8 +143,7 @@ class ReadWriteFileStepTest {
                           def base64Text = readFile file: 'binary-file', encoding: 'Base64'
                           writeFile file: 'round-trip-base64', text: base64Text, encoding: 'Base64'
                           semaphore 'bytes-checked'
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("file-created/1", b);
         byte[] bytes = {0x48, 0x45, 0x4c, 0x4c, 0x4f, (byte) 0x80, (byte) 0xec, (byte) 0xf4, 0x00, 0x0d, 0x1b};
