@@ -47,8 +47,7 @@ class DeleteDirStepTest {
 
     @Test
     void testDeleteEmptyWorkspace() throws Exception {
-        String workspace = runAndGetWorkspaceDir(
-                """
+        String workspace = runAndGetWorkspaceDir("""
                         node {
                           deleteDir()
                         }""");
@@ -58,8 +57,7 @@ class DeleteDirStepTest {
 
     @Test
     void testDeleteTopLevelDir() throws Exception {
-        String workspace = runAndGetWorkspaceDir(
-                """
+        String workspace = runAndGetWorkspaceDir("""
                         node {
                           writeFile file: 'f1', text: 'some text'
                           writeFile file: 'f2', text: 'some text'
@@ -76,8 +74,7 @@ class DeleteDirStepTest {
 
     @Test
     void testDeleteSubFolder() throws Exception {
-        String workspace = runAndGetWorkspaceDir(
-                """
+        String workspace = runAndGetWorkspaceDir("""
                         node {
                           writeFile file: 'f1', text: 'some text'
                           writeFile file: 'f2', text: 'some text'

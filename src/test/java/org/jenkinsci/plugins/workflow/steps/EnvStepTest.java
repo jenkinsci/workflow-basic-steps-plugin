@@ -61,8 +61,7 @@ public class EnvStepTest {
     void overriding() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                 env.CUSTOM = 'initial'
                                 env.FOOPATH = node {isUnix() ? '/opt/foos' : 'C:\\\\foos'}
                                 env.NULLED = 'outside'
@@ -72,8 +71,7 @@ public class EnvStepTest {
                                     echo "groovy NULLED=${env.NULLED}"
                                   }
                                   isUnix() ? sh('echo outside CUSTOM=$CUSTOM NOVEL=$NOVEL NULLED=outside') : bat('echo outside CUSTOM=%CUSTOM% NOVEL=%NOVEL% NULLED=outside')
-                                }""",
-                    true));
+                                }""", true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             j.assertLogContains(
                     Functions.isWindows()
@@ -99,14 +97,12 @@ public class EnvStepTest {
     void parallel() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                 parallel a: {
                                   node {withEnv(['TOOL=aloc']) {semaphore 'a'; isUnix() ? sh('echo a TOOL=$TOOL') : bat('echo a TOOL=%TOOL%')}}
                                 }, b: {
                                   node {withEnv(['TOOL=bloc']) {semaphore 'b'; isUnix() ? sh('echo b TOOL=$TOOL') : bat('echo b TOOL=%TOOL%')}}
-                                }""",
-                    true));
+                                }""", true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("a/1", b);
             SemaphoreStep.waitForStart("b/1", b);
@@ -122,8 +118,7 @@ public class EnvStepTest {
     void restarting() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                 def show(which) {
                                   echo "groovy ${which} ${env.TESTVAR}:"
                                   isUnix() ? sh("echo shell ${which} \\$TESTVAR:") : bat("echo shell ${which} %TESTVAR%:")
@@ -135,8 +130,7 @@ public class EnvStepTest {
                                     show 'after'
                                   }
                                   show 'outside'
-                                }""",
-                    true));
+                                }""", true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarting/1", b);
         });
@@ -157,16 +151,14 @@ public class EnvStepTest {
     void nested() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                 node {
                                   withEnv(['A=one']) {
                                     withEnv(['B=two']) {
                                       isUnix() ? sh('echo A=$A B=$B') : bat('echo A=%A% B=%B%')
                                     }
                                   }
-                                }""",
-                    true));
+                                }""", true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             j.assertLogContains("A=one B=two", b);
         });

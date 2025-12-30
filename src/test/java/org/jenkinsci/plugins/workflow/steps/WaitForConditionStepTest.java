@@ -117,8 +117,7 @@ class WaitForConditionStepTest {
     void catchErrors() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                     node {
                       waitUntil {
                         try {
@@ -133,8 +132,7 @@ class WaitForConditionStepTest {
                       }
                     }
                     echo 'finished waiting'
-                    """,
-                    true));
+                    """, true));
             WorkflowRun b = p.scheduleBuild2(0).waitForStart();
             SemaphoreStep.waitForStart("wait/1", b);
             j.jenkins.getWorkspaceFor(p).child("flag").write("", null);

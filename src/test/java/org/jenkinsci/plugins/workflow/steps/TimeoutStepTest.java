@@ -120,8 +120,7 @@ class TimeoutStepTest {
     void killingParallel() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                         node {
                           timeout(time:5, unit:'SECONDS') {
                             parallel(
@@ -132,8 +131,7 @@ class TimeoutStepTest {
                           }
                           echo 'NotHere'
                         }
-                        """,
-                    true));
+                        """, true));
             WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
 
             // make sure things that are supposed to run do, and things that are NOT supposed to run do not.
@@ -160,8 +158,7 @@ class TimeoutStepTest {
         assumeTrue(System.getenv("CI") == null, "TODO consistently failing in ci.jenkins.io yet passing locally");
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                         node {
                           timeout(time:5, unit:'SECONDS', activity: true) {
                             echo 'NotHere';
@@ -173,8 +170,7 @@ class TimeoutStepTest {
                             echo 'ShouldNot!';
                           }
                         }
-                        """,
-                    true));
+                        """, true));
             WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
             j.assertLogContains("JustHere!", b);
             j.assertLogNotContains("ShouldNot!", b);
@@ -187,8 +183,7 @@ class TimeoutStepTest {
         assumeTrue(System.getenv("CI") == null, "TODO also flaky in ci.jenkins.io");
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                         node {
                           parallel(
                             a: {
@@ -209,8 +204,7 @@ class TimeoutStepTest {
                               }
                             })
                         }
-                        """,
-                    true));
+                        """, true));
             WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
             j.assertLogContains("JustHere!", b);
             j.assertLogNotContains("ShouldNot!", b);
@@ -223,8 +217,7 @@ class TimeoutStepTest {
         assumeTrue(System.getenv("CI") == null, "TODO also flaky in ci.jenkins.io");
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "restarted");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                         node {
                           timeout(time:15, unit:'SECONDS', activity: true) {
                             echo 'NotHere';
@@ -238,8 +231,7 @@ class TimeoutStepTest {
                             echo 'ShouldNot!';
                           }
                         }
-                        """,
-                    true));
+                        """, true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarted/1", b);
         });
@@ -259,8 +251,7 @@ class TimeoutStepTest {
         sessions.then(j -> {
             j.createSlave();
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                     node('!master') {
                       timeout(time:5, unit:'SECONDS', activity: true) {
                         if (isUnix()) {
@@ -270,8 +261,7 @@ class TimeoutStepTest {
                         }
                       }
                     }
-                    """,
-                    true));
+                    """, true));
             WorkflowRun b = j.assertBuildStatus(Result.ABORTED, p.scheduleBuild2(0));
             j.assertLogContains("JustHere", b);
             j.assertLogNotContains("ShouldNot", b);
@@ -288,15 +278,13 @@ class TimeoutStepTest {
             git.git("commit", "--all", "--message=init");
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
             p.addProperty(new ParametersDefinitionProperty(new StringParameterDefinition("GIT", git.toString())));
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                     node('!master') {
                       timeout(time: 5, unit: 'MINUTES', activity: true) {
                         git GIT
                       }
                     }
-                    """,
-                    true));
+                    """, true));
             j.buildAndAssertSuccess(p);
         });
     }
@@ -306,16 +294,14 @@ class TimeoutStepTest {
     void restarted() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "restarted");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                         node {
                           timeout(time: 15, unit: 'SECONDS') {
                             semaphore 'restarted'
                             sleep 999
                           }
                         }
-                        """,
-                    true));
+                        """, true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarted/1", b);
         });
@@ -332,8 +318,7 @@ class TimeoutStepTest {
     void timeIsConsumed() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "timeIsConsumed");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                         node {
                           timeout(time: 20, unit: 'SECONDS') {
                             sleep 10
@@ -341,8 +326,7 @@ class TimeoutStepTest {
                             sleep 10
                           }
                         }
-                        """,
-                    true));
+                        """, true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("timeIsConsumed/1", b);
         });
@@ -486,38 +470,33 @@ class TimeoutStepTest {
             WorkflowJob p = j.createProject(WorkflowJob.class);
 
             // Inside
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                     timeout(time: 5, unit: 'SECONDS') {
                                       try {
                                         sleep 10
                                       } catch (e) {
                                         echo e.isActualInterruption() ? 'GOOD' : 'BAD'
                                       }
-                                    }""",
-                    true));
+                                    }""", true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
 
             // Outside
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                     try {
                                       timeout(time: 5, unit: 'SECONDS') {
                                         sleep 10
                                       }
                                     } catch (e) {
                                       echo e.isActualInterruption() ? 'BAD' : 'GOOD'
-                                    }""",
-                    true));
+                                    }""", true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
 
             // Between
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                     timeout(time: 5, unit: 'SECONDS') {
                                       try {
                                         timeout(time: 20, unit: 'SECONDS') {
@@ -526,45 +505,39 @@ class TimeoutStepTest {
                                       } catch (e) {
                                         echo e.isActualInterruption() ? 'GOOD' : 'BAD'
                                       }
-                                    }""",
-                    true));
+                                    }""", true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
 
             // Inside (unkillable)
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                     timeout(time: 5, unit: 'SECONDS') {
                                       try {
                                         unkillable()
                                       } catch (e) {
                                         echo e.isActualInterruption() ? 'GOOD' : 'BAD'
                                       }
-                                    }""",
-                    true));
+                                    }""", true));
             b = p.scheduleBuild2(0).get();
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
 
             // Outside (unkillable)
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                     try {
                                       timeout(time: 5, unit: 'SECONDS') {
                                         unkillable()
                                       }
                                     } catch (e) {
                                       echo e.isActualInterruption() ? 'BAD' : 'GOOD'\
-                                    }""",
-                    true));
+                                    }""", true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
 
             // Between (unkillable)
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                     timeout(time: 5, unit: 'SECONDS') {
                                       try {
                                         timeout(time: 20, unit: 'SECONDS') {
@@ -573,8 +546,7 @@ class TimeoutStepTest {
                                       } catch (e) {
                                         echo e.isActualInterruption() ? 'GOOD' : 'BAD'
                                       }
-                                    }""",
-                    true));
+                                    }""", true));
             b = j.buildAndAssertSuccess(p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);

@@ -123,13 +123,11 @@ class CoreStepTest {
     @Test
     void javadoc() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                         node {
                             writeFile text: 'hello world', file: 'docs/index.html'
                             step([$class: 'JavadocArchiver', javadocDir: 'docs'])
-                        }""",
-                true));
+                        }""", true));
         WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
         assertEquals(
                 "hello world",
@@ -143,15 +141,13 @@ class CoreStepTest {
     @Test
     void mailer() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node {
                     writeFile text: '''<testsuite name='s'><testcase name='c'><error>failed</error></testcase></testsuite>''', file: 'r.xml'
                     junit 'r.xml'
                     step([$class: 'Mailer', recipients: 'test@nowhere.net'])
                 }
-                """,
-                true));
+                """, true));
         String recipient = "test@nowhere.net";
         Mailbox inbox = Mailbox.get(new InternetAddress(recipient));
         inbox.clear();
@@ -159,39 +155,33 @@ class CoreStepTest {
         assertEquals(1, inbox.size());
         var subj = Messages.MailSender_UnstableMail_Subject(); // MailSender.createUnstableMail/getSubject
         assertEquals(subj + " " + b.getFullDisplayName(), inbox.get(0).getSubject());
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node {
                     catchError {error 'oops'}
                     step([$class: 'Mailer', recipients: 'test@nowhere.net'])
                 }
-                """,
-                true));
+                """, true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());
         assertEquals(
                 Messages.MailSender_FailureMail_Subject() + " " + b.getFullDisplayName(),
                 inbox.get(0).getSubject());
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node {
                     catchError {echo 'ok'}
                     step([$class: 'Mailer', recipients: 'test@nowhere.net'])
                 }
-                """,
-                true));
+                """, true));
         inbox.clear();
         b = r.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
         assertEquals(0, inbox.size());
-        p.setDefinition(new CpsFlowDefinition(
-                """
+        p.setDefinition(new CpsFlowDefinition("""
                 node {
                     try {error 'oops'} catch (e) {echo "caught ${e}"; currentBuild.result = 'FAILURE'}
                     step([$class: 'Mailer', recipients: 'test@nowhere.net'])
                 }
-                """,
-                true));
+                """, true));
         inbox.clear();
         b = r.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
         assertEquals(1, inbox.size());

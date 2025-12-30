@@ -105,8 +105,7 @@ class CoreWrapperStepTest {
             slaveEnv.put("HOME", "/home/jenkins");
             createSpecialEnvSlave(j, "slave", "", slaveEnv);
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                     node('slave') {
                       mock {
                         semaphore 'restarting'
@@ -118,8 +117,7 @@ class CoreWrapperStepTest {
                         }
                       }
                     }
-                    """,
-                    true));
+                    """, true));
             WorkflowRun b = p.scheduleBuild2(0).getStartCondition().get();
             SemaphoreStep.waitForStart("restarting/1", b);
         });
@@ -190,8 +188,7 @@ class CoreWrapperStepTest {
     void envStickiness() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                     def show(which) {
                       echo "groovy ${which} ${env.TESTVAR}"
                       if (isUnix()) {
@@ -209,8 +206,7 @@ class CoreWrapperStepTest {
                       }
                       show 'outside'
                     }
-                    """,
-                    true));
+                    """, true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             j.assertLogContains("received initial", b);
             j.assertLogContains("groovy before wrapped", b);
@@ -334,12 +330,10 @@ class CoreWrapperStepTest {
     void argumentsToString() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                    """
+            p.setDefinition(new CpsFlowDefinition("""
                                 node {
                                     wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {}
-                                }""",
-                    true));
+                                }""", true));
             WorkflowRun b = j.buildAndAssertSuccess(p);
             List<FlowNode> coreStepNodes = new DepthFirstScanner()
                     .filteredNodes(
