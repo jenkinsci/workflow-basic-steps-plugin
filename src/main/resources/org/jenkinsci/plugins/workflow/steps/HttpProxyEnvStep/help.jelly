@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+  Provides the global proxy settings as HTTP proxy environment variables<br/>
+  <ul>
+    <li>http_proxy/HTTP_PROXY</li>
+    <li>https_proxy/HTTPS_PROXY</li>
+    <li>no_proxy/NO_PROXY</li>
+  </ul>
+</j:jelly>
