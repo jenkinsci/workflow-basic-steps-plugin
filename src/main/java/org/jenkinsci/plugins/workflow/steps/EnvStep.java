@@ -52,12 +52,15 @@ public class EnvStep extends Step {
         if (overrides == null) {
             this.overrides = Collections.emptyList();
         } else {
+            List<String> stored = new ArrayList<>();
             for (String pair : overrides) {
                 if (pair == null || pair.indexOf('=') == -1) {
                     throw new IllegalArgumentException(String.valueOf(pair));
                 }
+                // store a trimmed form to normalize whitespace (keys/values are trimmed later too)
+                stored.add(pair.trim());
             }
-            this.overrides = new ArrayList<>(overrides);
+            this.overrides = stored;
         }
     }
 
@@ -88,10 +91,12 @@ public class EnvStep extends Step {
             for (String pair : overrides) {
                 int split = pair.indexOf('=');
                 if (split == -1) {
+                    // defensive: in case an instance is deserialized from an older form
                     throw new IllegalStateException("Invalid environment override: " + pair);
                 }
+                // trim both key and value to be tolerant of user input like "FOO = bar "
                 String key = pair.substring(0, split).trim();
-                String value = pair.substring(split + 1);
+                String value = pair.substring(split + 1).trim();
                 overridesM.put(key, value);
             }
             getContext()
@@ -143,7 +148,7 @@ public class EnvStep extends Step {
         public Step newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
             String overridesS = formData.getString("overrides");
             List<String> overrides = new ArrayList<>();
-            for (String line : overridesS.split("\r?\n")) {
+            for (String line : overridesS.split("\\r?\\n")) {
                 line = line.trim();
                 if (!line.isEmpty()) {
                     overrides.add(line);
