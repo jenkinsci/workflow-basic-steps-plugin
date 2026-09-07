@@ -49,12 +49,16 @@ public class EnvStep extends Step {
 
     @DataBoundConstructor
     public EnvStep(List<String> overrides) {
-        for (String pair : overrides) {
-            if (pair.indexOf('=') == -1) {
-                throw new IllegalArgumentException(pair);
+        if (overrides == null) {
+            this.overrides = Collections.emptyList();
+        } else {
+            for (String pair : overrides) {
+                if (pair == null || pair.indexOf('=') == -1) {
+                    throw new IllegalArgumentException(String.valueOf(pair));
+                }
             }
+            this.overrides = new ArrayList<>(overrides);
         }
-        this.overrides = new ArrayList<>(overrides);
     }
 
     public List<String> getOverrides() {
@@ -75,7 +79,7 @@ public class EnvStep extends Step {
 
         Execution(List<String> overrides, StepContext context) {
             super(context);
-            this.overrides = overrides;
+            this.overrides = overrides == null ? Collections.emptyList() : overrides;
         }
 
         @Override
@@ -83,8 +87,12 @@ public class EnvStep extends Step {
             Map<String, String> overridesM = new HashMap<>();
             for (String pair : overrides) {
                 int split = pair.indexOf('=');
-                assert split != -1;
-                overridesM.put(pair.substring(0, split), pair.substring(split + 1));
+                if (split == -1) {
+                    throw new IllegalStateException("Invalid environment override: " + pair);
+                }
+                String key = pair.substring(0, split).trim();
+                String value = pair.substring(split + 1);
+                overridesM.put(key, value);
             }
             getContext()
                     .newBodyInvoker()
