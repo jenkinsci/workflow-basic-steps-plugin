@@ -40,9 +40,10 @@ import org.kohsuke.stapler.DataBoundSetter;
 public final class WaitForConditionStep extends Step {
 
     static final long MIN_RECURRENCE_PERIOD = 250; // ¼s
-    static final long MAX_RECURRENCE_PERIOD = 15000; // ¼min
+    static final long DEFAULT_MAX_RECURRENCE_PERIOD = 15000; // ¼min
 
     private long initialRecurrencePeriod = MIN_RECURRENCE_PERIOD;
+    private long maxRecurrencePeriod = DEFAULT_MAX_RECURRENCE_PERIOD;
     private boolean quiet = false;
 
     @DataBoundConstructor
@@ -50,12 +51,20 @@ public final class WaitForConditionStep extends Step {
 
     @DataBoundSetter
     public void setInitialRecurrencePeriod(long initialRecurrencePeriod) {
-        this.initialRecurrencePeriod =
-                Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, MAX_RECURRENCE_PERIOD));
+        this.initialRecurrencePeriod = Math.max(MIN_RECURRENCE_PERIOD, initialRecurrencePeriod);
     }
 
     public long getInitialRecurrencePeriod() {
         return initialRecurrencePeriod;
+    }
+
+    @DataBoundSetter
+    public void setMaxRecurrencePeriod(long maxRecurrencePeriod) {
+        this.maxRecurrencePeriod = maxRecurrencePeriod;
+    }
+
+    public long getMaxRecurrencePeriod(long maxRecurrencePeriod) {
+        return maxRecurrencePeriod;
     }
 
     @DataBoundSetter
@@ -69,7 +78,11 @@ public final class WaitForConditionStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new Execution(context, initialRecurrencePeriod, this.quiet);
+        if (maxRecurrencePeriod < initialRecurrencePeriod) {
+            throw new IllegalStateException("The initial recurrance period must not be greater than the maximum.");
+        }
+        long initial = Math.max(MIN_RECURRENCE_PERIOD, Math.min(initialRecurrencePeriod, maxRecurrencePeriod));
+        return new Execution(context, initial, maxRecurrencePeriod, this.quiet);
     }
 
     public static final class Execution extends AbstractStepExecutionImpl {
@@ -85,12 +98,14 @@ public final class WaitForConditionStep extends Step {
 
         private static final float RECURRENCE_PERIOD_BACKOFF = 1.2f;
         private long initialRecurrencePeriod;
+        private long maxRecurrencePeriod;
         long recurrencePeriod;
         private final boolean quiet;
 
-        Execution(StepContext context, long initialRecurrencePeriod, boolean quiet) {
+        Execution(StepContext context, long initialRecurrencePeriod, long maxRecurrencePeriod, boolean quiet) {
             super(context);
             this.initialRecurrencePeriod = initialRecurrencePeriod;
+            this.maxRecurrencePeriod = maxRecurrencePeriod;
             recurrencePeriod = initialRecurrencePeriod;
             this.quiet = quiet;
         }
@@ -99,6 +114,9 @@ public final class WaitForConditionStep extends Step {
             // in case we are deserializing an older version of this object prior to this field being added
             if (initialRecurrencePeriod == 0) {
                 initialRecurrencePeriod = MIN_RECURRENCE_PERIOD;
+            }
+            if (maxRecurrencePeriod == 0) {
+                maxRecurrencePeriod = DEFAULT_MAX_RECURRENCE_PERIOD;
             }
             return this;
         }
@@ -162,7 +180,7 @@ public final class WaitForConditionStep extends Step {
                             },
                             recurrencePeriod,
                             TimeUnit.MILLISECONDS);
-            recurrencePeriod = Math.min((long) (recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), MAX_RECURRENCE_PERIOD);
+            recurrencePeriod = Math.min((long) (recurrencePeriod * RECURRENCE_PERIOD_BACKOFF), maxRecurrencePeriod);
         }
 
         @Override
