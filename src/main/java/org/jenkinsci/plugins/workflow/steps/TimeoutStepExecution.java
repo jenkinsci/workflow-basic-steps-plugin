@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.agents.AgentToControllerCallable;
 import jenkins.model.CauseOfInterruption;
-import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.SystemProperties;
 import jenkins.util.Timer;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -301,16 +301,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    private static final class ResetTimer extends SlaveToMasterCallable<Void, RuntimeException> {
-
-        private static final long serialVersionUID = 1L;
-
-        private final @NonNull String id;
-
-        ResetTimer(@NonNull String id) {
-            this.id = id;
-        }
-
+    private record ResetTimer(@NonNull String id) implements AgentToControllerCallable<Void, RuntimeException> {
         @Override
         public Void call() throws RuntimeException {
             StepExecution.acceptAll(TimeoutStepExecution.class, e -> {
