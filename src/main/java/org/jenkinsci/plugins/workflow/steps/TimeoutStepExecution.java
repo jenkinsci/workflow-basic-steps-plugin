@@ -79,7 +79,8 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         if (activity) {
             bodyInvoker = bodyInvoker.withContext(BodyInvoker.mergeConsoleLogFilters(
-                    context.get(ConsoleLogFilter.class), new ConsoleLogFilterImpl2(id, timeout)));
+                    context.get(ConsoleLogFilter.class),
+                    new ConsoleLogFilterImpl3(new AgentToControllerCallable.EncryptedObject<>(id), timeout)));
         }
 
         body = bodyInvoker.start();
@@ -301,11 +302,12 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    private record ResetTimer(@NonNull String id) implements AgentToControllerCallable<Void, RuntimeException> {
+    private record ResetTimer(@NonNull EncryptedObject<String> id)
+            implements AgentToControllerCallable<Void, RuntimeException> {
         @Override
         public Void call() throws RuntimeException {
             StepExecution.acceptAll(TimeoutStepExecution.class, e -> {
-                if (id.equals(e.id)) {
+                if (id.o().equals(e.id)) {
                     e.resetTimer();
                 }
             });
@@ -313,7 +315,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         }
     }
 
-    private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
+    /** @deprecated only here for serial compatibility */
+    @Deprecated
+    private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private final @NonNull String id;
@@ -321,6 +325,30 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private transient @CheckForNull Channel channel;
 
         ConsoleLogFilterImpl2(@NonNull String id, long timeout) {
+            this.id = null;
+            this.timeout = 0;
+            assert false;
+        }
+
+        private Object readResolve() {
+            return this;
+        }
+
+        @Override
+        public OutputStream decorateLogger(@SuppressWarnings("rawtypes") Run build, final OutputStream logger)
+                throws IOException, InterruptedException {
+            return logger;
+        }
+    }
+
+    private static class ConsoleLogFilterImpl3 extends ConsoleLogFilter implements /* TODO Remotable */ Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final @NonNull AgentToControllerCallable.EncryptedObject<String> id;
+        private final long timeout;
+        private transient @CheckForNull Channel channel;
+
+        ConsoleLogFilterImpl3(@NonNull AgentToControllerCallable.EncryptedObject<String> id, long timeout) {
             this.id = id;
             this.timeout = timeout;
         }
@@ -363,14 +391,14 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         private final Reference<?> stream;
         private final long timeout;
         private final @CheckForNull Channel channel;
-        private final @NonNull String id;
+        private final @NonNull AgentToControllerCallable.EncryptedObject<String> id;
 
         Tick(
                 AtomicBoolean active,
                 Reference<?> stream,
                 long timeout,
                 @CheckForNull Channel channel,
-                @NonNull String id) {
+                @NonNull AgentToControllerCallable.EncryptedObject<String> id) {
             this.active = active;
             this.stream = stream;
             this.timeout = timeout;
