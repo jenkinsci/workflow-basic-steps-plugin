@@ -240,7 +240,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         @Override
         public void onFailure(StepContext context, Throwable t) {
-            if (t instanceof FlowInterruptedException && !forceInterruption) {
+            if (t instanceof FlowInterruptedException fie && !forceInterruption) {
                 /*
                  * Check whether the FlowInterruptedException has propagated past the corresponding
                  * timeout step.
@@ -253,11 +253,10 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 }
                 if (flowNode != null) {
                     String nodeId = flowNode.getId();
-                    for (CauseOfInterruption cause : ((FlowInterruptedException) t).getCauses()) {
-                        if (cause instanceof ExceededTimeout) {
-                            ExceededTimeout exceededTimeout = (ExceededTimeout) cause;
-                            if (nodeId.equals(exceededTimeout.getNodeId())) {
-                                ((FlowInterruptedException) t).setActualInterruption(false);
+                    for (CauseOfInterruption cause : fie.getCauses()) {
+                        if (cause instanceof ExceededTimeout et) {
+                            if (nodeId.equals(et.getNodeId())) {
+                                fie.setActualInterruption(false);
                             }
                         }
                     }
