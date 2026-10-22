@@ -152,11 +152,11 @@ public class EnvStep extends Step {
         @Override
         public String argumentsToString(Map<String, Object> namedArgs) {
             Object overrides = namedArgs.get("overrides");
-            if (overrides instanceof List) {
+            if (overrides instanceof List<?> list) {
                 StringBuilder b = new StringBuilder();
-                for (Object pair : (List<?>) overrides) {
-                    if (pair instanceof String) {
-                        int idx = ((String) pair).indexOf('=');
+                for (Object pair : list) {
+                    if (pair instanceof String s) {
+                        int idx = s.indexOf('=');
                         if (idx > 0) {
                             if (b.length() > 0) {
                                 b.append(", ");

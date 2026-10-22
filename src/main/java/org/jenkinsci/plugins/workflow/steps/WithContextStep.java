@@ -95,13 +95,12 @@ public class WithContextStep extends Step {
         @Override
         public boolean start() throws Exception {
             StepContext context = getContext();
-            if (obj instanceof ConsoleLogFilter) {
-                obj = BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), (ConsoleLogFilter) obj);
-            } else if (obj instanceof LauncherDecorator) {
-                obj = BodyInvoker.mergeLauncherDecorators(
-                        context.get(LauncherDecorator.class), (LauncherDecorator) obj);
-            } else if (obj instanceof EnvironmentExpander) {
-                obj = EnvironmentExpander.merge(context.get(EnvironmentExpander.class), (EnvironmentExpander) obj);
+            if (obj instanceof ConsoleLogFilter clf) {
+                obj = BodyInvoker.mergeConsoleLogFilters(context.get(ConsoleLogFilter.class), clf);
+            } else if (obj instanceof LauncherDecorator ld) {
+                obj = BodyInvoker.mergeLauncherDecorators(context.get(LauncherDecorator.class), ld);
+            } else if (obj instanceof EnvironmentExpander ee) {
+                obj = EnvironmentExpander.merge(context.get(EnvironmentExpander.class), ee);
             }
             context.newBodyInvoker()
                     .withContext(obj)

@@ -85,7 +85,7 @@ public class EnvStepTest {
                             b.getExecution(),
                             Predicates.and(
                                     new NodeStepTypePredicate("withEnv"),
-                                    n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                                    n -> n instanceof StepStartNode ssn && !ssn.isBody()));
             assertThat(coreStepNodes, Matchers.hasSize(1));
             assertEquals(
                     "CUSTOM, NOVEL, BUILD_TAG, NULLED, FOOPATH+BALL",

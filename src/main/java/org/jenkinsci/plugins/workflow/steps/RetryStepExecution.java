@@ -70,8 +70,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
                 if (left > 0 && matchesConditions(t, context)) {
                     if (t instanceof AbortException) {
                         l.error(t.getMessage());
-                    } else if (t instanceof FlowInterruptedException) {
-                        FlowInterruptedException fie = (FlowInterruptedException) t;
+                    } else if (t instanceof FlowInterruptedException fie) {
                         fie.handle(context.get(Run.class), l);
                     } else {
                         Functions.printStackTrace(t, l.error("Execution failed"));
@@ -89,8 +88,7 @@ public class RetryStepExecution extends AbstractStepExecutionImpl {
 
         private boolean matchesConditions(Throwable t, StepContext context) throws IOException, InterruptedException {
             if (conditions == null || conditions.isEmpty()) {
-                return !(t instanceof FlowInterruptedException)
-                        || !((FlowInterruptedException) t).isActualInterruption();
+                return !(t instanceof FlowInterruptedException fie && fie.isActualInterruption());
             }
             for (ErrorCondition ec : conditions) {
                 if (ec.test(t, context)) {
