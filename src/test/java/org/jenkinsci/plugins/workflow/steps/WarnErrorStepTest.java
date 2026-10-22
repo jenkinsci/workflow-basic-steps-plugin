@@ -30,6 +30,7 @@ import hudson.model.Result;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +78,20 @@ class WarnErrorStepTest {
     }
 
     @Test
-    void catchesTimeoutsByDefault() throws Exception {
+    void canCatchTimeoutsWithOption() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("""
+                        timeout(time: 1, unit: 'SECONDS') {
+                          warnError(message: 'caught error', catchInterruptions: true) {
+                            sleep 5
+                          }
+                        }""", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
+    }
+
+    @Test
+    void avoidsCatchingTimeoutsByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("""
                         timeout(time: 1, unit: 'SECONDS') {
@@ -86,24 +100,24 @@ class WarnErrorStepTest {
                           }
                         }""", true));
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-        assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
-    }
-
-    @Test
-    void canAvoidCatchingTimeoutsWithOption() throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("""
-                        timeout(time: 1, unit: 'SECONDS') {
-                          warnError(message: 'caught error', catchInterruptions: false) {
-                            sleep 5
-                          }
-                        }""", true));
-        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         assertCatchError(r, b, Result.ABORTED, null, false);
     }
 
     @Test
-    void catchesAttemptsToStopBuildByDefault() throws Exception {
+    void canCatchAttemptsToStopBuildWithOption() throws Exception {
+        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        p.setDefinition(new CpsFlowDefinition("""
+                        warnError(message: 'caught error', catchInterruptions: true) {
+                          semaphore 'ready'
+                        }""", true));
+        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ready/1", b);
+        b.doStop();
+        assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
+    }
+
+    @Test
+    void avoidsCatchingAttemptsToStopBuildByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("""
                         warnError('caught error') {
@@ -112,19 +126,31 @@ class WarnErrorStepTest {
         WorkflowRun b = p.scheduleBuild2(0).waitForStart();
         SemaphoreStep.waitForStart("ready/1", b);
         b.doStop();
-        assertCatchError(r, b, Result.ABORTED, Result.ABORTED, true);
+        assertCatchError(r, b, Result.ABORTED, null, false);
     }
 
     @Test
-    void canAvoidCatchingAttemptsToStopBuildWithOption() throws Exception {
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+    void gracefulSupersession() throws Exception {
+        var p = r.jenkins.createProject(WorkflowJob.class, "p");
+        var dcb = new DisableConcurrentBuildsJobProperty();
+        dcb.setAbortPrevious(true);
+        p.addProperty(dcb);
         p.setDefinition(new CpsFlowDefinition("""
-                        warnError(message: 'caught error', catchInterruptions: false) {
-                          semaphore 'ready'
-                        }""", true));
-        WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-        SemaphoreStep.waitForStart("ready/1", b);
-        b.doStop();
-        assertCatchError(r, b, Result.ABORTED, null, false);
+            warnError('caught abort') {
+              semaphore 'ready'
+            }
+            echo 'later stage'
+            if (BUILD_NUMBER == '1') {
+              sleep 999
+            }
+        """, true));
+        var b1 = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ready/1", b1);
+        SemaphoreStep.success("ready/2", null);
+        r.buildAndAssertStatus(Result.SUCCESS, p); // b2
+        // With catchInterruptions defaulting to true, runs later stage
+        // (and with workflow-job-plugin #804, winds up ABORTED rather than exiting gracefully)
+        r.assertBuildStatus(Result.NOT_BUILT, r.waitForCompletion(b1));
+        r.assertLogNotContains("later stage", b1);
     }
 }

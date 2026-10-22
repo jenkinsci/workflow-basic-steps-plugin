@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import jenkins.util.SystemProperties;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -59,7 +60,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     private @NonNull String buildResult = Result.FAILURE.toString();
     // This result is actually associated with the step, but this name makes more sense to users.
     private @NonNull String stageResult = Result.SUCCESS.toString();
-    private boolean catchInterruptions = true;
+    private boolean catchInterruptions =
+            SystemProperties.getBoolean(CatchErrorStep.class.getName() + ".catchInterruptions");
 
     @DataBoundConstructor
     public CatchErrorStep() {}
@@ -306,7 +308,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
 
         @Override
         public boolean isCatchInterruptions() {
-            return true;
+            return false;
         }
     };
 }
