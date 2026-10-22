@@ -164,14 +164,12 @@ public final class ToolStep extends Step {
                 for (ToolInstallation tool : desc.getInstallations()) {
                     if (name.equals(tool.getName())) {
                         if (tool instanceof NodeSpecific<?> ns) {
-                            tool = (ToolInstallation) ns
-                                    .forNode(
-                                            getContext().get(Node.class),
-                                            getContext().get(TaskListener.class));
+                            tool = (ToolInstallation) ns.forNode(
+                                    getContext().get(Node.class), getContext().get(TaskListener.class));
                         }
                         if (tool instanceof EnvironmentSpecific<?> es) {
-                            tool = (ToolInstallation) es
-                                    .forEnvironment(getContext().get(EnvVars.class));
+                            tool = (ToolInstallation)
+                                    es.forEnvironment(getContext().get(EnvVars.class));
                         }
 
                         return tool.getHome();
