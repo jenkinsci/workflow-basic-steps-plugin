@@ -93,6 +93,27 @@ class WaitForConditionStepTest {
     }
 
     @Test
+    void maxRecurrence() throws Throwable {
+        sessions.then(j -> {
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition(
+                    "waitUntil(initialRecurrencePeriod: 250, maxRecurrencePeriod: 255) {semaphore 'wait'}; semaphore 'waited'", true));
+            WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+            SemaphoreStep.waitForStart("wait/1", b);
+            SemaphoreStep.success("wait/1", false);
+            SemaphoreStep.waitForStart("wait/2", b);
+            SemaphoreStep.success("wait/2", false);
+            SemaphoreStep.waitForStart("wait/3", b);
+            SemaphoreStep.success("wait/3", true);
+            SemaphoreStep.waitForStart("waited/1", b);
+            SemaphoreStep.success("waited/1", null);
+            WorkflowRun run = j.assertBuildStatusSuccess(j.waitForCompletion(b));
+            j.assertLogContains("Will try again after " + Util.getTimeSpanString(250), run);
+            j.assertLogContains("Will try again after " + Util.getTimeSpanString(255), run);
+        });
+    }
+
+    @Test
     void failure() throws Throwable {
         sessions.then(j -> {
             WorkflowJob p = j.createProject(WorkflowJob.class, "p");

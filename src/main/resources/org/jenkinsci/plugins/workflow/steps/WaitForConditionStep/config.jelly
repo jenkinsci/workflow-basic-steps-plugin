@@ -28,6 +28,9 @@ THE SOFTWARE.
     <f:entry field="initialRecurrencePeriod" title="${%Initial Recurrence Period Milliseconds}">
         <f:number clazz="positive-number"/>
     </f:entry>
+    <f:entry field="maxRecurrencePeriod" title="${%Maximum Recurrence Period Milliseconds}">
+        <f:number clazz="positive-number"/>
+    </f:entry>
     <f:entry field="quiet" title="${%Quiet Mode}">
         <f:checkbox checked="false"/>
     </f:entry>
