@@ -53,7 +53,6 @@ import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable
 import org.jenkinsci.plugins.workflow.support.visualization.table.FlowGraphTable.Row;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
@@ -399,7 +398,6 @@ class TimeoutStepTest {
         }
     }
 
-    @Disabled("TODO cannot find any way to solve this case")
     @Issue("JENKINS-39072")
     @Test
     void veryUnresponsiveBody() throws Throwable {
@@ -530,9 +528,9 @@ class TimeoutStepTest {
                                         unkillable()
                                       }
                                     } catch (e) {
-                                      echo e.isActualInterruption() ? 'BAD' : 'GOOD'\
+                                      echo e.isActualInterruption() ? 'GOOD' : 'BAD'\
                                     }""", true));
-            b = j.buildAndAssertSuccess(p);
+            b = j.buildAndAssertStatus(Result.ABORTED, p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
 
@@ -547,7 +545,7 @@ class TimeoutStepTest {
                                         echo e.isActualInterruption() ? 'GOOD' : 'BAD'
                                       }
                                     }""", true));
-            b = j.buildAndAssertSuccess(p);
+            b = j.buildAndAssertStatus(Result.ABORTED, p);
             j.assertLogContains("GOOD", b);
             j.assertLogNotContains("BAD", b);
         });

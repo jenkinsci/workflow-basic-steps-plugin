@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.workflow.steps;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -9,6 +7,7 @@ import hudson.Main;
 import hudson.Util;
 import hudson.console.ConsoleLogFilter;
 import hudson.console.LineTransformationOutputStream;
+import hudson.model.OneOffExecutor;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -19,9 +18,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,9 +28,7 @@ import jenkins.model.CauseOfInterruption;
 import jenkins.security.SlaveToMasterCallable;
 import jenkins.util.SystemProperties;
 import jenkins.util.Timer;
-import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.graphanalysis.LinearBlockHoppingScanner;
 
 @SuppressFBWarnings("SE_INNER_CLASS")
 public class TimeoutStepExecution extends AbstractStepExecutionImpl {
@@ -157,45 +152,17 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
         String nodeId = flowNode != null ? flowNode.getId() : null;
         if (forcible) {
             if (!killer.isCancelled()) {
-                listener()
-                        .getLogger()
-                        .println("Body did not finish within grace period; terminating with extreme prejudice");
-                FlowExecution exec;
                 try {
-                    exec = getContext().get(FlowExecution.class);
+                    if (getContext().get(Run.class) instanceof Run<?, ?> build
+                            && build.getOneOffExecutor() instanceof OneOffExecutor ooe) {
+                        listener().getLogger().println("Body did not finish within grace period; aborting build");
+                        ooe.interrupt(Result.ABORTED, new ExceededTimeout(nodeId));
+                    } else {
+                        LOGGER.warning(() -> "could not find executor for " + getContext() + " to abort it");
+                    }
                 } catch (IOException | InterruptedException x) {
                     LOGGER.log(Level.WARNING, null, x);
-                    return;
                 }
-                final Throwable death = new FlowInterruptedException(Result.ABORTED, new ExceededTimeout(nodeId));
-                /* Due to JENKINS-25504, this does not accomplish anything beyond what the original body.cancel would have:
-                getContext().onFailure(death);
-                */
-                final ListenableFuture<List<StepExecution>> currentExecutions = exec.getCurrentExecutions(true);
-                // TODO would use Futures.addCallback but this is still @Beta in Guava 19
-                // and the Pipeline copy is in workflow-support on which we have no dep
-                currentExecutions.addListener(
-                        () -> {
-                            assert currentExecutions.isDone();
-                            try {
-                                FlowNode outer = getContext().get(FlowNode.class); // timeout
-                                for (StepExecution exec1 : currentExecutions.get()) {
-                                    // some deadbeat step, perhaps
-                                    FlowNode inner = exec1.getContext().get(FlowNode.class);
-                                    LinearBlockHoppingScanner scanner = new LinearBlockHoppingScanner();
-                                    scanner.setup(inner);
-                                    for (FlowNode enclosing : scanner) {
-                                        if (enclosing.equals(outer)) {
-                                            exec1.getContext().onFailure(death);
-                                            break;
-                                        }
-                                    }
-                                }
-                            } catch (IOException | InterruptedException | ExecutionException x) {
-                                LOGGER.log(Level.WARNING, null, x);
-                            }
-                        },
-                        MoreExecutors.newDirectExecutorService());
             }
         } else {
             listener().getLogger().println("Cancelling nested steps due to timeout");

@@ -29,6 +29,6 @@ THE SOFTWARE.
         <f:textbox/>
     </f:entry>
     <f:entry field="catchInterruptions" title="${%Catch Pipeline interruptions}">
-        <f:checkbox checked="true"/>
+        <f:checkbox/>
     </f:entry>
 </j:jelly>
