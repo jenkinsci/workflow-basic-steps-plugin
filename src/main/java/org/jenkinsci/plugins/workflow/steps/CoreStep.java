@@ -169,11 +169,11 @@ public final class CoreStep extends Step {
         @SuppressWarnings("unchecked")
         @CheckForNull
         static Map<String, Object> delegateArguments(@CheckForNull Object delegate) {
-            if (delegate instanceof UninstantiatedDescribable) {
+            if (delegate instanceof UninstantiatedDescribable ud) {
                 // TODO JENKINS-45101 getStepArgumentsAsString does not resolve its arguments
                 // thus delegate.model == null and we cannot inspect DescribableModel.soleRequiredParameter
                 // thus for, e.g., `junit testResults: '*.xml', keepLongStdio: true` we will get null
-                return new HashMap<>(((UninstantiatedDescribable) delegate).getArguments());
+                return new HashMap<>(ud.getArguments());
             } else if (delegate instanceof Map) {
                 Map<String, Object> r = new HashMap<>((Map<String, Object>) delegate);
                 r.remove(DescribableModel.CLAZZ);

@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import jenkins.util.SystemProperties;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -59,7 +60,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
     private @NonNull String buildResult = Result.FAILURE.toString();
     // This result is actually associated with the step, but this name makes more sense to users.
     private @NonNull String stageResult = Result.SUCCESS.toString();
-    private boolean catchInterruptions = true;
+    private boolean catchInterruptions =
+            SystemProperties.getBoolean(CatchErrorStep.class.getName() + ".catchInterruptions");
 
     @DataBoundConstructor
     public CatchErrorStep() {}
@@ -138,14 +140,14 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
         // Previously, the types of buildResult and stageResult were Result rather than String,
         // so we handle either type.
         Object serializedBuildResult = fields.get("buildResult", "FAILURE");
-        if (serializedBuildResult instanceof Result) {
-            buildResult = ((Result) serializedBuildResult).toString();
+        if (serializedBuildResult instanceof Result r) {
+            buildResult = r.toString();
         } else {
             buildResult = (String) serializedBuildResult;
         }
         Object serializedStageResult = fields.get("stageResult", "SUCCESS");
-        if (serializedStageResult instanceof Result) {
-            stageResult = ((Result) serializedStageResult).toString();
+        if (serializedStageResult instanceof Result r) {
+            stageResult = r.toString();
         } else {
             stageResult = (String) serializedStageResult;
         }
@@ -241,8 +243,8 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
             public void onFailure(StepContext context, Throwable t) {
                 try {
                     if (!options.isCatchInterruptions()
-                            && t instanceof FlowInterruptedException
-                            && ((FlowInterruptedException) t).isActualInterruption()) {
+                            && t instanceof FlowInterruptedException fie
+                            && fie.isActualInterruption()) {
                         context.onFailure(t);
                         return;
                     }
@@ -255,8 +257,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
                     Result stepResult = options.getStepResultOnError();
                     if (t instanceof AbortException) {
                         listener.error(t.getMessage());
-                    } else if (t instanceof FlowInterruptedException) {
-                        FlowInterruptedException fie = (FlowInterruptedException) t;
+                    } else if (t instanceof FlowInterruptedException fie) {
                         fie.handle(context.get(Run.class), listener);
                         buildResult = fie.getResult();
                         stepResult = fie.getResult();
@@ -307,7 +308,7 @@ public final class CatchErrorStep extends Step implements CatchExecutionOptions 
 
         @Override
         public boolean isCatchInterruptions() {
-            return true;
+            return false;
         }
     };
 }

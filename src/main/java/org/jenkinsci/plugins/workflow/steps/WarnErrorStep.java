@@ -34,6 +34,7 @@ import hudson.util.FormValidation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import jenkins.util.SystemProperties;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -50,7 +51,8 @@ public class WarnErrorStep extends Step implements CatchExecutionOptions {
     private static final long serialVersionUID = 1L;
 
     private final String message;
-    private boolean catchInterruptions = true;
+    private boolean catchInterruptions =
+            SystemProperties.getBoolean(WarnErrorStep.class.getName() + ".catchInterruptions");
 
     @DataBoundConstructor
     public WarnErrorStep(String message) {

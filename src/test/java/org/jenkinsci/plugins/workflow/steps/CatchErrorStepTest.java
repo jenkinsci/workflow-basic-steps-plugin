@@ -192,12 +192,12 @@ class CatchErrorStepTest {
     }
 
     @Test
-    void catchesInterruptionsByDefault() throws Exception {
+    void canCatchInterruptionsWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("""
                 import jenkins.model.CauseOfInterruption
                 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
-                catchError(message: 'caught error') {
+                catchError(message: 'caught error', catchInterruptions: true) {
                         throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])
                 }
                 """, false));
@@ -206,12 +206,12 @@ class CatchErrorStepTest {
     }
 
     @Test
-    void canAvoidCatchingInterruptionsWithOption() throws Exception {
+    void avoidsCatchingInterruptionsByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("""
                 import jenkins.model.CauseOfInterruption
                 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
-                catchError(message: 'caught error', catchInterruptions: false) {
+                catchError(message: 'caught error') {
                         throw new FlowInterruptedException(Result.ABORTED, true, new CauseOfInterruption[0])
                 }
                 """, false));
@@ -220,10 +220,10 @@ class CatchErrorStepTest {
     }
 
     @Test
-    void catchesAttemptsToStopBuildByDefault() throws Exception {
+    void canCatchAttemptsToStopBuildWithOption() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("""
-                catchError(message: 'caught error') {
+                catchError(message: 'caught error', catchInterruptions: true) {
                         semaphore 'ready'
                 }
                 """, true));
@@ -234,10 +234,10 @@ class CatchErrorStepTest {
     }
 
     @Test
-    void canAvoidCatchingAttemptsToStopBuildWithOption() throws Exception {
+    void avoidsCatchingAttemptsToStopBuildByDefault() throws Exception {
         WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("""
-                catchError(message: 'caught error', catchInterruptions: false) {
+                catchError(message: 'caught error') {
                         semaphore 'ready'
                 }
                 """, true));
@@ -301,5 +301,30 @@ class CatchErrorStepTest {
         } else {
             assertThat(warningNode, nullValue());
         }
+    }
+
+    @Test
+    void gracefulSupersession() throws Exception {
+        var p = r.jenkins.createProject(WorkflowJob.class, "p");
+        var dcb = new DisableConcurrentBuildsJobProperty();
+        dcb.setAbortPrevious(true);
+        p.addProperty(dcb);
+        p.setDefinition(new CpsFlowDefinition("""
+            catchError {
+              semaphore 'ready'
+            }
+            echo 'later stage'
+            if (BUILD_NUMBER == '1') {
+              sleep 999
+            }
+        """, true));
+        var b1 = p.scheduleBuild2(0).waitForStart();
+        SemaphoreStep.waitForStart("ready/1", b1);
+        SemaphoreStep.success("ready/2", null);
+        r.buildAndAssertStatus(Result.SUCCESS, p); // b2
+        // With catchInterruptions defaulting to true, runs later stage
+        // (and with workflow-job-plugin #804, winds up ABORTED rather than exiting gracefully)
+        r.assertBuildStatus(Result.NOT_BUILT, r.waitForCompletion(b1));
+        r.assertLogNotContains("later stage", b1);
     }
 }

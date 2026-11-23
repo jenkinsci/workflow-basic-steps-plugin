@@ -161,7 +161,7 @@ public class StashStep extends Step {
         @Override
         public String argumentsToString(Map<String, Object> namedArgs) {
             Object name = namedArgs.get("name");
-            return name instanceof String ? (String) name : null;
+            return name instanceof String s ? s : null;
         }
     }
 }

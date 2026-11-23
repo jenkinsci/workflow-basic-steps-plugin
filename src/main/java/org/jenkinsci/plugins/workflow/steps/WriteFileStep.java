@@ -98,7 +98,7 @@ public final class WriteFileStep extends Step {
         @Override
         public String argumentsToString(Map<String, Object> namedArgs) {
             Object file = namedArgs.get("file");
-            return file instanceof String ? (String) file : null;
+            return file instanceof String s ? s : null;
         }
     }
 

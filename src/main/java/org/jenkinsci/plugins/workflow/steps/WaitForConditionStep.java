@@ -192,11 +192,11 @@ public final class WaitForConditionStep extends Step {
 
         @Override
         public void onSuccess(final StepContext context, Object result) {
-            if (!(result instanceof Boolean)) {
+            if (!(result instanceof Boolean b)) {
                 context.onFailure(new ClassCastException("body return value " + result + " is not boolean"));
                 return;
             }
-            if ((Boolean) result) {
+            if (b) {
                 context.onSuccess(null);
                 return;
             }

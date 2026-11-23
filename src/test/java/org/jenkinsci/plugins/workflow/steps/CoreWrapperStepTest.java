@@ -340,7 +340,7 @@ class CoreWrapperStepTest {
                             b.getExecution(),
                             Predicates.and(
                                     new NodeStepTypePredicate("wrap"),
-                                    n -> n instanceof StepStartNode && !((StepStartNode) n).isBody()));
+                                    n -> n instanceof StepStartNode ssn && !ssn.isBody()));
             assertThat(coreStepNodes, Matchers.hasSize(1));
             assertEquals("xterm", ArgumentsAction.getStepArgumentsAsString(coreStepNodes.get(0)));
         });

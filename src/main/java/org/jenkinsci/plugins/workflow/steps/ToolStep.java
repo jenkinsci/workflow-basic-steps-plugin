@@ -138,7 +138,7 @@ public final class ToolStep extends Step {
         @Override
         public String argumentsToString(Map<String, Object> namedArgs) {
             Object name = namedArgs.get("name");
-            return name instanceof String ? (String) name : null;
+            return name instanceof String s ? s : null;
         }
     }
 
@@ -163,15 +163,13 @@ public final class ToolStep extends Step {
                 }
                 for (ToolInstallation tool : desc.getInstallations()) {
                     if (name.equals(tool.getName())) {
-                        if (tool instanceof NodeSpecific) {
-                            tool = (ToolInstallation) ((NodeSpecific<?>) tool)
-                                    .forNode(
-                                            getContext().get(Node.class),
-                                            getContext().get(TaskListener.class));
+                        if (tool instanceof NodeSpecific<?> ns) {
+                            tool = (ToolInstallation) ns.forNode(
+                                    getContext().get(Node.class), getContext().get(TaskListener.class));
                         }
-                        if (tool instanceof EnvironmentSpecific) {
-                            tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool)
-                                    .forEnvironment(getContext().get(EnvVars.class));
+                        if (tool instanceof EnvironmentSpecific<?> es) {
+                            tool = (ToolInstallation)
+                                    es.forEnvironment(getContext().get(EnvVars.class));
                         }
 
                         return tool.getHome();

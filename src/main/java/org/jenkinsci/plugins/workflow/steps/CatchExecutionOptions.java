@@ -64,7 +64,7 @@ public interface CatchExecutionOptions extends Serializable {
      *
      * {@link FlowInterruptedException} is commonly used to control the flow of execution for things
      * like builds aborted by a user and builds that time out inside of {@link TimeoutStep}. It is
-     * sometimes desirable to rethrow these kinds of exceptions rather than catching them so as to
+     * normally desirable to rethrow these kinds of exceptions rather than catching them so as to
      * not interfere with their intended behavior.
      */
     boolean isCatchInterruptions();

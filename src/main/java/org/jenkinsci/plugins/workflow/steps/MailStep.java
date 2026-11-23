@@ -121,7 +121,7 @@ public class MailStep extends Step {
         @Override
         public String argumentsToString(Map<String, Object> namedArgs) {
             Object subject = namedArgs.get("subject");
-            return subject instanceof String ? (String) subject : null;
+            return subject instanceof String s ? s : null;
         }
     }
 
