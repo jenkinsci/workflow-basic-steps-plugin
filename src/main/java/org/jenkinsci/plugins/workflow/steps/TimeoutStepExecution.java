@@ -286,7 +286,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     private static class ConsoleLogFilterImpl2 extends ConsoleLogFilter implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private final @NonNull String id;
+        private final String id;
         private final long timeout;
         private transient @CheckForNull Channel channel;
 
