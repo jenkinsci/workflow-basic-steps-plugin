@@ -57,6 +57,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
      */
     private transient boolean forcible;
 
+    /** Set when the body finishes, so a late activity reset cannot rearm the timer. */
+    private transient volatile boolean done;
+
     /** Token for {@link #activity} callbacks. */
     private final String id;
 
@@ -103,6 +106,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
      * @param forceReset reset timer if already set
      */
     private void setupTimer(final long now, boolean forceReset) {
+        if (done) {
+            return;
+        }
         // Used to track whether we should be logging the timeout setup/reset - for activity resets, we don't actually
         // want to log the "Timeout set to expire..." line every single time.
         boolean resettingKiller = false;
@@ -129,13 +135,16 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
                 }
             }
             killer = Timer.get().schedule(this::cancel, delay, TimeUnit.MILLISECONDS);
+            if (done) {
+                killer.cancel(true);
+            }
         } else {
             listener().getLogger().println("Timeout expired " + Util.getTimeSpanString(-delay) + " ago");
             cancel();
         }
     }
 
-    private void resetTimer() {
+    void resetTimer() {
         LOGGER.fine(() -> "resetting timer on " + id);
         long now = System.currentTimeMillis();
         end = now + timeout;
@@ -143,6 +152,9 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
     }
 
     private void cancel() {
+        if (done) {
+            return;
+        }
         FlowNode flowNode = null;
         try {
             flowNode = getContext().get(FlowNode.class);
@@ -199,6 +211,7 @@ public class TimeoutStepExecution extends AbstractStepExecutionImpl {
 
         @Override
         protected void finished(StepContext context) throws Exception {
+            done = true;
             if (killer != null) {
                 killer.cancel(true);
                 killer = null;
