@@ -35,6 +35,7 @@ import hudson.model.Result;
 import hudson.model.StringParameterDefinition;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -207,6 +208,32 @@ class TimeoutStepTest {
             WorkflowRun b = j.buildAndAssertStatus(Result.ABORTED, p);
             j.assertLogContains("JustHere!", b);
             j.assertLogNotContains("ShouldNot!", b);
+        });
+    }
+
+    @Test
+    void activityResetAfterBodyFinished() throws Throwable {
+        sessions.then(j -> {
+            WorkflowJob p = j.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("""
+                        timeout(time: 3, unit: 'SECONDS', activity: true) {
+                          semaphore 'inside'
+                        }
+                        semaphore 'after'
+                        sleep 10 // past the timeout plus grace period
+                        """, true));
+            WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+            SemaphoreStep.waitForStart("inside/1", b);
+            List<TimeoutStepExecution> executions = new ArrayList<>();
+            StepExecution.acceptAll(TimeoutStepExecution.class, executions::add).get();
+            assertEquals(1, executions.size());
+            SemaphoreStep.success("inside/1", null);
+            SemaphoreStep.waitForStart("after/1", b);
+            // An activity reset delivered after the body finished, as from a late ResetTimer.
+            executions.get(0).resetTimer();
+            SemaphoreStep.success("after/1", null);
+            j.assertBuildStatusSuccess(j.waitForCompletion(b));
+            j.assertLogNotContains("Timeout has been exceeded", b);
         });
     }
 
